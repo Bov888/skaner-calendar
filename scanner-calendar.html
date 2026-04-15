@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="uk" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scanner Planner Pro — Private</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg: #0d0f0e; --surface: #141714; --card-bg: #1a1e1b;
+            --border: #1e2320; --text: #e8ede9; --muted: #5a6659;
+            --accent: #4a9e42; --accent-glow: rgba(74, 158, 66, 0.15);
+            --cat-learning: #4a9e42; --cat-travel: #e07b39; --cat-sport: #5b8dd9;
+            --cat-creative: #c45c8a; --cat-career: #c9a227; --cat-personal: #6b8f71;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background-color: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        h1, h2, h3 { font-family: 'Outfit', sans-serif; }
+
+        /* AUTH SCREEN */
+        #auth-overlay {
+            position: fixed; inset: 0; background: var(--bg); z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .auth-card {
+            background: var(--surface); padding: 3rem; border: 1px solid var(--border);
+            border-radius: 20px; width: 100%; max-width: 400px; text-align: center;
+        }
+        .auth-card h2 { margin-bottom: 2rem; color: var(--accent); }
+        .auth-card input {
+            width: 100%; padding: 12px; margin-bottom: 1rem; border-radius: 10px;
+            border: 1px solid var(--border); background: var(--bg); color: var(--text);
+        }
+
+        /* UI ELEMENTS */
+        .btn {
+            background: var(--surface); border: 1px solid var(--border); color: var(--text);
+            padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 0.8rem;
+            font-weight: 500; display: flex; align-items: center; gap: 8px;
+        }
+        .btn:hover { border-color: var(--accent); color: var(--accent); }
+        .btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
+
+        /* CALENDAR LAYOUT (як раніше) */
+        #sidebar { width: 320px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; transition: 0.3s; }
+        #sidebar.collapsed { margin-left: -320px; }
+        #main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        header { padding: 1.2rem 2rem; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        
+        #calendar-container { flex: 1; overflow-y: auto; padding: 2rem; }
+        .year-block { margin-bottom: 1.5rem; }
+        .year-header { font-size: 1.4rem; padding: 1rem; border: 1px solid var(--border); border-radius: 12px; cursor: pointer; display: flex; justify-content: space-between; }
+        .year-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; padding-top: 1rem; transition: 0.3s; }
+        .year-block.collapsed .year-row { display: none; }
+        
+        .month-cell { background: var(--surface); border: 1px solid var(--border); min-height: 120px; border-radius: 10px; padding: 10px; }
+        .month-cell.drag-over { border-color: var(--accent); background: var(--accent-glow); }
+        .project-card { background: var(--card-bg); border: 1px solid var(--border); padding: 10px; border-radius: 8px; cursor: grab; font-size: 0.8rem; margin-top: 5px; display: flex; align-items: center; gap: 8px; }
+        .cat-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal { background: var(--surface); padding: 2rem; border-radius: 20px; border: 1px solid var(--border); width: 350px; }
+        
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div id="auth-overlay">
+    <div class="auth-card">
+        <h2>Scanner Login</h2>
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="password" placeholder="Пароль">
+        <button class="btn btn-primary" style="width: 100%; margin-bottom: 10px;" onclick="handleAuth('login')">Увійти</button>
+        <button class="btn" style="width: 100%;" onclick="handleAuth('signup')">Реєстрація</button>
+        <p id="auth-error" style="color: #ef4444; font-size: 0.7rem; margin-top: 10px;"></p>
+    </div>
+</div>
+
+<aside id="sidebar">
+    <div style="padding: 1.5rem; border-bottom: 1px solid var(--border);">
+        <h2 style="font-size: 1.1rem;">Беклог</h2>
+        <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="openModal()">+ Нова ідея</button>
+    </div>
+    <div class="project-list" id="backlog" ondrop="handleDrop(event, 'backlog')" ondragover="e => e.preventDefault()"></div>
+</aside>
+
+<main id="main-content">
+    <header>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <button class="btn" onclick="toggleSidebar()">☰</button>
+            <h1>Scanner Planner</h1>
+        </div>
+        <button class="btn" onclick="handleLogout()">Вийти</button>
+    </header>
+    <div id="calendar-container"></div>
+</main>
+
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+        <h3>Проєкт</h3>
+        <input type="text" id="projTitle" style="width:100%; padding:10px; margin:10px 0; background:#0d0f0e; border:1px solid #1e2320; color:white;">
+        <select id="projCat" style="width:100%; padding:10px; margin-bottom:15px; background:#0d0f0e; border:1px solid #1e2320; color:white;">
+            <option value="learning">Навчання</option>
+            <option value="travel">Подорожі</option>
+            <option value="sport">Спорт</option>
+            <option value="creative">Творчість</option>
+            <option value="career">Кар'єра</option>
+            <option value="personal">Особисте</option>
+        </select>
+        <div style="display: flex; gap: 10px;">
+            <button id="deleteBtn" class="btn" style="color:#ef4444;" onclick="deleteProject()">Видалити</button>
+            <button class="btn" onclick="closeModal()">Скасувати</button>
+            <button class="btn btn-primary" onclick="saveProject()">Зберегти</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- НАЛАШТУВАННЯ SUPABASE ---
+    const SB_URL = 'ТВІЙ_SUPABASE_URL';
+    const SB_KEY = 'ТВІЙ_SUPABASE_ANON_KEY';
+    const supabase = document.getElementById('auth-overlay') ? supabase.createClient(SB_URL, SB_KEY) : null;
+    // (Примітка: для роботи SDK треба ініціалізувати клієнт після завантаження скрипта)
+    let sb; 
+    try { sb = supabase.createClient(SB_URL, SB_KEY); } catch(e) {}
+
+    const MONTHS = ['Січень', 'Лютий', 'Березень', 'Квітень', 'Травень', 'Червень', 'Липень', 'Серпень', 'Вересень', 'Жовтень', 'Листопад', 'Грудень'];
+    let projects = [];
+    let editingId = null;
+
+    // --- AUTH LOGIC ---
+    async function handleAuth(type) {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const errorEl = document.getElementById('auth-error');
+        
+        const { data, error } = type === 'login' 
+            ? await sb.auth.signInWithPassword({ email, password })
+            : await sb.auth.signUp({ email, password });
+
+        if (error) errorEl.innerText = error.message;
+        else checkUser();
+    }
+
+    async function checkUser() {
+        const { data: { user } } = await sb.auth.getUser();
+        if (user) {
+            document.getElementById('auth-overlay').classList.add('hidden');
+            loadData();
+        }
+    }
+
+    async function handleLogout() {
+        await sb.auth.signOut();
+        location.reload();
+    }
+
+    // --- DATA SYNC ---
+    async function loadData() {
+        const { data, error } = await sb.from('projects').select('*');
+        if (!error) {
+            projects = data;
+            initCalendar();
+        }
+    }
+
+    async function saveToCloud(proj) {
+        const { data: { user } } = await sb.auth.getUser();
+        const payload = { ...proj, user_id: user.id };
+        
+        if (proj.id && String(proj.id).length > 10) { // existing
+            await sb.from('projects').update(payload).eq('id', proj.id);
+        } else { // new
+            delete payload.id;
+            await sb.from('projects').insert([payload]);
+        }
+        loadData();
+    }
+
+    // --- CALENDAR UI --- (Скорочено для компактності, логіка та сама)
+    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
+
+    function initCalendar() {
+        const container = document.getElementById('calendar-container');
+        container.innerHTML = '';
+        const startYear = new Date().getFullYear();
+
+        for (let i = 0; i < 6; i++) {
+            const year = startYear + i;
+            const block = document.createElement('div');
+            block.className = 'year-block';
+            block.innerHTML = `<div class="year-header" onclick="this.parentElement.classList.toggle('collapsed')"><span>${year}</span><span>▼</span></div>`;
+            const row = document.createElement('div');
+            row.className = 'year-row';
+
+            for (let m = 1; m <= 12; m++) {
+                const dateKey = `${year}-${String(m).padStart(2, '0')}`;
+                const cell = document.createElement('div');
+                cell.className = 'month-cell';
+                cell.dataset.date = dateKey;
+                cell.innerHTML = `<span class="month-label">${MONTHS[m-1]}</span>`;
+                cell.ondragover = (e) => { e.preventDefault(); cell.classList.add('drag-over'); };
+                cell.ondragleave = () => cell.classList.remove('drag-over');
+                cell.ondrop = (e) => handleDrop(e, dateKey);
+                row.appendChild(cell);
+            }
+            block.appendChild(row);
+            container.appendChild(block);
+        }
+        renderProjects();
+    }
+
+    function renderProjects() {
+        document.querySelectorAll('.month-cell').forEach(c => {
+            const l = c.querySelector('.month-label');
+            c.innerHTML = ''; c.appendChild(l);
+        });
+        document.getElementById('backlog').innerHTML = '';
+
+        projects.forEach(p => {
+            const card = createCard(p);
+            if (p.date) {
+                const cell = document.querySelector(`[data-date="${p.date}"]`);
+                if (cell) cell.appendChild(card);
+            } else {
+                document.getElementById('backlog').appendChild(card);
+            }
+        });
+    }
+
+    function createCard(p) {
+        const div = document.createElement('div');
+        div.className = 'project-card';
+        div.draggable = true;
+        div.innerHTML = `<span class="cat-dot" style="background-color: var(--cat-${p.cat})"></span> <span>${p.title}</span>`;
+        div.ondragstart = (e) => e.dataTransfer.setData("text/plain", p.id);
+        div.onclick = () => openModal(p.id);
+        return div;
+    }
+
+    async function handleDrop(e, targetDate) {
+        e.preventDefault();
+        const id = e.dataTransfer.getData("text/plain");
+        const project = projects.find(p => p.id == id);
+        if (project) {
+            project.date = (targetDate === 'backlog') ? null : targetDate;
+            await saveToCloud(project);
+        }
+    }
+
+    function openModal(id = null) {
+        editingId = id;
+        const p = projects.find(x => x.id == id);
+        document.getElementById('projTitle').value = p ? p.title : "";
+        document.getElementById('projCat').value = p ? p.cat : "learning";
+        document.getElementById('deleteBtn').style.display = id ? "block" : "none";
+        document.getElementById('modalOverlay').style.display = 'flex';
+    }
+
+    function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; }
+
+    async function saveProject() {
+        const title = document.getElementById('projTitle').value;
+        const cat = document.getElementById('projCat').value;
+        if (!title) return;
+        const proj = editingId ? projects.find(x => x.id == editingId) : { title, cat, date: null };
+        proj.title = title; proj.cat = cat;
+        await saveToCloud(proj);
+        closeModal();
+    }
+
+    async function deleteProject() {
+        if (editingId) {
+            await sb.from('projects').delete().eq('id', editingId);
+            loadData();
+            closeModal();
+        }
+    }
+
+    checkUser();
+</script>
+</body>
+</html>
