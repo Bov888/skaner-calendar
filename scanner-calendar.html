@@ -120,8 +120,8 @@
 
 <script>
     // --- НАЛАШТУВАННЯ SUPABASE ---
-    const SB_URL = 'ТВІЙ_SUPABASE_URL';
-    const SB_KEY = 'ТВІЙ_SUPABASE_ANON_KEY';
+    const SB_URL = 'https://mlkdphygsdfcanztbtez.supabase.co';
+    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2RwaHlnc2RmY2FuenRidGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyODAwNTAsImV4cCI6MjA5MTg1NjA1MH0.PfjkZXua-9tp2lxVsBD3YBUNpx_USmMha5BQBZcGLFc';
     const supabase = document.getElementById('auth-overlay') ? supabase.createClient(SB_URL, SB_KEY) : null;
     // (Примітка: для роботи SDK треба ініціалізувати клієнт після завантаження скрипта)
     let sb; 
