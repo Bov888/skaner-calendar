@@ -2,179 +2,210 @@
 <html lang="uk" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scanner Planner Final</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Scanner Planner Mobile</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@700&family=JetBrains+Mono&display=swap" rel="stylesheet">
     <style>
         :root[data-theme="dark"] {
             --bg: #0a0a0a; --surface: #111111; --border: #1a1a1a; --text: #e0e0e0;
-            --muted: #444444; --accent: #4a9e42; --card: #1a1a1a;
+            --muted: #666; --accent: #4a9e42; --sidebar: #0d0d0d;
         }
         :root[data-theme="light"] {
             --bg: #f5f5f7; --surface: #ffffff; --border: #e0e0e0; --text: #1d1d1f;
-            --muted: #86868b; --accent: #34c759; --card: #f2f2f7;
+            --muted: #86868b; --accent: #34c759; --sidebar: #fbfbfd;
         }
         :root {
             --cat-learning: #4a9e42; --cat-travel: #e07b39; --cat-sport: #5b8dd9;
-            --cat-creative: #c45c8a; --cat-career: #c9a227; --cat-personal: #6b8f71;
+            --cat-creative: #c45c8a; --cat-career: #c9a227;
         }
 
-        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; transition: 0.3s; }
-        
-        #auth-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 10000; display: flex; align-items: center; justify-content: center; }
-        .auth-card { background: var(--surface); padding: 2.5rem; border-radius: 15px; width: 340px; text-align: center; border: 1px solid var(--border); box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
-        .auth-card h2 { color: var(--accent); font-family: 'Outfit'; margin-bottom: 2rem; font-size: 1.8rem; }
-        
-        input { width: 100%; padding: 14px; margin-bottom: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); box-sizing: border-box; font-size: 1rem; }
-        
-        .btn { padding: 14px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; width: 100%; transition: 0.2s; font-size: 1rem; }
-        .btn-primary { background: var(--accent); color: white; margin-top: 10px; }
-        .btn-primary:disabled { background: var(--muted); cursor: not-allowed; }
-        .btn-text { background: none; color: var(--muted); margin-top: 15px; font-size: 0.85rem; text-decoration: underline; }
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
 
-        #main-app { display: none; flex: 1; flex-direction: column; overflow: hidden; }
-        header { padding: 2rem 3rem; display: flex; justify-content: space-between; align-items: center; }
+        /* SIDEBAR (Адаптивний) */
+        #sidebar { 
+            width: 280px; background: var(--sidebar); border-right: 1px solid var(--border); 
+            display: flex; flex-direction: column; z-index: 2000; transition: transform 0.3s ease;
+        }
         
-        #calendar-scroll { flex: 1; overflow-y: auto; padding: 0 3rem 3rem; }
-        .year-header { font-family: 'JetBrains Mono'; color: var(--accent); font-weight: bold; margin: 2rem 0 1rem; font-size: 1.2rem; }
-        .year-row { display: grid; grid-template-columns: repeat(12, 1fr); gap: 10px; }
-        .month-cell { background: var(--surface); border: 1px solid var(--border); aspect-ratio: 1/1; padding: 8px; border-radius: 6px; position: relative; min-height: 90px; }
-        .month-name { font-size: 0.65rem; color: var(--muted); position: absolute; top: 6px; right: 8px; text-transform: uppercase; }
+        /* ТЕЛЕФОНИ: Sidebar стає оверлеєм */
+        @media (max-width: 768px) {
+            #sidebar { position: fixed; height: 100%; transform: translateX(-100%); }
+            #sidebar.open { transform: translateX(0); box-shadow: 10px 0 30px rgba(0,0,0,0.5); }
+        }
+
+        /* MAIN UI */
+        main { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        .top-header { padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
         
-        .project-card { background: var(--card); border: 1px solid var(--border); padding: 8px; border-radius: 4px; font-size: 0.75rem; margin-top: 18px; cursor: pointer; border-left: 3px solid var(--accent); }
+        .menu-btn { display: none; background: none; border: none; color: var(--text); font-size: 1.5rem; cursor: pointer; }
+        @media (max-width: 768px) { .menu-btn { display: block; } }
+
+        /* КАТЕГОРІЇ (Горизонтальна прокрутка на мобілці) */
+        .nav-categories { 
+            display: flex; gap: 12px; overflow-x: auto; padding: 10px 1.5rem; 
+            font-size: 0.75rem; border-bottom: 1px solid var(--border); scrollbar-width: none;
+        }
+        .nav-categories::-webkit-scrollbar { display: none; }
+        .cat-item { white-space: nowrap; display: flex; align-items: center; gap: 5px; cursor: pointer; }
+
+        /* ГРІД КАЛЕНДАРЯ */
+        #calendar-scroll { flex: 1; overflow-y: auto; padding: 1rem; }
+        .year-title { font-family: 'JetBrains Mono'; color: var(--accent); font-weight: bold; margin: 1.5rem 0 0.5rem; }
+        
+        .year-row { 
+            display: grid; grid-template-columns: repeat(12, 1fr); gap: 5px; 
+        }
+        
+        /* Адаптація сітки: на дуже малих екранах 6 місяців в ряд */
+        @media (max-width: 600px) {
+            .year-row { grid-template-columns: repeat(4, 1fr); gap: 4px; }
+        }
+
+        .month-cell { 
+            background: var(--surface); border: 1px solid var(--border); aspect-ratio: 1/1; 
+            border-radius: 4px; position: relative; min-height: 60px;
+        }
+        .month-name { font-size: 0.55rem; color: var(--muted); position: absolute; top: 2px; right: 4px; pointer-events: none; }
+
+        /* КАРТКИ */
+        .project-card { 
+            background: var(--accent); color: white; padding: 4px; border-radius: 3px; 
+            font-size: 0.6rem; margin-top: 12px; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        /* КНОПКИ */
+        .btn { padding: 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; }
+        .btn-add { background: var(--accent); color: white; width: calc(100% - 2rem); margin: 1rem; }
+
+        /* MODAL */
+        #modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 3000; padding: 20px; }
+        .modal-box { background: var(--surface); padding: 1.5rem; border-radius: 12px; width: 100%; max-width: 320px; border: 1px solid var(--border); }
+        input, select { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
     </style>
 </head>
 <body>
 
-<div id="auth-overlay">
-    <div class="auth-card">
-        <h2>Scanner Planner</h2>
-        <input type="email" id="email" placeholder="Ваш Email">
-        <input type="password" id="password" placeholder="Пароль">
-        
-        <button class="btn btn-primary" id="loginBtn" onclick="handleAuth('login')">Увійти</button>
-        <button class="btn btn-text" id="signupBtn" onclick="handleAuth('signup')">Немає акаунту? Реєстрація</button>
-        
-        <p id="auth-msg" style="font-size: 0.8rem; color: #ff4d4d; margin-top: 15px; min-height: 1.2em; line-height: 1.4;"></p>
+<aside id="sidebar">
+    <div style="padding: 1rem; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-family:'Outfit'">Backlog</span>
+        <button class="menu-btn" onclick="toggleMenu()">✕</button>
+    </div>
+    <button class="btn btn-add" onclick="openModal()">+ Додати ідею</button>
+    <div id="backlog" style="flex:1; overflow-y:auto; padding: 0 1rem;"></div>
+    <div style="padding: 1rem;">
+        <button onclick="sb.auth.signOut().then(()=>location.reload())" style="color:#ff4d4d; background:none; border:none; cursor:pointer;">Вийти</button>
+    </div>
+</aside>
+
+<main>
+    <header class="top-header">
+        <button class="menu-btn" onclick="toggleMenu()">☰</button>
+        <h2 style="font-family:'Outfit'; margin:0; font-size:1.2rem;">Planner<span>Scanner</span></h2>
+        <button onclick="toggleTheme()" style="background:none; border:none; cursor:pointer; font-size:1.2rem;">🌗</button>
+    </header>
+
+    <div class="nav-categories">
+        <div class="cat-item" onclick="render('learning')"><span style="color:var(--cat-learning)">●</span> Навчання</div>
+        <div class="cat-item" onclick="render('travel')"><span style="color:var(--cat-travel)">●</span> Подорожі</div>
+        <div class="cat-item" onclick="render('creative')"><span style="color:var(--cat-creative)">●</span> Творчість</div>
+        <div class="cat-item" onclick="render()">✕ Скинути</div>
+    </div>
+
+    <div id="calendar-scroll"></div>
+</main>
+
+<div id="modal">
+    <div class="modal-box">
+        <h3>Нова ідея</h3>
+        <input type="text" id="mTitle" placeholder="Назва...">
+        <select id="mCat">
+            <option value="learning">Навчання</option>
+            <option value="travel">Подорожі</option>
+            <option value="creative">Творчість</option>
+        </select>
+        <button class="btn btn-add" style="margin: 10px 0 0" onclick="saveProject()">Зберегти</button>
+        <button class="btn" style="background:none; color:var(--muted); width:100%" onclick="closeModal()">Закрити</button>
     </div>
 </div>
 
-<div id="main-app">
-    <header>
-        <div>
-            <h1 style="font-family:'Outfit'; font-size:2.2rem; margin:0;">Календар <span>Сканера</span></h1>
-            <div style="font-family:'JetBrains Mono'; font-size:0.75rem; color:var(--muted); letter-spacing: 1px;">SYSTEM ACTIVE • 6 YEARS PLAN</div>
-        </div>
-        <div style="display:flex; gap:15px;">
-            <button onclick="toggleTheme()" style="background:none; border:1px solid var(--border); color:var(--text); cursor:pointer; padding:8px 15px; border-radius:20px;">Тема 🌗</button>
-            <button onclick="sb.auth.signOut().then(()=>location.reload())" style="background:none; border:1px solid #ff4d4d; color:#ff4d4d; cursor:pointer; padding:8px 15px; border-radius:20px;">Вийти</button>
-        </div>
-    </header>
-    <div id="calendar-scroll"></div>
-</div>
-
 <script>
-    // --- 1. ПІДКЛЮЧЕННЯ (Встав свій anon ключ тут) ---
     const SB_URL = "https://mlkdphygsdfcanztbtez.supabase.co";
     const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2RwaHlnc2RmY2FuenRidGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyODAwNTAsImV4cCI6MjA5MTg1NjA1MH0.PfjkZXua-9tp2lxVsBD3YBUNpx_USmMha5BQBZcGLFc"; 
     const sb = supabase.createClient(SB_URL, SB_KEY);
 
-    const msgEl = document.getElementById('auth-msg');
-    const loginBtn = document.getElementById('loginBtn');
-    const signupBtn = document.getElementById('signupBtn');
+    let projects = [];
 
-    // --- 2. АВТОРИЗАЦІЯ (Виправлена) ---
-    async function handleAuth(type) {
-        const email = document.getElementById('email').value.trim();
-        const password = document.getElementById('password').value.trim();
-
-        if (!email || !password) {
-            msgEl.innerText = "Будь ласка, заповніть усі поля.";
-            return;
-        }
-
-        // Блокуємо кнопки під час запиту
-        loginBtn.disabled = true;
-        signupBtn.disabled = true;
-        msgEl.style.color = "var(--muted)";
-        msgEl.innerText = type === 'login' ? "Входимо..." : "Створюємо профіль...";
-
-        try {
-            const { data, error } = (type === 'login') 
-                ? await sb.auth.signInWithPassword({ email, password })
-                : await sb.auth.signUp({ email, password });
-
-            if (error) throw error;
-
-            if (type === 'signup' && !data.session) {
-                msgEl.style.color = "var(--accent)";
-                msgEl.innerText = "Акаунт створено! Перевірте пошту для підтвердження.";
-            } else {
-                checkUser();
-            }
-        } catch (err) {
-            msgEl.style.color = "#ff4d4d";
-            msgEl.innerText = err.message;
-        } finally {
-            loginBtn.disabled = false;
-            signupBtn.disabled = false;
-        }
+    // Мобільне меню
+    function toggleMenu() {
+        document.getElementById('sidebar').classList.toggle('open');
     }
 
-    // Перевірка сесії
-    async function checkUser() {
-        const { data: { user } } = await sb.auth.getUser();
-        if (user) {
-            document.getElementById('auth-overlay').style.display = 'none';
-            document.getElementById('main-app').style.display = 'flex';
-            loadData();
-        }
-    }
-
-    // --- 3. ТЕМА ---
+    // Тема
     function toggleTheme() {
-        const theme = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-        document.body.setAttribute('data-theme', theme);
-        localStorage.setItem('sc-theme', theme);
+        const t = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        document.body.setAttribute('data-theme', t);
     }
-    const savedTheme = localStorage.getItem('sc-theme') || 'dark';
-    document.body.setAttribute('data-theme', savedTheme);
 
-    // --- 4. ДАНІ ТА КАЛЕНДАР ---
+    // Дані
     async function loadData() {
         const { data } = await sb.from('projects').select('*');
-        render(data || []);
+        projects = data || [];
+        render();
     }
 
-    function render(projects) {
-        const container = document.getElementById('calendar-scroll');
-        container.innerHTML = '';
-        const months = ['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
-        
+    function render(filter = null) {
+        const cont = document.getElementById('calendar-scroll');
+        cont.innerHTML = '';
+        const months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
+
         for (let y = 0; y < 6; y++) {
             const year = 2026 + y;
-            container.innerHTML += `<div class="year-header">${year}</div>`;
+            cont.innerHTML += `<div class="year-title">${year}</div>`;
             const row = document.createElement('div');
             row.className = 'year-row';
-            
+
             for (let m = 1; m <= 12; m++) {
                 const dKey = `${year}-${String(m).padStart(2,'0')}`;
                 const cell = document.createElement('div');
                 cell.className = 'month-cell';
                 cell.innerHTML = `<div class="month-name">${months[m-1]}</div>`;
                 
-                const proj = projects.find(p => p.date === dKey);
-                if(proj) {
-                    cell.innerHTML += `<div class="project-card">${proj.title}</div>`;
+                const p = projects.find(x => x.date === dKey);
+                if (p && (!filter || p.cat === filter)) {
+                    cell.innerHTML += `<div class="project-card" style="background:var(--cat-${p.cat})">${p.title}</div>`;
                 }
                 row.appendChild(cell);
             }
-            container.appendChild(row);
+            cont.appendChild(row);
         }
+
+        // Backlog
+        const bLog = document.getElementById('backlog');
+        bLog.innerHTML = '';
+        projects.filter(p => !p.date).forEach(p => {
+            bLog.innerHTML += `<div class="project-card" style="background:var(--cat-${p.cat}); margin-bottom:8px; padding:10px;">${p.title}</div>`;
+        });
     }
 
-    checkUser();
+    // Модалка та збереження
+    function openModal() { document.getElementById('modal').style.display = 'flex'; }
+    function closeModal() { document.getElementById('modal').style.display = 'none'; }
+
+    async function saveProject() {
+        const title = document.getElementById('mTitle').value;
+        const cat = document.getElementById('mCat').value;
+        const { data: { user } } = await sb.auth.getUser();
+
+        await sb.from('projects').insert([{ title, cat, user_id: user.id }]);
+        closeModal(); loadData();
+    }
+
+    // Перевірка входу
+    sb.auth.getUser().then(({data}) => {
+        if(data.user) loadData();
+        else window.location.href = "/";
+    });
 </script>
 </body>
 </html>
