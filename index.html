@@ -3,153 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scanner Planner - Final Pro</title>
+    <title>Scanner Planner - Professional</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=Outfit:wght@700&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
     <style>
         :root[data-theme="dark"] {
-            --bg: #0a0a0a; --surface: #121212; --border: #222; --text: #ffffff;
-            --muted: #888; --accent: #4a9e42; --sidebar: #0a0a0a;
+            --bg: #0a0a0a; --surface: #141414; --border: #262626; --text: #f0f0f0;
+            --muted: #737373; --accent: #4a9e42; --sidebar: #0d0d0d; --drop-bg: rgba(74, 158, 66, 0.1);
         }
         :root[data-theme="light"] {
-            --bg: #f8f9fa; --surface: #ffffff; --border: #dcdcdc; --text: #1a1a1a;
-            --muted: #6c757d; --accent: #388e3c; --sidebar: #f1f3f4;
-        }
-        :root {
-            --cat-learning: #4caf50; --cat-travel: #ff9800; --cat-sport: #2196f3;
-            --cat-creative: #e91e63; --cat-career: #ffc107;
+            --bg: #fdfdfd; --surface: #ffffff; --border: #e5e5e5; --text: #171717;
+            --muted: #8a8a8a; --accent: #34c759; --sidebar: #f8f8f8; --drop-bg: rgba(52, 199, 89, 0.1);
         }
 
-        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; transition: 0.2s; }
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; transition: background 0.3s; }
 
         /* SIDEBAR */
-        #sidebar { 
-            width: 280px; min-width: 280px; background: var(--sidebar); border-right: 1px solid var(--border); 
-            display: flex; flex-direction: column; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
+        #sidebar { width: 280px; min-width: 280px; background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; transition: transform 0.3s ease; }
         #sidebar.collapsed { margin-left: -280px; }
 
-        /* MAIN CONTENT */
-        main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-        .top-header { padding: 1.2rem 2.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); background: var(--bg); }
-        
-        .header-title { font-family: 'Outfit'; font-size: 1.8rem; margin: 0; letter-spacing: -0.5px; }
-        .header-title span { color: var(--accent); }
+        /* HEADER */
+        main { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        .top-header { padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+        .logo { font-family: 'Outfit'; font-size: 1.5rem; margin: 0; font-weight: 600; }
+        .logo span { color: var(--accent); }
 
-        .icon-btn { 
-            background: var(--surface); border: 1.5px solid var(--border); color: var(--text); 
-            padding: 10px 18px; border-radius: 25px; cursor: pointer; font-weight: 700;
-            display: flex; align-items: center; gap: 10px; font-size: 0.9rem; transition: 0.2s;
-        }
-        .icon-btn:hover { border-color: var(--accent); background: var(--bg); }
+        .btn-ui { background: none; border: 1px solid var(--border); color: var(--text); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: 0.2s; }
+        .btn-ui:hover { border-color: var(--muted); }
 
-        /* CATEGORIES NAV */
-        .categories-nav { display: flex; gap: 20px; padding: 12px 2.5rem; overflow-x: auto; border-bottom: 1px solid var(--border); background: var(--surface); }
-        .cat-tag { cursor: pointer; display: flex; align-items: center; gap: 8px; white-space: nowrap; font-size: 0.85rem; font-weight: 700; color: var(--muted); transition: 0.2s; }
-        .cat-tag:hover { color: var(--text); }
+        /* CATEGORIES */
+        #cat-list { display: flex; gap: 12px; padding: 10px 2rem; overflow-x: auto; border-bottom: 1px solid var(--border); font-size: 0.75rem; font-weight: 600; scrollbar-width: none; }
+        .cat-item { cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; color: var(--muted); }
+        .cat-item:hover { color: var(--text); }
+        .cat-dot { width: 7px; height: 7px; border-radius: 50%; }
 
-        /* CALENDAR ACCORDION */
-        #calendar-scroll { flex: 1; overflow-y: auto; padding: 1rem 2.5rem; scroll-behavior: smooth; }
-        
-        .year-section { margin-bottom: 10px; border-bottom: 1px solid var(--border); }
-        .year-header { 
-            display: flex; align-items: center; justify-content: space-between;
-            cursor: pointer; padding: 20px 0; font-family: 'JetBrains Mono'; 
-            color: var(--accent); font-size: 1.3rem; font-weight: 800;
-        }
-        .year-header::after { content: '▼'; font-size: 0.8rem; transition: 0.3s; opacity: 0.5; }
-        .year-section.closed .year-header::after { transform: rotate(-90deg); }
-        .year-section.closed .year-content { display: none; }
+        /* CALENDAR GRID */
+        #calendar-scroll { flex: 1; overflow-y: auto; padding: 0 2rem 3rem; }
+        .year-section { margin-top: 2rem; }
+        .year-btn { font-family: 'JetBrains Mono'; color: var(--accent); cursor: pointer; font-size: 1rem; font-weight: 500; display: block; margin-bottom: 12px; }
+        .year-row { display: grid; grid-template-columns: repeat(12, 1fr); gap: 8px; transition: 0.3s; }
+        .year-section.closed .year-row { display: none; }
 
-        .year-row { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; padding-bottom: 30px; }
-        @media (max-width: 1200px) { .year-row { grid-template-columns: repeat(6, 1fr); } }
-        @media (max-width: 768px) { .year-row { grid-template-columns: repeat(4, 1fr); } }
+        @media (max-width: 1100px) { .year-row { grid-template-columns: repeat(6, 1fr); } }
+        @media (max-width: 600px) { .year-row { grid-template-columns: repeat(4, 1fr); } }
 
-        .month-cell { 
-            background: var(--surface); border: 1.5px solid var(--border); aspect-ratio: 1/1.1; 
-            border-radius: 8px; position: relative; padding: 8px; transition: 0.2s;
-        }
-        .month-cell:hover { border-color: var(--muted); }
-        .month-label { font-size: 0.75rem; font-weight: 800; color: var(--muted); font-family: 'JetBrains Mono'; text-transform: uppercase; }
+        .month-cell { background: var(--surface); border: 1px solid var(--border); aspect-ratio: 1/1.1; border-radius: 6px; position: relative; padding: 6px; min-height: 80px; transition: 0.2s; }
+        .month-cell.drag-over { background: var(--drop-bg); border-color: var(--accent); }
+        .month-label { font-size: 0.65rem; color: var(--muted); font-family: 'JetBrains Mono'; text-transform: uppercase; position: absolute; top: 4px; right: 6px; }
 
-        /* CARDS */
+        /* PROJECT CARDS */
         .card { 
-            background: var(--accent); color: white; padding: 6px 10px; border-radius: 6px; 
-            font-size: 0.75rem; margin-top: 10px; font-weight: 700; line-height: 1.2;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1);
+            background: var(--bg); border: 1px solid var(--border); padding: 6px 8px; border-radius: 5px; 
+            font-size: 0.7rem; margin-top: 15px; cursor: grab; font-weight: 600; line-height: 1.3;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: relative; overflow: hidden;
         }
+        .card:active { cursor: grabbing; opacity: 0.8; }
+        .card-accent { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+
+        /* BACKLOG */
+        #backlog { flex: 1; padding: 1rem; overflow-y: auto; }
+        #backlog.drag-over { background: var(--drop-bg); }
 
         /* MODAL */
-        #modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(5px); }
-        .modal-content { background: var(--surface); padding: 2.5rem; border-radius: 20px; width: 350px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-        .modal-content h3 { font-family: 'Outfit'; margin-top: 0; font-size: 1.5rem; }
+        #modal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(4px); }
+        .modal-box { background: var(--surface); padding: 2rem; border-radius: 12px; width: 320px; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .modal-box h3 { margin: 0 0 1rem; font-family: 'Outfit'; font-weight: 600; }
+        input, select { width: 100%; padding: 12px; margin-bottom: 12px; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; box-sizing: border-box; font-family: inherit; }
         
-        input, select { 
-            width: 100%; padding: 14px; margin-bottom: 15px; background: var(--bg); 
-            border: 1.5px solid var(--border); color: var(--text); border-radius: 10px; font-weight: 600;
-        }
-        
-        .btn-main { background: var(--accent); color: white; border: none; padding: 14px; border-radius: 10px; cursor: pointer; font-weight: 800; width: 100%; font-size: 1rem; }
+        .btn-prime { width: 100%; background: var(--accent); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 600; margin-top: 5px; }
+        .btn-sec { background: none; border: none; color: var(--muted); width: 100%; padding: 10px; cursor: pointer; font-size: 0.8rem; margin-top: 5px; }
     </style>
 </head>
 <body>
 
 <aside id="sidebar">
-    <div style="padding: 2rem; border-bottom: 1px solid var(--border);">
-        <button onclick="openModal()" class="btn-main">+ НОВИЙ ПРОЄКТ</button>
+    <div style="padding: 1.5rem; border-bottom: 1px solid var(--border);">
+        <button onclick="openModal()" class="btn-prime">+ НОВА ІДЕЯ</button>
     </div>
-    <div style="padding: 1.5rem 2rem 0.5rem; font-size: 0.8rem; font-family: 'JetBrains Mono'; color: var(--accent); font-weight: 800;">ЧЕРГА ІДЕЙ</div>
-    <div id="backlog" style="flex:1; overflow-y:auto; padding: 1rem;"></div>
+    <div style="padding: 1rem 1.5rem 0.5rem; font-size: 0.7rem; color: var(--muted); font-weight: 600; letter-spacing: 0.05em;">BACKLOG</div>
+    <div id="backlog" ondragover="allowDrop(event)" ondrop="drop(event, 'backlog')"></div>
 </aside>
 
 <main>
     <header class="top-header">
-        <div style="display:flex; gap:20px; align-items:center;">
-            <button class="icon-btn" onclick="toggleSidebar()">☰ МЕНЮ</button>
-            <h2 class="header-title">Planner<span>Scanner</span></h2>
+        <div style="display:flex; gap:12px; align-items:center;">
+            <button class="btn-ui" onclick="toggleSidebar()">☰</button>
+            <h1 class="logo">Scanner<span>Planner</span></h1>
         </div>
-        <div style="display:flex; gap:12px;">
-            <button class="icon-btn" onclick="toggleTheme()">🌗 ТЕМА</button>
-            <button class="icon-btn" style="color:#ff5252; border-color:#ff5252;" onclick="sb.auth.signOut().then(()=>location.reload())">ВИХІД</button>
+        <div style="display:flex; gap:10px;">
+            <button class="btn-ui" onclick="toggleTheme()">🌗</button>
+            <button class="btn-ui" style="color:#ff5252;" onclick="sb.auth.signOut().then(()=>location.reload())">Вихід</button>
         </div>
     </header>
 
-    <div class="categories-nav">
-        <div class="cat-tag" onclick="render('learning')"><span style="color:var(--cat-learning)">●</span> НАВЧАННЯ</div>
-        <div class="cat-tag" onclick="render('travel')"><span style="color:var(--cat-travel)">●</span> ПОДОРОЖІ</div>
-        <div class="cat-tag" onclick="render('creative')"><span style="color:var(--cat-creative)">●</span> ТВОРЧІСТЬ</div>
-        <div class="cat-tag" onclick="render()">✕ СКИНУТИ</div>
-    </div>
+    <div id="cat-list"></div>
 
     <div id="calendar-scroll"></div>
 </main>
 
 <div id="modal">
-    <div class="modal-content">
-        <h3>Новий проєкт</h3>
-        <input type="text" id="mTitle" placeholder="Що плануєте?">
-        <select id="mCat">
-            <option value="learning">Навчання</option>
-            <option value="travel">Подорожі</option>
-            <option value="creative">Творчість</option>
-            <option value="career">Кар'єра</option>
-        </select>
-        <button class="btn-main" onclick="saveProject()">ЗБЕРЕГТИ В ХМАРУ</button>
-        <button onclick="closeModal()" style="width: 100%; background: none; border: none; color: var(--muted); margin-top: 15px; cursor: pointer; font-weight: 700;">СКАСУВАТИ</button>
+    <div class="modal-box">
+        <h3 id="modal-title">Новий проєкт</h3>
+        <input type="text" id="mTitle" placeholder="Назва вашої ідеї">
+        
+        <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px;">
+            <select id="mCat" style="margin-bottom:0;"></select>
+            <button class="btn-ui" onclick="addNewCategory()" title="Створити категорію">+</button>
+        </div>
+
+        <button class="btn-prime" onclick="saveProject()">ЗБЕРЕГТИ</button>
+        <button class="btn-sec" onclick="closeModal()">Скасувати</button>
     </div>
 </div>
 
 <script>
-    // --- ПІДКЛЮЧЕННЯ ---
+    // --- ПІДКЛЮЧЕННЯ (ВСТАВ СВІЙ ANON KEY) ---
     const SB_URL = "https://mlkdphygsdfcanztbtez.supabase.co";
     const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2RwaHlnc2RmY2FuenRidGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyODAwNTAsImV4cCI6MjA5MTg1NjA1MH0.PfjkZXua-9tp2lxVsBD3YBUNpx_USmMha5BQBZcGLFc"; 
     const sb = supabase.createClient(SB_URL, SB_KEY);
 
     let projects = [];
+    let categories = ['Навчання', 'Подорожі', 'Творчість', 'Кар\'єра'];
+    const catColors = {
+        'Навчання': '#4a9e42', 'Подорожі': '#e07b39', 'Творчість': '#c45c8a', 'Кар\'єра': '#c9a227'
+    };
 
-    // --- ЛОГІКА ІНТЕРФЕЙСУ ---
+    // --- UI ЛОГІКА ---
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
-
     function toggleTheme() {
         const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', next);
@@ -157,7 +137,57 @@
     }
     document.documentElement.setAttribute('data-theme', localStorage.getItem('sc-theme') || 'dark');
 
-    // --- РОБОТА З КАЛЕНДАРЕМ ---
+    // --- КАТЕГОРІЇ ---
+    function updateCategoryUI() {
+        const list = document.getElementById('cat-list');
+        const select = document.getElementById('mCat');
+        list.innerHTML = '';
+        select.innerHTML = '';
+
+        categories.forEach(c => {
+            const color = catColors[c] || '#888';
+            list.innerHTML += `<div class="cat-item" onclick="render('${c}')"><span class="cat-dot" style="background:${color}"></span>${c}</div>`;
+            select.innerHTML += `<option value="${c}">${c}</option>`;
+        });
+        list.innerHTML += `<div class="cat-item" style="text-decoration:underline" onclick="render()">✕ Скинути</div>`;
+    }
+
+    function addNewCategory() {
+        const name = prompt("Назва нової категорії:");
+        if (name && !categories.includes(name)) {
+            categories.push(name);
+            catColors[name] = '#' + Math.floor(Math.random()*16777215).toString(16);
+            updateCategoryUI();
+        }
+    }
+
+    // --- DRAG & DROP ---
+    function allowDrop(e) {
+        e.preventDefault();
+        const target = e.target.closest('.month-cell') || e.target.closest('#backlog');
+        if (target) target.classList.add('drag-over');
+    }
+
+    // Видаляємо підсвітку, коли картку відвели
+    document.addEventListener('dragleave', (e) => {
+        const target = e.target.closest('.month-cell') || e.target.closest('#backlog');
+        if (target) target.classList.remove('drag-over');
+    });
+
+    async function drop(e, dateKey) {
+        e.preventDefault();
+        const target = e.target.closest('.month-cell') || e.target.closest('#backlog');
+        if (target) target.classList.remove('drag-over');
+
+        const projId = e.dataTransfer.getData("text");
+        const newDate = dateKey === 'backlog' ? null : dateKey;
+
+        // Оновлення в базі
+        const { error } = await sb.from('projects').update({ date: newDate }).eq('id', projId);
+        if(!error) loadData();
+    }
+
+    // --- РОБОТА З ДАНИМИ ---
     async function loadData() {
         const { data } = await sb.from('projects').select('*');
         projects = data || [];
@@ -165,18 +195,17 @@
     }
 
     function render(filter = null) {
+        updateCategoryUI();
         const cont = document.getElementById('calendar-scroll');
         cont.innerHTML = '';
-        const months = ['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
+        const monthsNames = ['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
 
         for (let y = 0; y < 6; y++) {
             const year = 2026 + y;
-            const yearSection = document.createElement('div');
-            yearSection.className = 'year-section';
-            yearSection.innerHTML = `<div class="year-header" onclick="this.parentElement.classList.toggle('closed')">${year}</div>`;
+            const section = document.createElement('div');
+            section.className = 'year-section';
+            section.innerHTML = `<span class="year-btn" onclick="this.parentElement.classList.toggle('closed')">${year}</span>`;
             
-            const content = document.createElement('div');
-            content.className = 'year-content';
             const row = document.createElement('div');
             row.className = 'year-row';
 
@@ -184,27 +213,38 @@
                 const dKey = `${year}-${String(m).padStart(2,'0')}`;
                 const cell = document.createElement('div');
                 cell.className = 'month-cell';
-                cell.innerHTML = `<div class="month-label">${months[m-1]}</div>`;
+                cell.dataset.date = dKey;
+                cell.innerHTML = `<div class="month-label">${monthsNames[m-1]}</div>`;
+                cell.ondragover = allowDrop;
+                cell.ondrop = (e) => drop(e, dKey);
                 
-                const p = projects.find(x => x.date === dKey);
-                if (p && (!filter || p.cat === filter)) {
-                    cell.innerHTML += `<div class="card" style="background:var(--cat-${p.cat})">${p.title}</div>`;
-                }
+                projects.filter(p => p.date === dKey).forEach(p => {
+                    if (!filter || p.cat === filter) cell.appendChild(createCard(p));
+                });
+
                 row.appendChild(cell);
             }
-            content.appendChild(row);
-            yearSection.appendChild(content);
-            cont.appendChild(yearSection);
+            section.appendChild(row);
+            cont.appendChild(section);
         }
 
         const bLog = document.getElementById('backlog');
         bLog.innerHTML = '';
-        projects.filter(x => !x.date).forEach(p => {
-            bLog.innerHTML += `<div class="card" style="background:var(--cat-${p.cat}); margin-bottom:12px; padding:12px;">${p.title}</div>`;
+        projects.filter(p => !p.date).forEach(p => {
+            if (!filter || p.cat === filter) bLog.appendChild(createCard(p));
         });
     }
 
-    // МОДАЛКА
+    function createCard(p) {
+        const el = document.createElement('div');
+        el.className = 'card';
+        el.draggable = true;
+        el.innerHTML = `<div class="card-accent" style="background:${catColors[p.cat] || '#888'}"></div>${p.title}`;
+        el.ondragstart = (e) => e.dataTransfer.setData("text", p.id);
+        el.onclick = () => alert(`Проєкт: ${p.title}\nКатегорія: ${p.cat}`);
+        return el;
+    }
+
     function openModal() { document.getElementById('modal').style.display = 'flex'; }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
 
@@ -212,12 +252,12 @@
         const title = document.getElementById('mTitle').value;
         const cat = document.getElementById('mCat').value;
         const { data: { user } } = await sb.auth.getUser();
+
         if(!title) return;
-        await sb.from('projects').insert([{ title, cat, user_id: user.id }]);
-        closeModal(); document.getElementById('mTitle').value = ''; loadData();
+        const { error } = await sb.from('projects').insert([{ title, cat, user_id: user.id }]);
+        if(!error) { closeModal(); document.getElementById('mTitle').value = ''; loadData(); }
     }
 
-    // СТАРТ
     sb.auth.getUser().then(({data}) => {
         if(data.user) loadData();
         else window.location.href = "/";
