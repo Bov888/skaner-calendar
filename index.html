@@ -2,8 +2,8 @@
 <html lang="uk" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scanner Planner Pro - Final</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Scanner Planner - Final Mobile Fix</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
     <style>
@@ -16,71 +16,94 @@
             --muted: #8a8a8a; --accent: #34c759; --sidebar: #f8f8f8; --drop-bg: rgba(52, 199, 89, 0.15);
         }
 
-        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        /* ОСНОВНА СТРУКТУРА */
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; width: 100vw; overflow: hidden; }
 
-        /* SIDEBAR */
-        #sidebar { width: 280px; min-width: 280px; background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; transition: 0.3s ease; }
-        #sidebar.collapsed { margin-left: -280px; }
+        #sidebar { 
+            width: 280px; min-width: 280px; background: var(--sidebar); border-right: 1px solid var(--border); 
+            display: flex; flex-direction: column; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1000;
+        }
+        
+        @media (max-width: 768px) {
+            #sidebar { position: fixed; height: 100%; transform: translateX(-100%); width: 85%; }
+            #sidebar.open { transform: translateX(0); box-shadow: 15px 0 50px rgba(0,0,0,0.5); }
+        }
 
-        /* HEADER */
-        main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-        .top-header { padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
-        .logo { font-family: 'Outfit'; font-size: 1.5rem; font-weight: 600; cursor: default; }
+        main { flex: 1; display: flex; flex-direction: column; min-width: 0; background: var(--bg); }
+
+        /* ВЕРХНЯ ПАНЕЛЬ */
+        .top-header { padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+        .logo { font-family: 'Outfit'; font-size: 1.3rem; font-weight: 600; }
         .logo span { color: var(--accent); }
 
-        .btn-ui { background: none; border: 1px solid var(--border); color: var(--text); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: 0.2s; }
-        .btn-ui:hover { border-color: var(--accent); transform: translateY(-1px); }
+        .btn-ui { background: none; border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600; }
 
-        /* CATEGORIES */
-        #cat-list { display: flex; gap: 15px; padding: 12px 2rem; overflow-x: auto; border-bottom: 1px solid var(--border); font-size: 0.75rem; font-weight: 600; scrollbar-width: none; background: var(--surface); }
-        .cat-item { cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; transition: 0.2s; opacity: 0.7; }
-        .cat-item:hover { opacity: 1; }
+        /* КАТЕГОРІЇ (Скрол пальцем) */
+        #cat-list { 
+            display: flex; gap: 15px; padding: 10px 1.5rem; overflow-x: auto; 
+            border-bottom: 1px solid var(--border); font-size: 0.75rem; font-weight: 600;
+            -webkit-overflow-scrolling: touch; scrollbar-width: none;
+        }
+        #cat-list::-webkit-scrollbar { display: none; }
+        .cat-item { cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
         .cat-dot { width: 8px; height: 8px; border-radius: 50%; }
 
-        /* CALENDAR */
-        #calendar-scroll { flex: 1; overflow-y: auto; padding: 0 2rem 3rem; scroll-behavior: smooth; }
-        .year-section { margin-top: 1.5rem; border-radius: 10px; padding: 10px; transition: 0.3s; }
-        .year-header { font-family: 'JetBrains Mono'; color: var(--accent); cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-        .year-header::before { content: '▾'; transition: 0.3s; }
+        /* КАЛЕНДАР (Ось тут фікс скролу) */
+        #calendar-scroll { 
+            flex: 1; overflow-y: scroll; padding: 1rem 1.5rem 5rem; /* Великий відступ знизу для 6-го року */
+            -webkit-overflow-scrolling: touch; 
+        }
+
+        .year-section { margin-top: 1rem; }
+        .year-header { 
+            font-family: 'JetBrains Mono'; color: var(--accent); cursor: pointer; font-size: 1.2rem; 
+            display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid transparent;
+        }
+        .year-header::before { content: '▾'; transition: 0.2s; }
         .year-section.closed .year-header::before { transform: rotate(-90deg); }
         .year-section.closed .year-row { display: none; }
 
-        .year-row { display: grid; grid-template-columns: repeat(12, 1fr); gap: 10px; animation: slideDown 0.4s ease-out; }
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        /* СІТКА */
+        .year-row { display: grid; grid-template-columns: repeat(12, 1fr); gap: 8px; margin-top: 10px; }
+        @media (max-width: 1024px) { .year-row { grid-template-columns: repeat(6, 1fr); } }
+        @media (max-width: 600px) { .year-row { grid-template-columns: repeat(4, 1fr); gap: 6px; } }
 
-        .month-cell { background: var(--surface); border: 1px solid var(--border); aspect-ratio: 1/1.1; border-radius: 8px; position: relative; padding: 6px; min-height: 85px; transition: 0.2s; }
-        .month-cell.drag-over { background: var(--drop-bg); border-color: var(--accent); }
-        .month-label { font-size: 0.65rem; color: var(--muted); font-family: 'JetBrains Mono'; text-transform: uppercase; }
-
-        /* CARDS */
-        .card { 
-            background: var(--bg); border: 1px solid var(--border); padding: 8px; border-radius: 6px; 
-            font-size: 0.7rem; margin-top: 12px; cursor: grab; font-weight: 600;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: relative; transition: 0.2s;
-            animation: fadeIn 0.3s ease;
+        .month-cell { 
+            background: var(--surface); border: 1px solid var(--border); aspect-ratio: 1; 
+            border-radius: 6px; position: relative; padding: 4px; min-height: 60px;
         }
-        @keyframes fadeIn { from { opacity: 0; scale: 0.9; } to { opacity: 1; scale: 1; } }
-        .card:hover { transform: scale(1.02); border-color: var(--muted); }
-        .card-line { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 6px 0 0 6px; }
+        .month-cell.drag-over { background: var(--drop-bg); border-color: var(--accent); }
+        .month-label { font-size: 0.6rem; color: var(--muted); font-family: 'JetBrains Mono'; text-transform: uppercase; position: absolute; top: 4px; right: 6px; }
 
-        /* MODAL */
-        #modal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 10000; backdrop-filter: blur(5px); }
-        .modal-box { background: var(--surface); padding: 2rem; border-radius: 16px; width: 340px; border: 1px solid var(--border); animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        @keyframes modalIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        
-        input, select { width: 100%; padding: 12px; margin-bottom: 15px; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; box-sizing: border-box; font-family: inherit; }
+        /* КАРТКИ */
+        .card { 
+            background: var(--bg); border: 1px solid var(--border); padding: 6px; border-radius: 4px; 
+            font-size: 0.65rem; margin-top: 14px; cursor: pointer; font-weight: 600;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: relative;
+        }
+        .card-line { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 4px 0 0 4px; }
+
+        /* МОДАЛКА */
+        #modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 20px; }
+        .modal-box { background: var(--surface); padding: 1.5rem; border-radius: 12px; width: 100%; max-width: 340px; border: 1px solid var(--border); }
+        input, select { width: 100%; padding: 12px; margin-bottom: 15px; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; box-sizing: border-box; }
         .btn-prime { width: 100%; background: var(--accent); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 600; margin-bottom: 10px; }
         .btn-danger { width: 100%; background: none; border: 1px solid #ff4d4d; color: #ff4d4d; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; }
+
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
 <aside id="sidebar">
-    <div style="padding: 1.5rem; border-bottom: 1px solid var(--border);">
+    <div style="padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-family:'Outfit'; font-weight: 600;">BACKLOG</span>
+        <button class="btn-ui" onclick="toggleSidebar()" style="border:none;">✕</button>
+    </div>
+    <div style="padding: 1rem;">
         <button onclick="openModal()" class="btn-prime">+ НОВА ІДЕЯ</button>
     </div>
-    <div style="padding: 1rem 1.5rem 0.5rem; font-size: 0.7rem; color: var(--muted); font-weight: 600; letter-spacing: 1px;">BACKLOG</div>
-    <div id="backlog" style="flex:1; overflow-y:auto; padding: 1rem;" ondragover="allowDrop(event)" ondrop="drop(event, 'backlog')"></div>
+    <div id="backlog" style="flex:1; overflow-y:auto; padding: 0 1rem;" ondragover="allowDrop(event)" ondrop="drop(event, 'backlog')"></div>
 </aside>
 
 <main>
@@ -89,12 +112,14 @@
             <button class="btn-ui" onclick="toggleSidebar()">☰</button>
             <h1 class="logo">Scanner<span>Planner</span></h1>
         </div>
-        <div style="display:flex; gap:10px;">
+        <div style="display:flex; gap:8px;">
             <button class="btn-ui" onclick="toggleTheme()">🌗</button>
             <button class="btn-ui" style="color:#ff5252;" onclick="sb.auth.signOut().then(()=>location.reload())">Вихід</button>
         </div>
     </header>
+
     <div id="cat-list"></div>
+
     <div id="calendar-scroll"></div>
 </main>
 
@@ -104,18 +129,17 @@
         <input type="text" id="mTitle" placeholder="Назва вашої ідеї">
         
         <div style="display:flex; gap:8px; margin-bottom:15px;">
-            <select id="mCat" style="margin-bottom:0;"></select>
-            <button class="btn-ui" onclick="addNewCategory()" style="padding:0 15px;">+</button>
+            <select id="mCat" style="margin-bottom:0; flex:1;"></select>
+            <button class="btn-ui" onclick="addNewCategory()">+</button>
         </div>
 
         <button class="btn-prime" id="saveBtn" onclick="saveProject()">ЗБЕРЕГТИ</button>
-        <button class="btn-danger" id="deleteBtn" style="display:none;" onclick="deleteProject()">ВИДАЛИТИ ПРОЄКТ</button>
-        <button class="btn-ui" style="width:100%; border:none; margin-top:10px;" onclick="closeModal()">Скасувати</button>
+        <button class="btn-danger" id="deleteBtn" style="display:none;" onclick="deleteProject()">ВИДАЛИТИ</button>
+        <button class="btn-ui" style="width:100%; border:none; margin-top:5px;" onclick="closeModal()">Закрити</button>
     </div>
 </div>
 
 <script>
-    // --- ПІДКЛЮЧЕННЯ ---
     const SB_URL = "https://mlkdphygsdfcanztbtez.supabase.co";
     const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2RwaHlnc2RmY2FuenRidGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyODAwNTAsImV4cCI6MjA5MTg1NjA1MH0.PfjkZXua-9tp2lxVsBD3YBUNpx_USmMha5BQBZcGLFc"; 
     const sb = supabase.createClient(SB_URL, SB_KEY);
@@ -127,8 +151,7 @@
         'Навчання': '#4a9e42', 'Подорожі': '#e07b39', 'Творчість': '#c45c8a', 'Кар\'єра': '#c9a227'
     };
 
-    // --- ТЕМА ТА СТАТУСИ ---
-    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
+    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
     function toggleTheme() {
         const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', next);
@@ -136,7 +159,6 @@
     }
     document.documentElement.setAttribute('data-theme', localStorage.getItem('sc-theme') || 'dark');
 
-    // --- КАТЕГОРІЇ ---
     function updateCategoryUI() {
         const list = document.getElementById('cat-list');
         const select = document.getElementById('mCat');
@@ -153,36 +175,22 @@
         const n = prompt("Назва нової категорії:");
         if (n && !categories.includes(n)) {
             categories.push(n);
-            catColors[n] = `hsl(${Math.random() * 360}, 70%, 50%)`;
+            catColors[n] = `hsl(${Math.random() * 360}, 65%, 50%)`;
             localStorage.setItem('sc-cats', JSON.stringify(categories));
             localStorage.setItem('sc-colors', JSON.stringify(catColors));
             updateCategoryUI();
         }
     }
 
-    // --- DRAG & DROP ---
-    function allowDrop(e) { 
-        e.preventDefault(); 
-        const cell = e.target.closest('.month-cell') || e.target.closest('#backlog');
-        if (cell) cell.classList.add('drag-over');
-    }
-    document.addEventListener('dragleave', e => {
-        const cell = e.target.closest('.month-cell') || e.target.closest('#backlog');
-        if (cell) cell.classList.remove('drag-over');
-    });
-
+    function allowDrop(e) { e.preventDefault(); }
     async function drop(e, dateKey) {
         e.preventDefault();
-        const cell = e.target.closest('.month-cell') || e.target.closest('#backlog');
-        if (cell) cell.classList.remove('drag-over');
-        
         const id = e.dataTransfer.getData("text");
         const newDate = dateKey === 'backlog' ? null : dateKey;
         await sb.from('projects').update({ date: newDate }).eq('id', id);
         loadData();
     }
 
-    // --- ДАНІ ---
     async function loadData() {
         const { data } = await sb.from('projects').select('*');
         projects = data || [];
@@ -208,7 +216,6 @@
                 const dKey = `${year}-${String(m).padStart(2,'0')}`;
                 const cell = document.createElement('div');
                 cell.className = 'month-cell';
-                cell.dataset.date = dKey;
                 cell.innerHTML = `<div class="month-label">${months[m-1]}</div>`;
                 cell.ondragover = allowDrop;
                 cell.ondrop = (e) => drop(e, dKey);
@@ -239,7 +246,6 @@
         return el;
     }
 
-    // --- МОДАЛЬНІ ВІКНА ---
     function openModal() {
         editingId = null;
         document.getElementById('modal-title').innerText = "Нова ідея";
@@ -250,7 +256,7 @@
 
     function openEditModal(p) {
         editingId = p.id;
-        document.getElementById('modal-title').innerText = "Редагувати проєкт";
+        document.getElementById('modal-title').innerText = "Редагувати";
         document.getElementById('mTitle').value = p.title;
         document.getElementById('mCat').value = p.cat;
         document.getElementById('deleteBtn').style.display = 'block';
@@ -274,7 +280,7 @@
     }
 
     async function deleteProject() {
-        if (confirm("Видалити цей проєкт назавжди?")) {
+        if (confirm("Видалити проєкт?")) {
             await sb.from('projects').delete().eq('id', editingId);
             closeModal(); loadData();
         }
