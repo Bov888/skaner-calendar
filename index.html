@@ -3,145 +3,147 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Planner - Final Stability</title>
+    <title>Scanner Planner Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root[data-theme="dark"] {
-            --bg: #0f0f11; --surface: #1a1a1d; --border: #2d2d31; --text: #f4f4f5;
-            --muted: #8d8d92; --accent: #10b981;
+            --bg: #0c0c0e; --surface: #161619; --border: #262629; --text: #f4f4f5;
+            --muted: #828288; --accent: #10b981; --error: #ef4444;
         }
         :root[data-theme="light"] {
             --bg: #ffffff; --surface: #f4f4f5; --border: #e4e4e7; --text: #18181b;
-            --muted: #71717a; --accent: #10b981;
+            --muted: #71717a; --accent: #10b981; --error: #ef4444;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; border: none; outline: none; font-family: 'Outfit', sans-serif !important; }
-        body { background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; }
+        * { box-sizing: border-box; margin: 0; padding: 0; border: none; outline: none; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-serif; height: 100vh; display: flex; overflow: hidden; }
 
-        /* Auth Logic */
+        /* Auth Screen */
         #auth-screen { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; align-items: center; justify-content: center; }
-        .auth-box { background: var(--surface); padding: 40px; border-radius: 24px; box-shadow: 0 0 0 1px var(--border); width: 90%; max-width: 380px; text-align: center; }
-
-        .app-layout { display: none; width: 100vw; height: 100vh; }
+        .auth-card { background: var(--surface); padding: 40px; border-radius: 24px; box-shadow: 0 0 0 1px var(--border); width: 90%; max-width: 400px; text-align: center; }
+        
+        /* Layout Structure */
+        .app-layout { display: none; width: 100vw; height: 100vh; flex-direction: row; }
         .logged-in .app-layout { display: flex; }
         .logged-in #auth-screen { display: none; }
 
-        /* Sidebar - Symmetric Lines */
+        /* Sidebar - Precision Lines */
         #sidebar { 
-            width: 280px; background: var(--bg); flex-shrink: 0;
+            width: 300px; background: var(--bg); flex-shrink: 0;
             box-shadow: 1px 0 0 0 var(--border);
-            display: flex; flex-direction: column; 
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 2000;
+            display: flex; flex-direction: column; transition: transform 0.3s ease; z-index: 2000;
         }
 
-        @media (max-width: 800px) {
+        @media (max-width: 850px) {
             #sidebar { position: fixed; height: 100%; left: 0; transform: translateX(-100%); }
             .sidebar-open #sidebar { transform: translateX(0); }
-            .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1500; backdrop-filter: blur(4px); }
+            .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1500; backdrop-filter: blur(4px); }
             .sidebar-open .overlay { display: block; }
         }
 
-        main { flex: 1; display: flex; flex-direction: column; min-width: 0; background: var(--bg); }
+        main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 
-        /* Navigation Components */
-        header, .cat-bar, .side-head { 
-            height: 64px; display: flex; align-items: center; 
-            padding: 0 20px; box-shadow: 0 1px 0 0 var(--border); flex-shrink: 0;
-        }
-
-        .btn {
-            width: 40px; height: 40px; border-radius: 10px; background: var(--surface);
+        /* UI Components - Symmetric 64px height */
+        .ui-header, .ui-nav, .ui-side-top { height: 64px; display: flex; align-items: center; padding: 0 20px; box-shadow: 0 1px 0 0 var(--border); flex-shrink: 0; }
+        
+        .btn-square { 
+            width: 42px; height: 42px; border-radius: 12px; background: var(--surface); 
             box-shadow: 0 0 0 1px var(--border); color: var(--text); cursor: pointer;
             display: flex; align-items: center; justify-content: center; transition: 0.2s;
         }
-        .btn:hover { box-shadow: 0 0 0 1px var(--accent); color: var(--accent); }
-        .btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+        .btn-square:hover { box-shadow: 0 0 0 1px var(--accent); color: var(--accent); }
+        .btn-square svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 2.5; fill: none; }
 
-        .btn-main { 
-            width: 100%; height: 48px; background: var(--accent); color: white; 
-            border-radius: 12px; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;
+        .btn-action { 
+            width: 100%; height: 48px; background: var(--accent); color: #fff; border-radius: 14px; 
+            font-weight: 800; text-transform: uppercase; cursor: pointer; letter-spacing: 0.5px;
         }
 
         .cat-bar { gap: 10px; overflow-x: auto; scrollbar-width: none; }
-        .cat-tag { 
-            height: 38px; padding: 0 16px; border-radius: 10px; box-shadow: 0 0 0 1px var(--border);
+        .cat-chip { 
+            height: 38px; padding: 0 16px; border-radius: 12px; box-shadow: 0 0 0 1px var(--border);
             background: var(--surface); display: flex; align-items: center; gap: 8px;
             font-size: 0.85rem; font-weight: 600; white-space: nowrap; cursor: pointer;
         }
-        .cat-tag.active { box-shadow: 0 0 0 1px var(--accent); color: var(--accent); background: rgba(16, 185, 129, 0.05); }
+        .cat-chip.active { box-shadow: 0 0 0 1px var(--accent); color: var(--accent); }
 
-        /* Content Grid */
-        #calendar-scroll { flex: 1; overflow-y: auto; padding: 24px; scroll-behavior: smooth; }
-        .year-title { font-size: 1.8rem; font-weight: 800; color: var(--accent); margin-bottom: 24px; display: flex; align-items: center; gap: 12px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-bottom: 48px; }
+        /* Grid System */
+        #content { flex: 1; overflow-y: auto; padding: 30px 20px; scroll-behavior: smooth; }
+        .year-wrap { margin-bottom: 50px; }
+        .year-head { font-size: 2rem; font-weight: 800; color: var(--accent); margin-bottom: 24px; display: flex; align-items: center; gap: 15px; }
         
-        .month-box { 
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
+        .month { 
             background: var(--surface); border-radius: 20px; padding: 40px 12px 12px; 
             position: relative; min-height: 140px; box-shadow: 0 0 0 1px var(--border);
         }
-        .m-label { position: absolute; top: 15px; left: 15px; font-size: 0.7rem; font-weight: 800; color: var(--muted); letter-spacing: 1px; }
+        .month:hover { box-shadow: 0 0 0 1px var(--muted); }
+        .m-name { position: absolute; top: 15px; left: 15px; font-size: 0.7rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; }
 
-        .card { padding: 10px 14px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; color: white; margin-bottom: 8px; cursor: pointer; }
+        .card { padding: 10px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; color: #fff; margin-bottom: 8px; cursor: pointer; border-left: 4px solid rgba(255,255,255,0.3); }
 
-        /* Inputs & Modals */
+        /* Form Elements */
         .field { width: 100%; padding: 14px; margin-bottom: 12px; background: var(--bg); border-radius: 12px; box-shadow: 0 0 0 1px var(--border); color: var(--text); font-size: 1rem; }
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 5000; backdrop-filter: blur(8px); }
+        .field:focus { box-shadow: 0 0 0 1px var(--accent); }
+        
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 5000; backdrop-filter: blur(8px); }
     </style>
 </head>
 <body>
 
 <div id="auth-screen">
-    <div class="auth-box">
-        <h2 style="margin-bottom: 8px; font-weight: 800;">ScannerPlanner</h2>
-        <p style="color: var(--muted); margin-bottom: 24px; font-size: 0.9rem;">Введіть дані для входу</p>
-        <input type="email" id="email" class="field" placeholder="Електронна пошта">
+    <div class="auth-card">
+        <h1 style="font-weight: 800; margin-bottom: 8px;">Scanner<span style="color:var(--accent)">Planner</span></h1>
+        <p style="color: var(--muted); margin-bottom: 30px;">Твій стратегічний календар</p>
+        <input type="email" id="email" class="field" placeholder="Email">
         <input type="password" id="pass" class="field" placeholder="Пароль">
-        <button onclick="handleLogin()" class="btn-main">Увійти</button>
-        <div id="auth-err" style="color: #ef4444; font-size: 0.8rem; margin-top: 16px; font-weight: 600;"></div>
+        <button onclick="auth()" class="btn-action">Увійти</button>
+        <div id="auth-msg" style="margin-top: 15px; font-size: 0.85rem; color: var(--error); font-weight: 600;"></div>
     </div>
 </div>
 
 <div class="app-layout" id="app">
-    <div class="overlay" id="overlay"></div>
+    <div class="overlay" onclick="toggleMenu(false)"></div>
     
     <aside id="sidebar">
-        <div class="side-head" style="justify-content: space-between;">
-            <span style="font-weight: 800; color: var(--muted); font-size: 0.8rem; letter-spacing: 1px;">INBOX</span>
-            <button class="btn" style="box-shadow: none;" id="close-menu">
+        <div class="ui-side-top" style="justify-content: space-between;">
+            <span style="font-weight: 800; color: var(--muted); font-size: 0.8rem; letter-spacing: 2px;">INBOX</span>
+            <button class="btn-square" style="box-shadow: none;" onclick="toggleMenu(false)">
                 <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
         </div>
-        <div style="padding: 20px;"><button onclick="openModal()" class="btn-main">+ Проєкт</button></div>
-        <div id="backlog" style="flex:1; overflow-y:auto; padding: 0 20px;"></div>
+        <div style="padding: 20px;"><button onclick="openModal()" class="btn-action">+ Додати проєкт</button></div>
+        <div id="backlog" style="flex:1; overflow-y:auto; padding: 0 20px 20px;"></div>
     </aside>
 
     <main>
-        <header>
-            <div style="display:flex; align-items:center; gap:16px;">
-                <button class="btn" id="open-menu">
+        <header class="ui-header" style="justify-content: space-between;">
+            <div style="display:flex; align-items:center; gap:15px;">
+                <button class="btn-square" onclick="toggleMenu(true)">
                     <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
                 </button>
-                <h1 style="font-size:1.2rem; font-weight:800;">Scanner<span style="color:var(--accent)">Planner</span></h1>
+                <h2 style="font-weight:800; font-size:1.3rem;">Scanner<span style="color:var(--accent)">Planner</span></h2>
             </div>
             <div style="display:flex; align-items:center; gap:12px;">
-                <input type="number" id="yr-val" class="field" style="width:85px; margin:0; height:40px; text-align:center; font-weight:800;" onchange="updateYr(this.value)">
-                <button class="btn" style="color:#ef4444" onclick="logout()">
-                    <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+                <input type="number" id="start-year" class="field" style="width:85px; margin:0; height:42px; text-align:center; font-weight:800;" onchange="updateStartYear(this.value)">
+                <button class="btn-square" onclick="toggleTheme()">🌓</button>
+                <button class="btn-square" style="color:var(--error)" onclick="logout()">
+                    <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
                 </button>
             </div>
         </header>
-        <div class="cat-bar" id="cats"></div>
-        <div id="calendar-scroll"></div>
+        <div class="ui-nav cat-bar" id="cat-list"></div>
+        <div id="content"></div>
     </main>
 </div>
 
 <div id="modal" class="modal" onclick="if(event.target==this)closeModal()">
-    <div class="auth-box" style="text-align:left;">
-        <h3 style="margin-bottom:20px; font-weight:800;">Додати проєкт</h3>
-        <input type="text" id="mT" class="field" placeholder="Назва проєкту...">
-        <select id="mC" class="field"></select>
-        <button onclick="save()" class="btn-main">Зберегти</button>
+    <div class="auth-card" style="text-align: left;">
+        <h3 id="m-head" style="margin-bottom: 20px;">Новий проєкт</h3>
+        <input type="text" id="m-title" class="field" placeholder="Назва проєкту...">
+        <select id="m-cat" class="field"></select>
+        <button onclick="saveProject()" class="btn-action">Зберегти</button>
     </div>
 </div>
 
@@ -150,75 +152,101 @@
     const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2RwaHlnc2RmY2FuenRidGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyODAwNTAsImV4cCI6MjA5MTg1NjA1MH0.PfjkZXua-9tp2lxVsBD3YBUNpx_USmMha5BQBZcGLFc";
     const sb = supabase.createClient(SB_URL, SB_KEY);
 
-    let projs = [], catsData = [], year = 2026;
+    let projects = [], cats = [], year = 2026, filter = null, editId = null, targetDate = null;
 
-    // Fixed Menu Logic
-    const app = document.getElementById('app');
-    document.getElementById('open-menu').onclick = () => app.classList.add('sidebar-open');
-    document.getElementById('close-menu').onclick = () => app.classList.remove('sidebar-open');
-    document.getElementById('overlay').onclick = () => app.classList.remove('sidebar-open');
+    function toggleMenu(open) { document.getElementById('app').classList.toggle('sidebar-open', open); }
+    function toggleTheme() {
+        const t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', t);
+        localStorage.setItem('sc-theme', t);
+    }
 
-    async function handleLogin() {
-        const email = document.getElementById('email').value, pass = document.getElementById('pass').value;
-        const { error } = await sb.auth.signInWithPassword({ email, password: pass });
-        if (error) document.getElementById('auth-err').innerText = error.message;
+    async function auth() {
+        const email = document.getElementById('email').value, password = document.getElementById('pass').value;
+        const { error } = await sb.auth.signInWithPassword({ email, password });
+        if (error) document.getElementById('auth-msg').innerText = "Помилка: " + error.message;
     }
 
     async function logout() { await sb.auth.signOut(); window.location.reload(); }
 
     sb.auth.onAuthStateChange((ev, session) => {
-        if (session) { document.body.classList.add('logged-in'); load(); }
+        if (session) { document.body.classList.add('logged-in'); init(); }
         else document.body.classList.remove('logged-in');
     });
 
-    async function load() {
-        const { data: c } = await sb.from('categories').select('*');
+    async function init() {
+        const { data: c } = await sb.from('categories').select('*').order('created_at');
         const { data: p } = await sb.from('projects').select('*');
-        catsData = c || []; projs = p || [];
+        cats = c || []; projects = p || [];
         render();
     }
 
     function render() {
-        document.getElementById('yr-val').value = year;
-        const cl = document.getElementById('cats'), mc = document.getElementById('mC');
+        document.getElementById('start-year').value = year;
+        const cl = document.getElementById('cat-list'), mc = document.getElementById('m-cat');
         cl.innerHTML = ''; mc.innerHTML = '';
-        catsData.forEach(c => {
-            cl.innerHTML += `<div class="cat-tag"><div style="width:10px; height:10px; border-radius:50%; background:${c.color}"></div>${c.name}</div>`;
+        
+        cats.forEach(c => {
+            const chip = document.createElement('div');
+            chip.className = `cat-chip ${filter === c.name ? 'active' : ''}`;
+            chip.innerHTML = `<div style="width:10px; height:10px; border-radius:50%; background:${c.color}"></div>${c.name}`;
+            chip.onclick = () => { filter = filter === c.name ? null : c.name; render(); };
+            cl.appendChild(chip);
             mc.innerHTML += `<option value="${c.name}">${c.name}</option>`;
         });
 
-        const cs = document.getElementById('calendar-scroll'); cs.innerHTML = '';
+        const container = document.getElementById('content'); container.innerHTML = '';
         const months = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
-        
-        [year, year+1].forEach(curY => {
-            const sec = document.createElement('div');
-            sec.innerHTML = `<div class="year-title">${curY} <span style="font-size:0.7rem; opacity:0.3; letter-spacing:2px; font-weight:400">PLANNER</span></div>`;
+        const flt = filter ? projects.filter(p => p.cat === filter) : projects;
+
+        for (let y = 0; y < 3; y++) {
+            const curY = year + y;
+            const sec = document.createElement('div'); sec.className = 'year-wrap';
+            sec.innerHTML = `<div class="year-head">${curY} <span style="font-size:0.7rem; opacity:0.2; letter-spacing:3px;">STRATEGY</span></div>`;
             const grid = document.createElement('div'); grid.className = 'grid';
+            
             for (let m = 1; m <= 12; m++) {
                 const dk = `${curY}-${String(m).padStart(2,'0')}`;
-                const box = document.createElement('div'); box.className = 'month-box';
-                box.innerHTML = `<div class="m-label">${months[m-1]}</div>`;
-                projs.filter(p => p.date === dk).forEach(p => {
-                    const card = document.createElement('div'); card.className = 'card';
-                    card.style.background = (catsData.find(c => c.name === p.cat) || {}).color || '#888';
-                    card.innerText = p.title; box.appendChild(card);
-                });
-                grid.appendChild(box);
+                const div = document.createElement('div'); div.className = 'month';
+                div.innerHTML = `<div class="m-name">${months[m-1]}</div>`;
+                div.onclick = (e) => { if(e.target === div) openModal(null, dk); };
+                
+                flt.filter(p => p.date === dk).forEach(p => div.appendChild(createCard(p)));
+                grid.appendChild(div);
             }
-            sec.appendChild(grid); cs.appendChild(sec);
-        });
+            sec.appendChild(grid); container.appendChild(sec);
+        }
+
+        const bl = document.getElementById('backlog'); bl.innerHTML = '';
+        flt.filter(p => !p.date).forEach(p => bl.appendChild(createCard(p)));
     }
 
-    function openModal() { document.getElementById('modal').style.display = 'flex'; }
+    function createCard(p) {
+        const c = document.createElement('div'); c.className = 'card';
+        const color = (cats.find(cat => cat.name === p.cat) || {}).color || '#888';
+        c.style.backgroundColor = color; c.innerText = p.title;
+        c.onclick = (e) => { e.stopPropagation(); openModal(p); };
+        return c;
+    }
+
+    function openModal(p, d) {
+        editId = p ? p.id : null; targetDate = p ? p.date : d;
+        document.getElementById('m-title').value = p ? p.title : '';
+        document.getElementById('m-cat').value = p ? p.cat : (cats[0]?.name || '');
+        document.getElementById('modal').style.display = 'flex';
+    }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
-    function updateYr(v) { year = parseInt(v); render(); }
 
-    async function save() {
-        const t = document.getElementById('mT').value, c = document.getElementById('mC').value;
+    async function saveProject() {
+        const title = document.getElementById('m-title').value, cat = document.getElementById('m-cat').value;
         const { data: { user } } = await sb.auth.getUser();
-        await sb.from('projects').insert([{ title: t, cat: c, user_id: user.id }]);
-        closeModal(); load();
+        if (editId) await sb.from('projects').update({ title, cat }).eq('id', editId);
+        else await sb.from('projects').insert([{ title, cat, date: targetDate, user_id: user.id }]);
+        closeModal(); init();
     }
+
+    function updateStartYear(v) { year = parseInt(v); render(); }
+    document.documentElement.setAttribute('data-theme', localStorage.getItem('sc-theme') || 'dark');
 </script>
 </body>
 </html>
