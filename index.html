@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Planner - Final Refined</title>
+    <title>Scanner Planner - Perfect Alignment</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;800&display=swap" rel="stylesheet">
@@ -23,12 +23,22 @@
         
         .app-layout { display: flex; width: 100vw; height: 100vh; overflow: hidden; }
 
+        /* ВСТАНОВЛЮЄМО ЄДИНУ ВИСОТУ ШАПКИ ДЛЯ СИМЕТРІЇ */
+        header, .sidebar-header { 
+            height: 64px; 
+            display: flex; 
+            align-items: center; 
+            border-bottom: 1px solid var(--border); 
+            flex-shrink: 0;
+        }
+
         /* SIDEBAR */
         #sidebar { 
             width: 260px; background: var(--sidebar); border-right: 1px solid var(--border); 
             display: flex; flex-direction: column; flex-shrink: 0;
             transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 2000;
         }
+        .sidebar-header { padding: 0 20px; justify-content: space-between; }
         .sidebar-hidden #sidebar { margin-left: -260px; }
 
         @media (max-width: 768px) {
@@ -38,8 +48,10 @@
             .sidebar-open .overlay { display: block; }
         }
 
+        /* MAIN CONTENT */
         main { flex-grow: 1; display: flex; flex-direction: column; min-width: 0; }
-        .top-header { padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+        .top-header { padding: 0 20px; justify-content: space-between; }
+        
         .header-controls { display: flex; align-items: center; gap: 8px; }
 
         .btn-icon, .input-year { 
@@ -52,40 +64,34 @@
         .input-year { width: 75px; text-align: center; font-weight: 800; font-size: 0.95rem; }
         .btn-icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-        /* CALENDAR */
+        /* CATEGORIES BAR - тепер лінія ідеально стикується з лінією хедера */
+        #cat-list { 
+            display: flex; gap: 8px; padding: 0 20px; height: 56px; align-items: center;
+            overflow-x: auto; border-bottom: 1px solid var(--border); flex-shrink: 0; scrollbar-width: none; 
+        }
+        .cat-item { cursor: pointer; display: flex; align-items: center; gap: 8px; white-space: nowrap; font-size: 0.8rem; font-weight: 600; padding: 6px 14px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); transition: 0.2s; }
+        .cat-item:hover { border-color: var(--accent); }
+
+        /* CALENDAR AREA */
         #calendar-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 20px; scroll-behavior: smooth; }
         .year-section { margin-bottom: 25px; width: 100%; }
-        .year-header { 
-            color: var(--accent); font-size: 1.7rem; margin-bottom: 10px; font-weight: 800; 
-            cursor: pointer; display: flex; align-items: center; gap: 10px; user-select: none;
-        }
+        .year-header { color: var(--accent); font-size: 1.7rem; margin-bottom: 10px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 10px; }
         .year-header span.arrow { font-size: 1rem; color: var(--muted); transition: transform 0.2s; }
         .year-collapsed .arrow { transform: rotate(-90deg); }
         
         .year-row { display: flex; gap: 8px; width: 100%; }
         .month-cell { 
             background: var(--surface); border: 1px solid var(--border); border-radius: 12px; 
-            padding: 30px 8px 8px; position: relative; min-height: 110px; flex: 1 1 0; min-width: 0;
+            padding: 32px 8px 8px; position: relative; min-height: 115px; flex: 1 1 0; min-width: 0;
             display: flex; flex-direction: column; gap: 6px; transition: 0.2s;
         }
-        .month-cell.drag-over { border-color: var(--accent); background: rgba(16, 185, 129, 0.08); }
-        .month-label { font-size: 0.7rem; color: var(--muted); position: absolute; top: 10px; left: 10px; font-weight: 800; text-transform: uppercase; pointer-events: none; }
+        .month-label { font-size: 0.7rem; color: var(--muted); position: absolute; top: 12px; left: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
 
         @media (max-width: 768px) {
             .year-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-            .month-cell { flex: none; min-height: 100px; }
         }
 
-        .card { 
-            color: #fff; padding: 8px; border-radius: 8px; font-size: 0.75rem; cursor: grab; font-weight: 600; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-left: 3px solid rgba(255,255,255,0.4);
-            user-select: none; word-wrap: break-word; line-height: 1.2;
-        }
-
-        /* CATEGORIES */
-        #cat-list { display: flex; gap: 8px; padding: 12px 20px; overflow-x: auto; border-bottom: 1px solid var(--border); flex-shrink: 0; scrollbar-width: none; }
-        .cat-item { cursor: pointer; display: flex; align-items: center; gap: 8px; white-space: nowrap; font-size: 0.8rem; font-weight: 600; padding: 8px 14px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); transition: 0.2s; }
-        .cat-item:hover { border-color: var(--accent); }
+        .card { color: #fff; padding: 8px; border-radius: 8px; font-size: 0.75rem; cursor: grab; font-weight: 600; border-left: 3px solid rgba(255,255,255,0.4); line-height: 1.2; }
 
         /* MODALS */
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 3000; backdrop-filter: blur(8px); }
@@ -100,7 +106,7 @@
     <div class="overlay" onclick="toggleMenu()"></div>
 
     <aside id="sidebar" ondragover="event.preventDefault()" ondrop="handleDrop(event, null)">
-        <div style="padding: 18px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+        <div class="sidebar-header">
             <span style="font-weight: 800; font-size: 0.8rem; color: var(--muted); letter-spacing: 1px;">ВХІДНІ</span>
             <button onclick="toggleMenu()" class="btn-icon" style="border:none; background:none;"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
         </div>
@@ -112,7 +118,7 @@
         <header class="top-header">
             <div class="header-controls">
                 <button class="btn-icon" onclick="toggleMenu()"><svg viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
-                <h1 style="font-size:1.3rem; margin:0; font-weight:800; letter-spacing: -0.5px;">Scanner<span style="color:var(--accent)">Planner</span></h1>
+                <h1 style="font-size:1.3rem; margin:0 0 0 4px; font-weight:800; letter-spacing: -0.5px; display: flex; align-items: center;">Scanner<span style="color:var(--accent)">Planner</span></h1>
             </div>
             <div class="header-controls">
                 <input type="number" id="yearInput" class="input-year" onchange="updateStartYear(this.value)">
@@ -169,11 +175,7 @@
     }
 
     function toggleYear(year) {
-        if (collapsedYears.includes(year)) {
-            collapsedYears = collapsedYears.filter(y => y !== year);
-        } else {
-            collapsedYears.push(year);
-        }
+        collapsedYears = collapsedYears.includes(year) ? collapsedYears.filter(y => y !== year) : [...collapsedYears, year];
         localStorage.setItem('sc-collapsed-years', JSON.stringify(collapsedYears));
         render();
     }
@@ -195,11 +197,9 @@
         for (let y = 0; y < 6; y++) {
             const year = startYear + y;
             const isCollapsed = collapsedYears.includes(year);
-            const section = document.createElement('div'); 
-            section.className = 'year-section' + (isCollapsed ? ' year-collapsed' : '');
+            const section = document.createElement('div'); section.className = 'year-section' + (isCollapsed ? ' year-collapsed' : '');
             
-            const header = document.createElement('div');
-            header.className = 'year-header';
+            const header = document.createElement('div'); header.className = 'year-header';
             header.innerHTML = `<span>${year}</span><span class="arrow">▼</span>`;
             header.onclick = () => toggleYear(year);
             section.appendChild(header);
