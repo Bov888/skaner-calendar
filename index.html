@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Planner - Ultra Responsive</title>
+    <title>Scanner Planner - Final Flow</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
@@ -40,28 +40,32 @@
         }
         .btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5; }
 
-        /* CATEGORIES (FILTER + EDIT) */
+        /* CATEGORIES */
         #cat-strip { padding: 0 15px; height: 50px; display: flex; align-items: center; gap: 8px; overflow-x: auto; scrollbar-width: none; box-shadow: 0 1px 0 0 var(--border); }
         .cat-chip { 
             padding: 6px 12px; border-radius: 8px; background: var(--surface); font-size: 12px; font-weight: 700;
-            box-shadow: 0 0 0 1px var(--border); cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 6px;
+            box-shadow: 0 0 0 1px var(--border); cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 8px;
         }
         .cat-chip.active { box-shadow: 0 0 0 1px var(--accent); color: var(--accent); }
-        .dot { width: 10px; height: 10px; border-radius: 50%; cursor: pointer; transition: transform 0.2s; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; cursor: pointer; flex-shrink: 0; transition: transform 0.2s; }
         .dot:hover { transform: scale(1.3); }
 
-        /* DYNAMIC GRID SYSTEM */
+        /* GRID SYSTEM */
         #view { flex: 1; overflow-y: auto; padding: 20px; }
-        .year-sec { margin-bottom: 25px; }
+        .year-sec { margin-bottom: 15px; }
         .year-bar { 
-            background: var(--surface); padding: 12px 18px; border-radius: 12px; 
+            background: var(--surface); padding: 12px 18px; border-radius: 14px; 
             box-shadow: 0 0 0 1px var(--border); cursor: pointer; display: flex; 
             justify-content: space-between; align-items: center; margin-bottom: 10px;
         }
-        .year-bar h2 { font-size: 20px; font-weight: 900; color: var(--accent); }
+        .year-bar h2 { font-size: 18px; font-weight: 900; color: var(--accent); }
+        .year-bar span { font-size: 12px; transition: transform 0.3s; }
 
-        /* Desktop: 1 row | Mobile: 4x3 */
+        /* ФІКС: Логіка згортання */
         .calendar-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 8px; }
+        .year-sec.collapsed .calendar-grid { display: none; }
+        .year-sec.collapsed .year-bar span { transform: rotate(-90deg); }
+
         @media (max-width: 1024px) {
             .calendar-grid { grid-template-columns: repeat(3, 1fr); }
         }
@@ -72,18 +76,18 @@
         }
         .month-cell::before {
             content: attr(data-label); position: absolute; top: 8px; left: 8px;
-            font-size: 9px; font-weight: 900; color: var(--muted);
+            font-size: 9px; font-weight: 900; color: var(--muted); text-transform: uppercase;
         }
-        .month-cell.drag-over { box-shadow: 0 0 0 2px var(--accent); }
+        .month-cell.drag-over { border: 2px dashed var(--accent); }
 
         .proj {
-            padding: 5px 8px; border-radius: 6px; font-size: 10px; font-weight: 700;
+            padding: 6px 8px; border-radius: 6px; font-size: 10px; font-weight: 700;
             color: #fff; margin-bottom: 4px; cursor: grab;
             border-left: 3px solid rgba(0,0,0,0.2);
         }
 
         /* MODALS */
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 5000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 5000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
         .inp { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 10px; background: var(--bg); color: var(--text); box-shadow: 0 0 0 1px var(--border); }
         .p-btn { width: 100%; padding: 12px; border-radius: 10px; background: var(--accent); color: #000; font-weight: 900; cursor: pointer; }
     </style>
@@ -116,7 +120,10 @@
     <header class="bar">
         <div class="btn" onclick="toggleSidebar()"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></div>
         <h2 style="flex:1; font-weight: 900; font-size: 18px;">ScannerPlanner</h2>
-        <div class="btn" onclick="toggleTheme()"><svg viewBox="0 0 24 24"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.02 0l-.707-.707M6.343 6.343l-.707-.707"/></svg></div>
+        
+        <div class="btn" onclick="toggleTheme()" id="theme-switcher">
+            </div>
+
         <div class="btn" onclick="logout()" style="color: var(--error);"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></div>
     </header>
     <div id="cat-strip"></div>
@@ -135,7 +142,20 @@
     let projects = [], categories = [], filter = null;
 
     function toggleSidebar() { document.body.classList.toggle('sidebar-closed'); }
-    function toggleTheme() { document.documentElement.setAttribute('data-theme', document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark'); }
+    
+    function updateThemeIcon() {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const btn = document.getElementById('theme-switcher');
+        btn.innerHTML = isDark 
+            ? `<svg viewBox="0 0 24 24"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.02 0l-.707-.707M6.343 6.343l-.707-.707"/></svg>` // Сонце
+            : `<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>`; // Місяць
+    }
+
+    function toggleTheme() {
+        const current = document.documentElement.getAttribute('data-theme');
+        document.documentElement.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+        updateThemeIcon();
+    }
 
     async function login() {
         const { error } = await sb.auth.signInWithPassword({ email: email.value, password: pass.value });
@@ -145,6 +165,7 @@
 
     sb.auth.onAuthStateChange((ev, sess) => {
         if (sess) { document.getElementById('auth-gate').style.display='none'; sync(); }
+        updateThemeIcon();
     });
 
     async function sync() {
@@ -177,10 +198,8 @@
                 const code = `${y}-${String(m).padStart(2,'0')}`;
                 const cell = document.createElement('div'); cell.className = 'month-cell';
                 cell.setAttribute('data-label', mNames[m-1]);
-                cell.setAttribute('data-date', code);
                 cell.onclick = (e) => { if(e.target === cell) openModal('proj', code); };
                 
-                // DRAG EVENTS
                 cell.ondragover = (e) => { e.preventDefault(); cell.classList.add('drag-over'); };
                 cell.ondragleave = () => cell.classList.remove('drag-over');
                 cell.ondrop = async (e) => {
@@ -224,19 +243,19 @@
                 <input id="f-t" class="inp" value="${item?.title||''}" placeholder="Назва...">
                 <select id="f-c" class="inp">${categories.map(c=>`<option ${item?.cat===c.name?'selected':''}>${c.name}</option>`).join('')}</select>
                 <button onclick="saveProj('${item?.id||''}', '${date||''}')" class="p-btn">Зберегти</button>
-                ${item?`<button onclick="del('projects','${item.id}')" style="color:var(--error);background:none;width:100%;margin-top:10px;">Видалити</button>`:''}`;
+                ${item?`<button onclick="del('projects','${item.id}')" style="color:var(--error);background:none;width:100%;margin-top:10px;cursor:pointer;">Видалити</button>`:''}`;
         } else {
             body.innerHTML = `<h3>${item?'Редагувати':'Нова'} категорія</h3>
                 <input id="f-n" class="inp" value="${item?.name||''}" placeholder="Назва...">
                 <input id="f-co" type="color" class="inp" style="height:50px" value="${item?.color||'#10b981'}">
                 <button onclick="saveCat('${item?.id||''}')" class="p-btn">Зберегти</button>
-                ${item?`<button onclick="del('categories','${item.id}')" style="color:var(--error);background:none;width:100%;margin-top:10px;">Видалити</button>`:''}`;
+                ${item?`<button onclick="del('categories','${item.id}')" style="color:var(--error);background:none;width:100%;margin-top:10px;cursor:pointer;">Видалити</button>`:''}`;
         }
     }
 
     async function saveProj(id, date) {
         const user = (await sb.auth.getUser()).data.user;
-        const d = { title: f_t.value, cat: f_c.value, date: date==='null'?'':date, user_id: user.id };
+        const d = { title: f_t.value, cat: f_c.value, date: (date === 'null' || !date) ? null : date, user_id: user.id };
         if(id) await sb.from('projects').update(d).eq('id', id); else await sb.from('projects').insert([d]);
         closeModal(); sync();
     }
@@ -250,6 +269,8 @@
 
     async function del(t, id) { if(confirm('Видалити?')) { await sb.from(t).delete().eq('id', id); closeModal(); sync(); } }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
+
+    updateThemeIcon();
 </script>
 </body>
 </html>
