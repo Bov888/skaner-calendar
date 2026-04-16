@@ -3,245 +3,223 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Planner - Final OS</title>
+    <title>Scanner Planner - 6Y Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;900&display=swap" rel="stylesheet">
     <style>
         :root[data-theme="dark"] {
-            --bg: #09090b; --surface: #18181b; --border: #27272a; --text: #fafafa;
-            --muted: #71717a; --accent: #10b981; --panel: #111113;
+            --bg: #0c0c0e; --surface: #161619; --border: #262629; --text: #f4f4f5;
+            --muted: #828288; --accent: #10b981; --error: #ef4444;
         }
         :root[data-theme="light"] {
-            --bg: #ffffff; --surface: #f4f4f5; --border: #e4e4e7; --text: #09090b;
-            --muted: #71717a; --accent: #10b981; --panel: #f9f9fb;
+            --bg: #ffffff; --surface: #f4f4f5; --border: #e4e4e7; --text: #18181b;
+            --muted: #71717a; --accent: #10b981; --error: #ef4444;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; }
-        body { background: var(--bg); color: var(--text); height: 100vh; display: flex; overflow: hidden; }
+        * { box-sizing: border-box; margin: 0; padding: 0; border: none; outline: none; font-family: 'Outfit', sans-serif; }
+        body { background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; }
 
-        /* --- AUTH --- */
-        #auth-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 10000; display: flex; align-items: center; justify-content: center; }
-        .auth-form { background: var(--surface); padding: 32px; border-radius: 24px; box-shadow: 0 0 0 1px var(--border); width: 100%; max-width: 340px; }
+        /* Auth */
+        #auth-gate { position: fixed; inset: 0; background: var(--bg); z-index: 10000; display: flex; align-items: center; justify-content: center; }
+        .box { background: var(--surface); padding: 30px; border-radius: 24px; box-shadow: 0 0 0 1px var(--border); width: 90%; max-width: 360px; }
 
-        /* --- NAVIGATION & SIDEBAR --- */
-        #main-sidebar {
-            width: 280px; background: var(--panel); flex-shrink: 0;
-            box-shadow: 1px 0 0 0 var(--border);
-            display: flex; flex-direction: column; z-index: 500;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        /* Layout */
+        #sidebar { 
+            width: 280px; background: var(--bg); flex-shrink: 0; box-shadow: 1px 0 0 0 var(--border);
+            display: flex; flex-direction: column; transition: transform 0.3s; z-index: 2000;
         }
-        .sidebar-hidden #main-sidebar { transform: translateX(-280px); margin-right: -280px; }
-
-        @media (max-width: 800px) {
-            #main-sidebar { position: fixed; left: 0; height: 100%; }
-            .sidebar-hidden #main-sidebar { transform: translateX(-100%); margin-right: 0; }
-            #mobile-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 400; display: none; }
-            body:not(.sidebar-hidden) #mobile-overlay { display: block; }
-        }
-
-        /* --- UI COMPONENTS --- */
-        .bar-64 { height: 64px; display: flex; align-items: center; padding: 0 20px; box-shadow: 0 1px 0 0 var(--border); flex-shrink: 0; }
-        
-        .btn-ui {
-            width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
-            background: var(--surface); border-radius: 10px; cursor: pointer;
-            box-shadow: 0 0 0 1px var(--border); color: var(--text); transition: 0.2s;
-        }
-        .btn-ui:hover { box-shadow: 0 0 0 1px var(--accent); color: var(--accent); }
-        .btn-ui svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5; }
-
-        .btn-action {
-            width: 100%; height: 44px; background: var(--accent); color: #fff; border-radius: 12px;
-            font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 13px;
-        }
-
-        /* --- CONTENT --- */
+        .sidebar-hide #sidebar { transform: translateX(-280px); margin-right: -280px; }
         main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-        #scroll-area { flex: 1; overflow-y: auto; padding: 24px; }
-        
-        .cat-row { gap: 8px; overflow-x: auto; scrollbar-width: none; }
-        .cat-btn {
-            padding: 8px 14px; border-radius: 8px; background: var(--surface);
-            box-shadow: 0 0 0 1px var(--border); font-size: 13px; font-weight: 700;
-            white-space: nowrap; cursor: pointer; display: flex; align-items: center; gap: 6px;
+
+        /* Components */
+        .bar { height: 64px; display: flex; align-items: center; padding: 0 20px; box-shadow: 0 1px 0 0 var(--border); flex-shrink: 0; gap: 12px; }
+        .btn { 
+            width: 40px; height: 40px; border-radius: 12px; background: var(--surface); 
+            box-shadow: 0 0 0 1px var(--border); color: var(--text); cursor: pointer;
+            display: flex; align-items: center; justify-content: center; 
+        }
+        .btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; }
+
+        /* Categories Bar */
+        .cat-scroll { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 0 20px; height: 50px; align-items: center; box-shadow: 0 1px 0 0 var(--border); }
+        .chip { 
+            padding: 6px 12px; border-radius: 8px; background: var(--surface); font-size: 13px; 
+            font-weight: 600; box-shadow: 0 0 0 1px var(--border); white-space: nowrap; cursor: pointer;
         }
 
-        .year-section { margin-bottom: 40px; }
-        .year-title { font-size: 28px; font-weight: 900; color: var(--accent); margin-bottom: 20px; }
-        
-        .calendar-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
-        .month-box {
-            background: var(--surface); border-radius: 16px; padding: 35px 10px 10px;
-            box-shadow: 0 0 0 1px var(--border); position: relative; min-height: 110px;
+        /* Calendar Grid 4x3 */
+        #viewport { flex: 1; overflow-y: auto; padding: 20px; }
+        .year-block { margin-bottom: 20px; }
+        .year-header { 
+            display: flex; align-items: center; justify-content: space-between; 
+            padding: 15px; background: var(--surface); border-radius: 14px; 
+            cursor: pointer; box-shadow: 0 0 0 1px var(--border); margin-bottom: 10px;
         }
-        .month-box::after {
-            content: attr(data-label); position: absolute; top: 12px; left: 12px;
+        .year-header h2 { font-size: 1.5rem; font-weight: 900; color: var(--accent); }
+        
+        .grid-4x3 { 
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; 
+            transition: max-height 0.3s ease-out; overflow: hidden;
+        }
+        .collapsed .grid-4x3 { display: none; }
+
+        .month { 
+            background: var(--surface); border-radius: 12px; padding: 30px 8px 8px;
+            box-shadow: 0 0 0 1px var(--border); position: relative; min-height: 100px;
+        }
+        .month::before { 
+            content: attr(data-m); position: absolute; top: 8px; left: 10px; 
             font-size: 10px; font-weight: 900; color: var(--muted);
         }
 
-        .proj-tag {
-            padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 700;
-            color: #fff; margin-bottom: 6px; border-left: 3px solid rgba(255,255,255,0.4);
+        .task { 
+            padding: 6px; border-radius: 6px; font-size: 10px; font-weight: 700; 
+            color: #fff; margin-bottom: 4px; border-left: 3px solid rgba(0,0,0,0.2);
         }
 
-        /* --- FORMS --- */
-        .input-ui {
-            width: 100%; padding: 12px; margin-bottom: 12px; border-radius: 10px;
-            background: var(--bg); color: var(--text); box-shadow: 0 0 0 1px var(--border);
-        }
-        .modal-wrap {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-            display: none; align-items: center; justify-content: center; z-index: 2000;
+        /* Forms */
+        .inp { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 10px; background: var(--bg); color: var(--text); box-shadow: 0 0 0 1px var(--border); }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 5000; }
+        
+        @media (max-width: 600px) {
+            .grid-4x3 { grid-template-columns: repeat(3, 1fr); } /* Планшетний/мобільний вигляд 4х3 */
         }
     </style>
 </head>
-<body class="sidebar-hidden">
+<body class="sidebar-hide">
 
-<div id="auth-overlay">
-    <div class="auth-form">
-        <h2 style="margin-bottom: 20px; text-align: center;">Вхід</h2>
-        <input type="email" id="auth-e" class="input-ui" placeholder="Email">
-        <input type="password" id="auth-p" class="input-ui" placeholder="Пароль">
-        <button onclick="doLogin()" class="btn-action">Продовжити</button>
-        <div id="auth-error" style="color: #ff4d4d; font-size: 12px; margin-top: 10px; text-align: center;"></div>
+<div id="auth-gate">
+    <div class="box">
+        <h2 style="margin-bottom:20px; text-align:center;">ScannerPlanner</h2>
+        <input type="email" id="email" class="inp" placeholder="Email">
+        <input type="password" id="pass" class="inp" placeholder="Пароль">
+        <button onclick="login()" style="width:100%; height:44px; background:var(--accent); border-radius:10px; color:#fff; font-weight:800; cursor:pointer;">УВІЙТИ</button>
+        <p id="err" style="color:var(--error); font-size:12px; margin-top:10px; text-align:center;"></p>
     </div>
 </div>
 
-<div id="mobile-overlay" onclick="toggleSidebar()"></div>
-
-<aside id="main-sidebar">
-    <div class="bar-64" style="justify-content: space-between;">
-        <span style="font-weight: 900; color: var(--muted); font-size: 12px;">БЕКЛОГ</span>
-        <div class="btn-ui" onclick="toggleSidebar()" style="box-shadow: none;"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+<aside id="sidebar">
+    <div class="bar" style="justify-content:space-between;">
+        <span style="font-weight:900; color:var(--muted); font-size:12px;">BACKLOG</span>
+        <button class="btn" onclick="toggleSidebar()" style="box-shadow:none;">✕</button>
     </div>
-    <div style="padding: 20px;">
-        <button onclick="openModal('proj')" class="btn-action" style="margin-bottom: 10px;">+ Проєкт</button>
-        <button onclick="openModal('cat')" class="btn-action" style="background: var(--surface); color: var(--text); border: 1px solid var(--border);">+ Категорія</button>
-    </div>
-    <div id="sidebar-list" style="flex:1; overflow-y:auto; padding: 0 20px;"></div>
+    <div style="padding:15px;"><button onclick="openModal('proj')" style="width:100%; height:40px; background:var(--accent); border-radius:10px; color:#fff; font-weight:800; cursor:pointer;">+ ПРОЄКТ</button></div>
+    <div id="backlog" style="flex:1; overflow-y:auto; padding:0 15px;"></div>
 </aside>
 
 <main>
-    <header class="bar-64" style="justify-content: space-between;">
-        <div style="display:flex; align-items:center; gap:12px;">
-            <div class="btn-ui" onclick="toggleSidebar()"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></div>
-            <h1 style="font-size: 18px; font-weight: 900;">Scanner<span style="color:var(--accent)">Planner</span></h1>
-        </div>
-        <div style="display:flex; align-items:center; gap:10px;">
-            <input type="number" id="yr-set" class="input-ui" style="width: 75px; margin:0; height: 40px; text-align: center; font-weight: 700;" value="2026" onchange="renderAll()">
-            <div class="btn-ui" onclick="changeTheme()"><svg viewBox="0 0 24 24"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.02 0l-.707-.707M6.343 6.343l-.707-.707"/></svg></div>
-            <div class="btn-ui" onclick="doLogout()"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></div>
-        </div>
+    <header class="bar">
+        <button class="btn" onclick="toggleSidebar()"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+        <h1 style="flex:1; font-weight:900; font-size:1.2rem;">Scanner<span style="color:var(--accent)">Planner</span></h1>
+        <button class="btn" onclick="toggleTheme()" id="theme-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.02 0l-.707-.707M6.343 6.343l-.707-.707"/></svg>
+        </button>
+        <button class="btn" onclick="logout()"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>
     </header>
-    <nav class="bar-64 cat-row" id="cat-nav"></nav>
-    <div id="scroll-area"></div>
+    <div class="cat-scroll" id="cat-nav"></div>
+    <div id="viewport"></div>
 </main>
 
-<div id="m-wrap" class="modal-wrap" onclick="if(event.target==this)closeModal()">
-    <div class="auth-form" id="m-proj" style="display:none;">
-        <h3 style="margin-bottom: 15px;">Новий проєкт</h3>
-        <input type="text" id="p-title" class="input-ui" placeholder="Назва...">
-        <select id="p-cat" class="input-ui"></select>
-        <button onclick="saveProj()" class="btn-action">Зберегти</button>
-    </div>
-    <div class="auth-form" id="m-cat" style="display:none;">
-        <h3 style="margin-bottom: 15px;">Нова категорія</h3>
-        <input type="text" id="c-name" class="input-ui" placeholder="Назва (Робота, Навчання...)">
-        <input type="color" id="c-color" class="input-ui" style="height: 50px; padding: 5px;" value="#10b981">
-        <button onclick="saveCat()" class="btn-action">Створити</button>
-    </div>
+<div id="modal" class="modal" onclick="if(event.target==this)closeModal()">
+    <div class="box" id="modal-content"></div>
 </div>
 
 <script>
-    const S_URL = "https://mlkdphygsdfcanztbtez.supabase.co";
-    const S_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2RwaHlnc2RmY2FuenRidGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyODAwNTAsImV4cCI6MjA5MTg1NjA1MH0.PfjkZXua-9tp2lxVsBD3YBUNpx_USmMha5BQBZcGLFc";
-    const sb = supabase.createClient(S_URL, S_KEY);
+    const URL = "https://mlkdphygsdfcanztbtez.supabase.co";
+    const KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2RwaHlnc2RmY2FuenRidGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyODAwNTAsImV4cCI6MjA5MTg1NjA1MH0.PfjkZXua-9tp2lxVsBD3YBUNpx_USmMha5BQBZcGLFc";
+    const sb = supabase.createClient(URL, KEY);
 
-    let data_p = [], data_c = [], sel_date = null;
+    let projs = [], cats = [], yearStart = 2026;
 
-    function toggleSidebar() { document.body.classList.toggle('sidebar-hidden'); }
-    
-    function changeTheme() {
+    function toggleSidebar() { document.body.classList.toggle('sidebar-hide'); }
+    function toggleTheme() {
         const t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', t);
     }
 
-    async function doLogin() {
-        const e = document.getElementById('auth-e').value, p = document.getElementById('auth-p').value;
-        const { error } = await sb.auth.signInWithPassword({ email: e, password: p });
-        if (error) document.getElementById('auth-error').innerText = error.message;
+    async function login() {
+        const { error } = await sb.auth.signInWithPassword({ email: email.value, password: pass.value });
+        if (error) document.getElementById('err').innerText = error.message;
     }
+    function logout() { sb.auth.signOut(); window.location.reload(); }
 
-    function doLogout() { sb.auth.signOut(); window.location.reload(); }
-
-    sb.auth.onAuthStateChange((ev, session) => {
-        if (session) { document.getElementById('auth-overlay').style.display = 'none'; sync(); }
+    sb.auth.onAuthStateChange((ev, sess) => {
+        if (sess) { document.getElementById('auth-gate').style.display='none'; load(); }
     });
 
-    async function sync() {
+    async function load() {
         const [p, c] = await Promise.all([sb.from('projects').select('*'), sb.from('categories').select('*')]);
-        data_p = p.data || []; data_c = c.data || [];
-        renderAll();
+        projs = p.data || []; cats = c.data || [];
+        render();
     }
 
-    function renderAll() {
-        const yr = parseInt(document.getElementById('yr-set').value);
-        const nav = document.getElementById('cat-nav'), sel = document.getElementById('p-cat');
-        nav.innerHTML = ''; sel.innerHTML = '';
-        data_c.forEach(c => {
-            nav.innerHTML += `<div class="cat-btn"><div style="width:8px; height:8px; border-radius:50%; background:${c.color}"></div>${c.name}</div>`;
-            sel.innerHTML += `<option value="${c.name}">${c.name}</option>`;
+    function render() {
+        const nav = document.getElementById('cat-nav'); nav.innerHTML = '';
+        cats.forEach(c => {
+            const el = document.createElement('div'); el.className = 'chip';
+            el.innerHTML = `<span style="color:${c.color}">●</span> ${c.name}`;
+            el.onclick = () => editCat(c);
+            nav.appendChild(el);
         });
+        nav.innerHTML += `<div class="chip" onclick="editCat()">+ Нова</div>`;
 
-        const area = document.getElementById('scroll-area'); area.innerHTML = '';
-        const mNames = ['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'];
+        const view = document.getElementById('viewport'); view.innerHTML = '';
+        const mNames = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
 
-        [yr, yr+1].forEach(y => {
-            const wrap = document.createElement('div'); wrap.className = 'year-section';
-            wrap.innerHTML = `<div class="year-title">${y}</div>`;
-            const grid = document.createElement('div'); grid.className = 'calendar-grid';
-            for(let i=1; i<=12; i++) {
-                const code = `${y}-${String(i).padStart(2,'0')}`;
-                const box = document.createElement('div'); box.className = 'month-box';
-                box.setAttribute('data-label', mNames[i-1]);
-                box.onclick = () => openModal('proj', code);
-                data_p.filter(p => p.date === code).forEach(p => {
-                    const c = data_c.find(cat => cat.name === p.cat);
-                    box.innerHTML += `<div class="proj-tag" style="background:${c?.color || '#444'}">${p.title}</div>`;
+        for(let i=0; i<6; i++) {
+            const y = yearStart + i;
+            const block = document.createElement('div'); block.className = 'year-block';
+            block.innerHTML = `<div class="year-header" onclick="this.parentElement.classList.toggle('collapsed')"><h2>${y}</h2><span>▼</span></div>`;
+            const grid = document.createElement('div'); grid.className = 'grid-4x3';
+            
+            for(let m=1; m<=12; m++) {
+                const code = `${y}-${String(m).padStart(2,'0')}`;
+                const mDiv = document.createElement('div'); mDiv.className = 'month';
+                mDiv.setAttribute('data-m', mNames[m-1]);
+                mDiv.onclick = (e) => { if(e.target == mDiv) openModal('proj', code); };
+                
+                projs.filter(p => p.date === code).forEach(p => {
+                    const c = cats.find(ct => ct.name === p.cat);
+                    mDiv.innerHTML += `<div class="task" style="background:${c?.color || '#555'}">${p.title}</div>`;
                 });
-                grid.appendChild(box);
+                grid.appendChild(mDiv);
             }
-            wrap.appendChild(grid); area.appendChild(wrap);
-        });
-
-        const bl = document.getElementById('sidebar-list'); bl.innerHTML = '';
-        data_p.filter(p => !p.date).forEach(p => {
-            const c = data_c.find(cat => cat.name === p.cat);
-            bl.innerHTML += `<div class="proj-tag" style="background:${c?.color || '#444'}">${p.title}</div>`;
-        });
+            block.appendChild(grid); view.appendChild(block);
+        }
     }
 
-    function openModal(type, date = null) {
-        sel_date = date;
-        document.getElementById('m-wrap').style.display = 'flex';
-        document.getElementById('m-proj').style.display = type === 'proj' ? 'block' : 'none';
-        document.getElementById('m-cat').style.display = type === 'cat' ? 'block' : 'none';
-    }
-    function closeModal() { document.getElementById('m-wrap').style.display = 'none'; }
-
-    async function saveProj() {
-        const t = document.getElementById('p-title').value, c = document.getElementById('p-cat').value;
-        const u = (await sb.auth.getUser()).data.user;
-        await sb.from('projects').insert([{ title: t, cat: c, date: sel_date, user_id: u.id }]);
-        closeModal(); sync();
+    function openModal(type, date) {
+        const content = document.getElementById('modal-content');
+        document.getElementById('modal').style.display = 'flex';
+        if(type === 'proj') {
+            content.innerHTML = `<h3>Новий проєкт</h3><input id="pT" class="inp" placeholder="Назва"><select id="pC" class="inp">${cats.map(c=>`<option>${c.name}</option>`).join('')}</select><button onclick="saveProj('${date}')" class="inp" style="background:var(--accent);font-weight:800;color:#fff">Зберегти</button>`;
+        }
     }
 
-    async function saveCat() {
-        const n = document.getElementById('c-name').value, c = document.getElementById('c-color').value;
-        const u = (await sb.auth.getUser()).data.user;
-        await sb.from('categories').insert([{ name: n, color: c, user_id: u.id }]);
-        closeModal(); sync();
+    async function saveProj(date) {
+        const user = (await sb.auth.getUser()).data.user;
+        await sb.from('projects').insert([{ title: pT.value, cat: pC.value, date, user_id: user.id }]);
+        closeModal(); load();
     }
+
+    function editCat(cat) {
+        const content = document.getElementById('modal-content');
+        document.getElementById('modal').style.display = 'flex';
+        content.innerHTML = `<h3>${cat?'Редагувати':'Нова'} категорія</h3>
+            <input id="cN" class="inp" value="${cat?.name||''}" placeholder="Назва">
+            <input id="cC" class="inp" type="color" value="${cat?.color||'#10b981'}">
+            <button onclick="saveCat(${cat?.id||null})" class="inp" style="background:var(--accent);font-weight:800;color:#fff">Зберегти</button>`;
+    }
+
+    async function saveCat(id) {
+        const user = (await sb.auth.getUser()).data.user;
+        const payload = { name: cN.value, color: cC.value, user_id: user.id };
+        if(id) await sb.from('categories').update(payload).eq('id', id);
+        else await sb.from('categories').insert([payload]);
+        closeModal(); load();
+    }
+
+    function closeModal() { document.getElementById('modal').style.display = 'none'; }
 </script>
 </body>
 </html>
