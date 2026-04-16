@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Planner - Stable Sync</title>
+    <title>Scanner Planner - Final Stable</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;800&display=swap" rel="stylesheet">
@@ -11,120 +11,99 @@
     <style>
         :root[data-theme="dark"] {
             --bg: #121214; --surface: #1e1e21; --border: #2e2e32; --text: #f4f4f5;
-            --muted: #a1a1aa; --accent: #10b981; --accent-hover: #059669; --sidebar: #121214;
+            --muted: #a1a1aa; --accent: #10b981; --sidebar: #121214;
         }
         :root[data-theme="light"] {
             --bg: #fafafa; --surface: #ffffff; --border: #e4e4e7; --text: #18181b;
-            --muted: #71717a; --accent: #10b981; --accent-hover: #059669; --sidebar: #fafafa;
+            --muted: #71717a; --accent: #10b981; --sidebar: #fafafa;
         }
 
         * { box-sizing: border-box; outline: none; font-family: 'Outfit', sans-serif !important; }
         body { background: var(--bg); color: var(--text); margin: 0; height: 100vh; overflow: hidden; display: flex; -webkit-font-smoothing: antialiased; }
         
-        #auth-screen { position: fixed; inset: 0; background: var(--bg); z-index: 5000; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+        #auth-screen { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; align-items: center; justify-content: center; flex-direction: column; }
         .auth-box { background: var(--surface); padding: 40px; border-radius: 24px; border: 1px solid var(--border); width: 100%; max-width: 400px; text-align: center; }
 
         .app-layout { display: none; width: 100vw; height: 100vh; overflow: hidden; }
         .logged-in .app-layout { display: flex; }
         .logged-in #auth-screen { display: none; }
 
-        header, .sidebar-header { height: 64px; display: flex; align-items: center; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-
         #sidebar { 
             width: 260px; background: var(--sidebar); border-right: 1px solid var(--border); 
             display: flex; flex-direction: column; flex-shrink: 0;
-            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 2000;
+            transition: margin-left 0.3s ease; z-index: 2000;
         }
-        .sidebar-header { padding: 0 20px; justify-content: space-between; }
         .sidebar-hidden #sidebar { margin-left: -260px; }
 
         @media (max-width: 768px) {
-            #sidebar { position: fixed; height: 100%; left: 0; transform: translateX(-100%); margin-left: 0; transition: transform 0.3s ease; }
+            #sidebar { position: fixed; height: 100%; left: 0; transform: translateX(-100%); margin-left: 0; }
             .sidebar-open #sidebar { transform: translateX(0); box-shadow: 10px 0 30px rgba(0,0,0,0.5); }
-            .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(3px); z-index: 1500; }
+            .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1500; }
             .sidebar-open .overlay { display: block; }
         }
 
         main { flex-grow: 1; display: flex; flex-direction: column; min-width: 0; }
-        .top-header { padding: 0 20px; justify-content: space-between; }
-        .header-controls { display: flex; align-items: center; gap: 8px; }
+        header { height: 64px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid var(--border); }
 
-        .btn-icon, .input-year { 
-            background: var(--surface); border: 1px solid var(--border); color: var(--text); 
-            height: 38px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; 
-            transition: all 0.2s; 
-        }
-        .btn-icon { width: 38px; min-width: 38px; padding: 0; }
-        .btn-icon:hover { border-color: var(--muted); background: var(--border); }
-        .input-year { width: 75px; text-align: center; font-weight: 800; font-size: 0.95rem; }
-        .btn-icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .btn-icon { background: var(--surface); border: 1px solid var(--border); color: var(--text); width: 38px; height: 38px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .input-year { width: 75px; text-align: center; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 10px; font-weight: 800; }
 
-        #cat-list { display: flex; gap: 8px; padding: 0 20px; height: 56px; align-items: center; overflow-x: auto; border-bottom: 1px solid var(--border); flex-shrink: 0; scrollbar-width: none; }
-        .cat-item { cursor: pointer; display: flex; align-items: center; gap: 8px; white-space: nowrap; font-size: 0.8rem; font-weight: 600; padding: 6px 14px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); transition: 0.2s; user-select: none; }
+        #cat-list { display: flex; gap: 8px; padding: 0 20px; height: 56px; align-items: center; overflow-x: auto; border-bottom: 1px solid var(--border); scrollbar-width: none; }
+        .cat-item { cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 600; padding: 6px 14px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); white-space: nowrap; transition: 0.2s; }
         .cat-item.active { border-color: var(--accent); background: rgba(16, 185, 129, 0.1); }
-        .cat-dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); }
+        .cat-dot { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); }
 
-        #calendar-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 20px; scroll-behavior: smooth; }
-        .year-section { margin-bottom: 25px; width: 100%; }
-        .year-header { color: var(--accent); font-size: 1.7rem; margin-bottom: 10px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 10px; }
-        .year-header span.arrow { font-size: 1rem; color: var(--muted); transition: transform 0.2s; }
-        .year-collapsed .arrow { transform: rotate(-90deg); }
-        
-        .year-row { display: flex; gap: 8px; width: 100%; }
-        .month-cell { 
-            background: var(--surface); border: 1px solid var(--border); border-radius: 12px; 
-            padding: 32px 8px 8px; position: relative; min-height: 115px; flex: 1 1 0; min-width: 0;
-            display: flex; flex-direction: column; gap: 6px; transition: 0.2s;
-        }
-        .month-cell.drag-over { border-color: var(--accent); background: rgba(16, 185, 129, 0.05); }
-        .month-label { font-size: 0.7rem; color: var(--muted); position: absolute; top: 12px; left: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; pointer-events: none; }
+        #calendar-scroll { flex: 1; overflow-y: auto; padding: 20px; }
+        .year-section { margin-bottom: 30px; }
+        .year-header { color: var(--accent); font-size: 1.7rem; font-weight: 800; margin-bottom: 12px; }
+        .year-row { display: flex; gap: 8px; }
+        @media (max-width: 768px) { .year-row { display: grid; grid-template-columns: repeat(3, 1fr); } }
 
-        @media (max-width: 768px) { .year-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; } }
+        .month-cell { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 32px 8px 8px; position: relative; min-height: 110px; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+        .month-label { font-size: 0.7rem; color: var(--muted); position: absolute; top: 10px; left: 10px; font-weight: 800; text-transform: uppercase; }
 
-        .card { color: #fff; padding: 8px; border-radius: 8px; font-size: 0.75rem; cursor: grab; font-weight: 600; border-left: 3px solid rgba(255,255,255,0.4); line-height: 1.2; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .card { padding: 8px; border-radius: 8px; font-size: 0.75rem; cursor: grab; font-weight: 600; color: white; border-left: 3px solid rgba(255,255,255,0.4); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 3000; backdrop-filter: blur(8px); }
-        .modal-box { background: var(--surface); padding: 28px; border-radius: 24px; width: 90%; max-width: 360px; border: 1px solid var(--border); }
-        .modern-input { width: 100%; padding: 14px 16px; margin-bottom: 14px; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 12px; font-size: 0.95rem; }
-        .btn-primary { background: var(--accent); color: white; border: none; padding: 14px; border-radius: 12px; width: 100%; font-weight: 800; font-size: 0.95rem; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 5000; backdrop-filter: blur(8px); }
+        .modal-box { background: var(--surface); padding: 30px; border-radius: 24px; width: 90%; max-width: 360px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
+        .modern-input { width: 100%; padding: 14px; margin-bottom: 15px; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 12px; font-size: 0.95rem; }
+        .btn-primary { background: var(--accent); color: white; border: none; padding: 14px; border-radius: 12px; width: 100%; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; }
     </style>
 </head>
 <body>
 
 <div id="auth-screen">
     <div class="auth-box">
-        <h1 style="font-weight:800; font-size:1.8rem; margin-bottom:8px;">Scanner<span style="color:var(--accent)">Planner</span></h1>
-        <p style="color:var(--muted); margin-bottom:24px; font-size:0.9rem;">Вхід у вашу екосистему планування</p>
+        <h1 style="font-weight:800; margin-bottom:8px;">Scanner<span style="color:var(--accent)">Planner</span></h1>
+        <p style="color:var(--muted); margin-bottom:24px; font-size:0.9rem;">Вхід у систему</p>
         <input type="email" id="auth-email" class="modern-input" placeholder="Email">
         <input type="password" id="auth-password" class="modern-input" placeholder="Пароль">
-        <button onclick="handleAuth('login')" class="btn-primary" style="margin-bottom:12px;">Увійти</button>
-        <button onclick="handleAuth('signup')" style="background:none; border:none; color:var(--muted); cursor:pointer; font-weight:600; font-size:0.85rem;">Створити новий акаунт</button>
+        <button onclick="handleAuth('login')" class="btn-primary">Увійти</button>
+        <button onclick="handleAuth('signup')" style="background:none; border:none; color:var(--muted); cursor:pointer; margin-top:15px; font-weight:600;">Створити акаунт</button>
     </div>
 </div>
 
 <div class="app-layout">
     <div class="overlay" onclick="toggleMenu()"></div>
-    <aside id="sidebar" ondragover="event.preventDefault()" ondrop="handleDrop(event, null)">
-        <div class="sidebar-header">
-            <span style="font-weight: 800; font-size: 0.8rem; color: var(--muted); letter-spacing: 1px;">ВХІДНІ</span>
-            <button onclick="toggleMenu()" class="btn-icon" style="border:none; background:none;"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+    <aside id="sidebar">
+        <div style="padding: 20px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border);">
+            <span style="font-weight:800; font-size:0.8rem; color:var(--muted); letter-spacing: 1px;">ВХІДНІ (INBOX)</span>
+            <button onclick="toggleMenu()" class="btn-icon" style="border:none; background:none;">✕</button>
         </div>
-        <div style="padding: 20px;"><button onclick="openModal(null, null)" class="btn-primary">+ ДОДАТИ</button></div>
+        <div style="padding: 20px;"><button onclick="openModal(null, null)" class="btn-primary">+ НОВИЙ ПРОЄКТ</button></div>
         <div id="backlog" style="flex:1; overflow-y:auto; padding: 0 20px 20px; display:flex; flex-direction:column; gap:10px;"></div>
     </aside>
 
     <main>
-        <header class="top-header">
-            <div class="header-controls">
-                <button class="btn-icon" onclick="toggleMenu()"><svg viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
-                <h1 style="font-size:1.3rem; margin:0 0 0 4px; font-weight:800; letter-spacing: -0.5px; display: flex; align-items: center;">Scanner<span style="color:var(--accent)">Planner</span></h1>
+        <header>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <button class="btn-icon" onclick="toggleMenu()">☰</button>
+                <h1 style="font-size:1.3rem; margin:0; font-weight:800;">Scanner<span style="color:var(--accent)">Planner</span></h1>
             </div>
-            <div class="header-controls">
+            <div style="display:flex; gap:8px;">
                 <input type="number" id="yearInput" class="input-year" onchange="updateStartYear(this.value)">
-                <button class="btn-icon" onclick="toggleTheme()" id="themeBtn"></button>
-                <button class="btn-icon" style="color:#ef4444;" onclick="logout()">
-                    <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                </button>
+                <button class="btn-icon" onclick="toggleTheme()">🌓</button>
+                <button class="btn-icon" style="color:#ef4444;" onclick="logout()">✕</button>
             </div>
         </header>
         <div id="cat-list"></div>
@@ -134,25 +113,24 @@
 
 <div id="modal" class="modal" onclick="if(event.target==this)closeModal()">
     <div class="modal-box">
-        <h3 id="modal-title" style="margin-top:0; font-weight:800; font-size:1.4rem;">Проєкт</h3>
-        <input type="text" id="mTitle" class="modern-input" placeholder="Назва">
+        <h3 style="margin-top:0; font-weight:800; font-size:1.4rem;">Редагування</h3>
+        <input type="text" id="mTitle" class="modern-input" placeholder="Назва проєкту">
         <select id="mCat" class="modern-input" style="font-weight:600;"></select>
-        <p id="mDateDisplay" style="font-size:0.85rem; color:var(--muted); margin-bottom: 20px; font-weight:500;"></p>
-        <button onclick="saveProject()" class="btn-primary">Зберегти</button>
-        <button id="deleteBtn" onclick="deleteProject()" style="background:none; color:#ef4444; border:none; margin-top:16px; cursor:pointer; width:100%; font-weight:600;">Видалити</button>
+        <button onclick="saveProject()" class="btn-primary">Зберегти зміни</button>
+        <button onclick="deleteProject()" style="background:none; border:none; color:#ef4444; width:100%; margin-top:15px; cursor:pointer; font-weight:600;">Видалити проєкт</button>
     </div>
 </div>
 
 <div id="catModal" class="modal" onclick="if(event.target==this)closeCatModal()">
     <div class="modal-box">
-        <h3 style="margin-top:0; font-weight:800; font-size:1.4rem;">Категорія</h3>
-        <input type="text" id="catTitle" class="modern-input" placeholder="Назва">
-        <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px; font-weight:600;">
+        <h3 style="margin-top:0; font-weight:800; font-size:1.4rem;">Налаштування категорії</h3>
+        <input type="text" id="catTitle" class="modern-input" placeholder="Назва категорії">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px; font-weight:600;">
             <span>Колір:</span>
-            <input type="color" id="catColor" style="border:2px solid var(--border); width:48px; height:48px; background:none; cursor:pointer; border-radius:12px; padding:2px;">
+            <input type="color" id="catColor" style="width:50px; height:50px; border-radius:12px; border:2px solid var(--border); background:none; cursor:pointer; padding:2px;">
         </div>
-        <button onclick="saveCategory()" class="btn-primary">Зберегти</button>
-        <button id="deleteCatBtn" onclick="deleteCategory()" style="background:none; color:#ef4444; border:none; margin-top:16px; cursor:pointer; width:100%; font-weight:600;">Видалити категорію</button>
+        <button onclick="saveCategory()" class="btn-primary">Оновити</button>
+        <button onclick="deleteCategory()" style="background:none; border:none; color:#ef4444; width:100%; margin-top:15px; cursor:pointer; font-weight:600;">Видалити категорію</button>
     </div>
 </div>
 
@@ -162,54 +140,30 @@
     const sb = supabase.createClient(SB_URL, SB_KEY);
 
     let projects = [], catsData = [], startYear = parseInt(localStorage.getItem('sc-start-year')) || 2026;
-    let collapsedYears = JSON.parse(localStorage.getItem('sc-collapsed-years')) || [];
     let activeFilter = null, editingId = null, selectedDate = null, editingCatId = null;
 
     async function handleAuth(type) {
-        const email = document.getElementById('auth-email').value;
-        const password = document.getElementById('auth-password').value;
-        if (!email || !password) return alert("Заповніть пошта/пароль");
+        const email = document.getElementById('auth-email').value, password = document.getElementById('auth-password').value;
         const { error } = (type === 'login') ? await sb.auth.signInWithPassword({ email, password }) : await sb.auth.signUp({ email, password });
         if (error) alert(error.message);
     }
-
     async function logout() { await sb.auth.signOut(); window.location.reload(); }
 
-    sb.auth.onAuthStateChange((event, session) => {
+    sb.auth.onAuthStateChange((ev, session) => {
         if (session) { document.body.classList.add('logged-in'); loadData(); }
-        else { document.body.classList.remove('logged-in'); }
+        else document.body.classList.remove('logged-in');
     });
 
     async function loadData() {
         const { data: cData } = await sb.from('categories').select('*').order('created_at');
         catsData = cData || [];
-        
-        // Якщо порожньо, створюємо базові
-        if (catsData.length === 0) {
-            const { data: { user } } = await sb.auth.getUser();
-            const defaults = [
-                { name: 'Творчість', color: '#a855f7', user_id: user.id },
-                { name: 'Технології', color: '#3b82f6', user_id: user.id }
-            ];
-            await sb.from('categories').insert(defaults);
-            return loadData();
-        }
-
         const { data: pData } = await sb.from('projects').select('*');
         projects = pData || [];
         render();
     }
 
-    function toggleFilter(catName) { activeFilter = (activeFilter === catName) ? null : catName; render(); }
-    function toggleYear(year) {
-        collapsedYears = collapsedYears.includes(year) ? collapsedYears.filter(y => y !== year) : [...collapsedYears, year];
-        localStorage.setItem('sc-collapsed-years', JSON.stringify(collapsedYears));
-        render();
-    }
-
     function render() {
         document.getElementById('yearInput').value = startYear;
-        updateThemeIcon();
         const clist = document.getElementById('cat-list'), mcat = document.getElementById('mCat');
         clist.innerHTML = '<div class="cat-item" onclick="addCategory()"><b>+</b></div>';
         mcat.innerHTML = '';
@@ -219,7 +173,7 @@
             item.className = 'cat-item' + (activeFilter === c.name ? ' active' : '');
             if (activeFilter && activeFilter !== c.name) item.style.opacity = '0.4';
             item.innerHTML = `
-                <div class="cat-dot" style="background:${c.color}" onclick="event.stopPropagation(); openCatModal('${c.id}')"></div>
+                <div class="cat-dot" style="background:${c.color}" onclick="event.stopPropagation(); openCatModal(${c.id})"></div>
                 <span onclick="toggleFilter('${c.name}')">${c.name}</span>
             `;
             clist.appendChild(item);
@@ -227,74 +181,81 @@
         });
 
         const cont = document.getElementById('calendar-scroll'); cont.innerHTML = '';
-        const monthsNames = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
-        const displayProjects = activeFilter ? projects.filter(p => p.cat === activeFilter) : projects;
+        const months = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
+        const filtered = activeFilter ? projects.filter(p => p.cat === activeFilter) : projects;
 
         for (let y = 0; y < 6; y++) {
             const year = startYear + y;
-            const isCollapsed = collapsedYears.includes(year);
-            const section = document.createElement('div'); section.className = 'year-section' + (isCollapsed ? ' year-collapsed' : '');
-            const header = document.createElement('div'); header.className = 'year-header';
-            header.innerHTML = `<span>${year}</span><span class="arrow">▼</span>`;
-            header.onclick = () => toggleYear(year);
-            section.appendChild(header);
-
-            if (!isCollapsed) {
-                const row = document.createElement('div'); row.className = 'year-row';
-                for (let m = 1; m <= 12; m++) {
-                    const dKey = `${year}-${String(m).padStart(2,'0')}`;
-                    const cell = document.createElement('div'); cell.className = 'month-cell';
-                    cell.innerHTML = `<div class="month-label">${monthsNames[m-1]}</div>`;
-                    cell.onclick = (e) => { if(e.target === cell) openModal(null, dKey); };
-                    cell.addEventListener('dragover', (e) => { e.preventDefault(); cell.classList.add('drag-over'); });
-                    cell.addEventListener('dragleave', () => cell.classList.remove('drag-over'));
-                    cell.addEventListener('drop', (e) => handleDrop(e, dKey));
-                    displayProjects.filter(p => p.date === dKey).forEach(p => cell.appendChild(createCard(p)));
-                    row.appendChild(cell);
-                }
-                section.appendChild(row);
+            const sec = document.createElement('div'); sec.className = 'year-section';
+            sec.innerHTML = `<div class="year-header">${year}</div>`;
+            const row = document.createElement('div'); row.className = 'year-row';
+            for (let m = 1; m <= 12; m++) {
+                const dk = `${year}-${String(m).padStart(2,'0')}`;
+                const cell = document.createElement('div'); cell.className = 'month-cell';
+                cell.innerHTML = `<div class="month-label">${months[m-1]}</div>`;
+                cell.onclick = (e) => { if(e.target === cell) openModal(null, dk); };
+                cell.addEventListener('dragover', e => e.preventDefault());
+                cell.addEventListener('drop', e => handleDrop(e, dk));
+                filtered.filter(p => p.date === dk).forEach(p => cell.appendChild(createCard(p)));
+                row.appendChild(cell);
             }
-            cont.appendChild(section);
+            sec.appendChild(row); cont.appendChild(sec);
         }
         const blog = document.getElementById('backlog'); blog.innerHTML = '';
-        displayProjects.filter(p => !p.date).forEach(p => blog.appendChild(createCard(p)));
+        filtered.filter(p => !p.date).forEach(p => blog.appendChild(createCard(p)));
     }
 
     function createCard(p) {
         const cat = catsData.find(c => c.name === p.cat) || {color: '#888'};
-        const card = document.createElement('div'); card.className = 'card'; card.draggable = true;
-        card.style.backgroundColor = cat.color; card.innerText = p.title;
+        const card = document.createElement('div'); card.className = 'card';
+        card.style.backgroundColor = cat.color; card.innerText = p.title; card.draggable = true;
         card.onclick = (e) => { e.stopPropagation(); openModal(p); };
-        card.ondragstart = (e) => { e.dataTransfer.setData('projectId', p.id); };
+        card.ondragstart = e => e.dataTransfer.setData('pid', p.id);
         return card;
     }
 
     async function handleDrop(e, date) {
-        e.preventDefault(); const id = e.dataTransfer.getData('projectId');
-        document.querySelectorAll('.month-cell').forEach(c => c.classList.remove('drag-over'));
-        if (id) { await sb.from('projects').update({ date: date }).eq('id', id); loadData(); }
+        const id = e.dataTransfer.getData('pid');
+        if (id) { await sb.from('projects').update({ date }).eq('id', id); loadData(); }
     }
 
-    function updateThemeIcon() {
-        const theme = document.documentElement.getAttribute('data-theme');
-        const btn = document.getElementById('themeBtn');
-        if(!btn) return;
-        btn.innerHTML = theme === 'dark' ? `<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>` : `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="4.22" x2="19.78" y2="5.64"></line></svg>`;
+    function toggleFilter(name) { activeFilter = (activeFilter === name) ? null : name; render(); }
+    
+    function openModal(p, d) {
+        editingId = p ? p.id : null; selectedDate = p ? p.date : d;
+        document.getElementById('mTitle').value = p ? p.title : '';
+        if (catsData.length > 0) document.getElementById('mCat').value = p ? p.cat : catsData[0].name;
+        document.getElementById('modal').style.display = 'flex';
     }
+    function closeModal() { document.getElementById('modal').style.display = 'none'; }
+
+    async function saveProject() {
+        const title = document.getElementById('mTitle').value, cat = document.getElementById('mCat').value;
+        if (!title) return;
+        const { data: { user } } = await sb.auth.getUser();
+        if (editingId) await sb.from('projects').update({ title, cat }).eq('id', editingId);
+        else await sb.from('projects').insert([{ title, cat, date: selectedDate, user_id: user.id }]);
+        closeModal(); loadData();
+    }
+
+    async function deleteProject() { if(confirm("Видалити проєкт?")) { await sb.from('projects').delete().eq('id', editingId); closeModal(); loadData(); } }
 
     function openCatModal(id) {
-        editingCatId = id; const c = catsData.find(cat => cat.id === id);
-        document.getElementById('catTitle').value = c.name;
-        document.getElementById('catColor').value = c.color;
-        document.getElementById('catModal').style.display = 'flex';
+        editingCatId = id; 
+        const c = catsData.find(cat => cat.id == id);
+        if (c) {
+            document.getElementById('catTitle').value = c.name;
+            document.getElementById('catColor').value = c.color;
+            document.getElementById('catModal').style.display = 'flex';
+        }
     }
     function closeCatModal() { document.getElementById('catModal').style.display = 'none'; }
 
     async function saveCategory() {
         const newName = document.getElementById('catTitle').value.trim();
         const newColor = document.getElementById('catColor').value;
-        if (!newName) return;
-        const oldCat = catsData.find(c => c.id === editingCatId);
+        const oldCat = catsData.find(c => c.id == editingCatId);
+        if (!oldCat || !newName) return;
 
         await sb.from('categories').update({ name: newName, color: newColor }).eq('id', editingCatId);
         if (oldCat.name !== newName) {
@@ -305,8 +266,8 @@
     }
 
     async function deleteCategory() {
-        if (catsData.length <= 1) return alert("Мінімум одна категорія має бути");
-        if (confirm(`Видалити категорію? Проєкти втратять колір.`)) {
+        if (catsData.length <= 1) return alert("Не можна видалити останню категорію");
+        if (confirm("Видалити категорію? Проєкти залишаться, але втратять колір.")) {
             await sb.from('categories').delete().eq('id', editingCatId);
             closeCatModal(); loadData();
         }
@@ -321,39 +282,16 @@
         }
     }
 
-    function openModal(p, date) {
-        editingId = p ? p.id : null; selectedDate = p ? p.date : date;
-        document.getElementById('mTitle').value = p ? p.title : '';
-        document.getElementById('mCat').value = p ? p.cat : (catsData[0]?.name || '');
-        document.getElementById('mDateDisplay').innerText = selectedDate || 'В беклозі';
-        document.getElementById('modal').style.display = 'flex';
-    }
-    function closeModal() { document.getElementById('modal').style.display = 'none'; }
-    async function saveProject() {
-        const title = document.getElementById('mTitle').value, cat = document.getElementById('mCat').value;
-        if(!title) return;
-        const { data: { user } } = await sb.auth.getUser();
-        if(editingId) await sb.from('projects').update({title, cat, date: selectedDate}).eq('id', editingId);
-        else await sb.from('projects').insert([{title, cat, date: selectedDate, user_id: user.id}]);
-        closeModal(); loadData();
-    }
-    async function deleteProject() { if(confirm("Видалити проєкт?")) { await sb.from('projects').delete().eq('id', editingId); closeModal(); loadData(); } }
-    function updateStartYear(val) { startYear = parseInt(val); localStorage.setItem('sc-start-year', startYear); render(); }
-    
     function toggleMenu() { 
-        const isMobile = window.innerWidth <= 768;
-        if(isMobile) {
-            document.body.classList.toggle('sidebar-open');
-        } else {
-            document.body.classList.toggle('sidebar-hidden');
-        }
+        document.body.classList.toggle('sidebar-open');
+        document.body.classList.toggle('sidebar-hidden');
     }
-
     function toggleTheme() {
-        const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', next);
-        localStorage.setItem('sc-theme', next); updateThemeIcon();
+        const t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', t);
+        localStorage.setItem('sc-theme', t);
     }
+    function updateStartYear(v) { startYear = parseInt(v); localStorage.setItem('sc-start-year', v); render(); }
 
     document.documentElement.setAttribute('data-theme', localStorage.getItem('sc-theme') || 'dark');
 </script>
