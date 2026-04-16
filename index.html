@@ -1,274 +1,752 @@
 <!DOCTYPE html>
-<html lang="uk" data-theme="dark">
+<html lang="uk">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Planner - Stable</title>
-    
-    <script src="https://cdn.jsdelivr.net/npm/drag-drop-touch-polyfill@1.5.0/DragDropTouch.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;800&family=Outfit:wght@600&display=swap" rel="stylesheet">
-    
-    <style>
-        :root[data-theme="dark"] {
-            --bg: #0a0a0a; --surface: #141414; --border: #262626; --text: #f0f0f0;
-            --muted: #737373; --accent: #4a9e42; --sidebar: #0d0d0d;
-        }
-        :root[data-theme="light"] {
-            --bg: #fdfdfd; --surface: #ffffff; --border: #e5e5e5; --text: #171717;
-            --muted: #8a8a8a; --accent: #34c759; --sidebar: #f8f8f8;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Scanner Planner - Pro</title>
 
-        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; width: 100vw; overflow: hidden; }
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Cormorant+Garamond:ital,wght@0,600;1,400;1,600&display=swap" rel="stylesheet">
 
-        /* SIDEBAR ЛОГІКА */
-        #sidebar { 
-            width: 280px; min-width: 280px; background: var(--sidebar); border-right: 1px solid var(--border); 
-            display: flex; flex-direction: column; transition: 0.3s ease; z-index: 2000;
-        }
-        
-        .sidebar-hidden #sidebar { margin-left: -280px; }
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/drag-drop-touch-polyfill@1.5.0/DragDropTouch.min.js"></script>
 
-        @media (max-width: 768px) {
-            #sidebar { position: fixed; height: 100%; left: -280px; margin-left: 0 !important; }
-            body.sidebar-open #sidebar { left: 0; box-shadow: 20px 0 60px rgba(0,0,0,0.6); }
-            .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1500; }
-            body.sidebar-open .overlay { display: block; }
-        }
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-        main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
-        .top-header { padding: 10px 1.2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); background: var(--bg); }
-        
-        /* КАТЕГОРІЇ */
-        #cat-list { display: flex; gap: 12px; padding: 10px 1.2rem; overflow-x: auto; border-bottom: 1px solid var(--border); background: var(--surface); scrollbar-width: none; }
-        .cat-item { cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 0.7rem; font-weight: 800; }
+:root {
+  --bg: #080909;
+  --surface: #0f1110;
+  --surface2: #141614;
+  --border: #1c1f1d;
+  --border2: #242724;
+  --text: #dde3dc;
+  --text-dim: #7a8879;
+  --text-faint: #3a413a;
+  --accent: #3d7a36;
+  --accent-hi: #52a849;
+  --accent-glow: rgba(82,168,73,0.12);
+  --sidebar-w: 260px;
+  --danger: #9b3535;
+  --danger-hi: #c44444;
+}
 
-        /* КАЛЕНДАР */
-        #calendar-scroll { flex: 1; overflow-y: auto; padding: 10px 15px 80px; -webkit-overflow-scrolling: touch; }
-        .year-section { margin-top: 15px; }
-        .year-header { color: var(--accent); cursor: pointer; font-size: 1.2rem; margin-bottom: 10px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
-        .year-header::before { content: '▾'; transition: 0.2s; }
-        .year-section.closed .year-header::before { transform: rotate(-90deg); }
-        .year-section.closed .year-row { display: none; }
+html, body { height: 100%; overflow: hidden; }
 
-        .year-row { display: grid; grid-template-columns: repeat(12, 1fr); gap: 6px; }
-        @media (max-width: 1024px) { .year-row { grid-template-columns: repeat(6, 1fr); } }
-        @media (max-width: 600px) { .year-row { grid-template-columns: repeat(4, 1fr); } }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  display: flex;
+  height: 100vh;
+}
 
-        .month-cell { background: var(--surface); border: 1px solid var(--border); aspect-ratio: 1; border-radius: 6px; position: relative; padding: 4px; min-height: 60px; }
-        .month-label { font-size: 0.6rem; color: var(--muted); position: absolute; top: 3px; right: 5px; font-weight: 800; }
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
-        /* КАРТКИ */
-        .card { 
-            color: #fff; padding: 6px; border-radius: 4px; font-size: 0.65rem; margin-top: 15px; 
-            cursor: grab; font-weight: 800; position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            border: 1px solid rgba(255,255,255,0.1); touch-action: none; 
-        }
+/* ── SIDEBAR ── */
+#sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  transition: margin-left 0.25s cubic-bezier(.4,0,.2,1);
+  z-index: 200;
+  overflow: hidden;
+}
 
-        /* MODAL */
-        #modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 3000; padding: 20px; }
-        .modal-box { background: var(--surface); padding: 1.5rem; border-radius: 12px; width: 100%; max-width: 320px; border: 1px solid var(--border); }
-        input, select { width: 100%; padding: 12px; margin-bottom: 12px; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-family: inherit; font-weight: 600; box-sizing: border-box; }
-        
-        .btn-ui { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: 800; }
-    </style>
+body.sidebar-hidden #sidebar { margin-left: calc(-1 * var(--sidebar-w)); }
+
+@media (max-width: 720px) {
+  #sidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    margin-left: calc(-1 * var(--sidebar-w)) !important;
+    box-shadow: none;
+    transition: margin-left 0.25s cubic-bezier(.4,0,.2,1), box-shadow 0.25s;
+  }
+  body.sidebar-open #sidebar {
+    margin-left: 0 !important;
+    box-shadow: 30px 0 80px rgba(0,0,0,0.8);
+  }
+}
+
+.sidebar-head {
+  padding: 1.4rem 1.2rem 1rem;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.sidebar-head .logo {
+  font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.25rem; color: var(--text); letter-spacing: 0.01em;
+}
+
+.sidebar-head .logo em { color: var(--accent-hi); font-style: normal; }
+
+.icon-btn {
+  background: none; border: 1px solid var(--border2); color: var(--text-dim);
+  width: 30px; height: 30px; border-radius: 4px; cursor: pointer; font-size: 0.85rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: color 0.15s, border-color 0.15s, background 0.15s; flex-shrink: 0;
+}
+.icon-btn:hover { color: var(--text); border-color: var(--text-dim); }
+
+.add-btn {
+  margin: 1rem 1.2rem; background: var(--accent); color: #fff; border: none;
+  padding: 10px 14px; border-radius: 5px; font-family: 'DM Mono', monospace;
+  font-size: 0.72rem; letter-spacing: 0.06em; cursor: pointer; transition: background 0.15s;
+  width: calc(100% - 2.4rem); text-align: left;
+}
+.add-btn:hover { background: var(--accent-hi); }
+
+.sidebar-section-label {
+  font-size: 0.58rem; color: var(--text-faint); letter-spacing: 0.15em;
+  text-transform: uppercase; padding: 0 1.2rem 0.6rem;
+}
+
+/* ── BACKLOG ── */
+#backlog-zone { flex: 1; overflow-y: auto; padding: 0 0.8rem 1rem; }
+#backlog-zone.drag-over { background: var(--accent-glow); }
+
+.backlog-empty {
+  font-size: 0.62rem; color: var(--text-faint); text-align: center;
+  padding: 2rem 1rem; font-style: italic; font-family: 'Cormorant Garamond', serif; line-height: 1.6;
+}
+
+/* ── CATEGORIES BAR ── */
+#cats-bar {
+  display: flex; gap: 6px; padding: 8px 1rem; overflow-x: auto;
+  border-bottom: 1px solid var(--border); background: var(--surface); scrollbar-width: none; align-items: center; flex-shrink: 0;
+}
+#cats-bar::-webkit-scrollbar { display: none; }
+
+.cat-pill {
+  display: flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 3px;
+  border: 1px solid var(--border2); background: transparent; color: var(--text-dim);
+  font-family: 'DM Mono', monospace; font-size: 0.62rem; cursor: pointer; white-space: nowrap; transition: all 0.12s; letter-spacing: 0.04em;
+}
+.cat-pill:hover { color: var(--text); border-color: var(--text-dim); }
+.cat-pill.active { color: var(--text); border-color: var(--accent-hi); background: var(--accent-glow); }
+.cat-pill .cdot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+.cat-reset, .add-cat-btn {
+  padding: 4px 8px; border-radius: 3px; border: none; background: none; color: var(--text-faint);
+  font-size: 0.6rem; cursor: pointer; font-family: 'DM Mono', monospace; transition: color 0.12s; white-space: nowrap;
+}
+.cat-reset:hover { color: var(--text-dim); }
+.add-cat-btn { border: 1px dashed var(--border2); margin-left: auto; flex-shrink: 0; }
+.add-cat-btn:hover { color: var(--text-dim); border-color: var(--text-dim); }
+
+/* ── MAIN ── */
+main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+
+.top-bar {
+  padding: 10px 1rem; display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--border); background: var(--bg); flex-shrink: 0;
+}
+.top-bar .wordmark { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.1rem; color: var(--text-dim); }
+.top-bar .wordmark strong { color: var(--accent-hi); font-style: normal; font-weight: 600; }
+.top-bar-right { margin-left: auto; display: flex; gap: 6px; }
+
+/* ── CALENDAR ── */
+#cal-scroll { flex: 1; overflow-y: auto; padding: 12px 14px 80px; -webkit-overflow-scrolling: touch; }
+
+.year-block { margin-bottom: 18px; animation: fadeUp 0.35s ease both; }
+.year-block:nth-child(1) { animation-delay: 0.03s; }
+.year-block:nth-child(2) { animation-delay: 0.07s; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.year-toggle {
+  display: flex; align-items: center; gap: 8px; font-size: 0.68rem; letter-spacing: 0.12em;
+  color: var(--accent-hi); cursor: pointer; margin-bottom: 8px; user-select: none; width: max-content;
+}
+.year-toggle .arr { transition: transform 0.2s; display: inline-block; font-size: 0.6rem; }
+.year-block.closed .arr { transform: rotate(-90deg); }
+.year-toggle .yr-num { font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; font-weight: 600; line-height: 1; color: var(--text); }
+.year-toggle .yr-num.now { color: var(--accent-hi); }
+
+.month-header { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; margin-bottom: 3px; }
+@media (max-width: 900px) { .month-header { grid-template-columns: repeat(6, 1fr); } }
+@media (max-width: 500px) { .month-header { grid-template-columns: repeat(4, 1fr); } }
+
+.month-header span { font-size: 0.5rem; color: var(--text-faint); text-align: center; letter-spacing: 0.08em; text-transform: uppercase; }
+
+.year-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; }
+@media (max-width: 900px) { .year-grid { grid-template-columns: repeat(6, 1fr); } }
+@media (max-width: 500px) { .year-grid { grid-template-columns: repeat(4, 1fr); } }
+
+.year-block.closed .year-grid, .year-block.closed .month-header { display: none; }
+
+/* ── MONTH CELL ── */
+.month-cell {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
+  min-height: 64px; position: relative; padding: 20px 4px 4px; display: flex; flex-direction: column; gap: 4px; transition: border-color 0.12s;
+}
+.month-cell:hover { border-color: var(--border2); }
+.month-cell.drag-over { border-color: var(--accent-hi); background: var(--accent-glow); }
+.month-cell.past { opacity: 0.38; }
+.month-cell.now { border-color: var(--accent); box-shadow: inset 0 0 10px var(--accent-glow), 0 0 0 1px var(--accent); }
+
+.mcell-label { position: absolute; top: 3px; right: 5px; font-size: 0.5rem; color: var(--text-faint); letter-spacing: 0.08em; text-transform: uppercase; }
+.month-cell.now .mcell-label { color: var(--accent-hi); }
+
+/* ── CARD (Оновлено для максимального акценту кольором) ── */
+.card {
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 0.65rem;
+  line-height: 1.3;
+  cursor: grab;
+  font-family: 'DM Mono', monospace;
+  font-weight: 500;
+  color: #ffffff !important;
+  border: 1px solid rgba(255,255,255,0.15);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+  transition: opacity 0.12s, transform 0.12s, box-shadow 0.12s;
+  position: relative;
+  word-break: break-word;
+  touch-action: none;
+  user-select: none;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+}
+.card:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.5); border-color: rgba(255,255,255,0.3); }
+.card:active { cursor: grabbing; opacity: 0.75; }
+.card.dragging { opacity: 0.4; transform: scale(0.96); }
+
+.card-text { pointer-events: none; }
+.card-cat {
+  font-size: 0.48rem; opacity: 0.8; margin-top: 3px; text-transform: uppercase;
+  letter-spacing: 0.08em; pointer-events: none;
+}
+#backlog-zone .card { margin-bottom: 6px; }
+
+/* ── OVERLAY & MODALS ── */
+#overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 150; backdrop-filter: blur(2px); }
+body.sidebar-open #overlay { display: block; }
+
+#modal, #confirm-modal, #cat-prompt {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); align-items: center; justify-content: center; z-index: 500; padding: 20px; backdrop-filter: blur(6px);
+}
+#modal.open, #confirm-modal.open, #cat-prompt.open { display: flex; }
+
+.modal-box, .confirm-box, .cat-prompt-box {
+  background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; padding: 1.6rem;
+  width: 100%; max-width: 340px; box-shadow: 0 30px 80px rgba(0,0,0,0.7); animation: modalIn 0.2s ease;
+}
+@keyframes modalIn { from { opacity: 0; transform: translateY(12px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+.modal-title { font-family: 'Cormorant Garamond', serif; font-size: 1.15rem; font-style: italic; margin-bottom: 1.2rem; color: var(--text); }
+.field-label { font-size: 0.58rem; color: var(--text-faint); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 5px; display: block; }
+.modal-input {
+  width: 100%; background: var(--bg); border: 1px solid var(--border2); color: var(--text); font-family: 'DM Mono', monospace;
+  font-size: 0.78rem; padding: 10px 12px; border-radius: 5px; outline: none; margin-bottom: 14px; transition: border-color 0.15s; appearance: none;
+}
+.modal-input:focus { border-color: var(--accent-hi); }
+.cat-select-row { display: flex; gap: 6px; margin-bottom: 14px; align-items: stretch; }
+.cat-select-row .modal-input { margin-bottom: 0; flex: 1; }
+.cat-select-row .icon-btn { height: auto; flex-shrink: 0; }
+.modal-actions { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+
+.btn-primary { background: var(--accent); color: #fff; border: none; padding: 11px; border-radius: 5px; font-family: 'DM Mono', monospace; font-size: 0.7rem; letter-spacing: 0.06em; cursor: pointer; transition: background 0.15s; }
+.btn-primary:hover { background: var(--accent-hi); }
+.btn-danger { background: none; border: 1px solid var(--danger); color: var(--danger-hi); padding: 9px; border-radius: 5px; font-family: 'DM Mono', monospace; font-size: 0.68rem; letter-spacing: 0.06em; cursor: pointer; display: none; }
+.btn-danger:hover { background: rgba(155,53,53,0.15); }
+.btn-danger.visible { display: block; }
+.btn-ghost { background: none; border: 1px solid var(--border2); color: var(--text-dim); padding: 9px; border-radius: 5px; font-family: 'DM Mono', monospace; font-size: 0.68rem; cursor: pointer; transition: color 0.15s; }
+.btn-ghost:hover { color: var(--text); }
+
+.confirm-box { border-color: var(--danger); text-align: center; max-width: 280px; }
+.confirm-box p { font-size: 0.78rem; color: var(--text-dim); margin-bottom: 1.2rem; line-height: 1.5; }
+.confirm-box .cname { font-family: 'Cormorant Garamond', serif; font-style: italic; color: var(--text); font-size: 1rem; }
+.confirm-actions { display: flex; gap: 8px; }
+.confirm-actions button { flex: 1; }
+
+.cat-prompt-box h4 { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1rem; margin-bottom: 1rem; }
+.color-swatches { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.12s, border-color 0.12s; }
+.swatch:hover { transform: scale(1.2); }
+.swatch.picked { border-color: #fff; transform: scale(1.15); }
+
+/* ── STATS ── */
+.bottom-stat {
+  padding: 6px 1rem; border-top: 1px solid var(--border); font-size: 0.56rem; color: var(--text-faint);
+  letter-spacing: 0.08em; display: flex; gap: 1.5rem; flex-shrink: 0; background: var(--bg);
+}
+.bottom-stat span { color: var(--text-dim); }
+</style>
 </head>
 <body class="sidebar-hidden">
 
-<div class="overlay" onclick="toggleMenu()"></div>
+<div id="overlay" onclick="closeSidebar()"></div>
 
 <aside id="sidebar">
-    <div style="padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-weight: 800;">BACKLOG</span>
-        <button onclick="toggleMenu()" style="background:none; border:none; color:var(--text); font-size:1.5rem;">✕</button>
-    </div>
-    <div style="padding: 1rem;">
-        <button onclick="openModal()" style="width:100%; background:var(--accent); color:white; border:none; padding:12px; border-radius:8px; font-weight:800; cursor:pointer;">+ НОВА ІДЕЯ</button>
-    </div>
-    <div id="backlog" style="flex:1; overflow-y:auto; padding: 0 1rem;" ondragover="event.preventDefault()" ondrop="drop(event, 'backlog')"></div>
+  <div class="sidebar-head">
+    <div class="logo">Scanner<em>Planner</em></div>
+    <button class="icon-btn" onclick="closeSidebar()" title="Закрити">✕</button>
+  </div>
+  <button class="add-btn" onclick="openNewModal()">+ нова ідея</button>
+  <div class="sidebar-section-label">Backlog</div>
+  <div id="backlog-zone" ondragover="onDragOver(event,'backlog')" ondragleave="onDragLeave(event)" ondrop="onDrop(event,'backlog')">
+    <div class="backlog-empty" id="backlog-empty">Ідеї без дати.<br>Перетягни сюди — або на місяць.</div>
+  </div>
 </aside>
 
 <main>
-    <header class="top-header">
-        <div style="display:flex; gap:10px; align-items:center;">
-            <button class="btn-ui" onclick="toggleMenu()">☰</button>
-            <h1 style="font-family:'Outfit'; font-size:1.1rem; margin:0;">Scanner<span style="color:var(--accent)">Planner</span></h1>
-        </div>
-        <div style="display:flex; gap:8px;">
-            <button class="btn-ui" onclick="toggleTheme()">🌗</button>
-            <button class="btn-ui" style="color:#ff5252;" onclick="logout()">Вихід</button>
-        </div>
-    </header>
-    <div id="cat-list"></div>
-    <div id="calendar-scroll"></div>
+  <div class="top-bar">
+    <button class="icon-btn" onclick="toggleSidebar()" title="Бекlog">☰</button>
+    <div class="wordmark">Scanner<strong>Planner</strong></div>
+    <div class="top-bar-right">
+      <button class="icon-btn" onclick="scrollToNow()" title="Сьогодні">◎</button>
+      <button class="icon-btn" style="color: var(--danger-hi); border-color: rgba(196, 68, 68, 0.3);" onclick="logout()" title="Вихід">⏻</button>
+    </div>
+  </div>
+  <div id="cats-bar"></div>
+  <div id="cal-scroll"></div>
+  <div class="bottom-stat" id="bottom-stat"></div>
 </main>
 
 <div id="modal">
-    <div class="modal-box">
-        <h3 id="modal-title" style="margin-top:0;">Проєкт</h3>
-        <input type="text" id="mTitle" placeholder="Назва">
-        <div style="display:flex; gap:8px; margin-bottom:12px;">
-            <select id="mCat" style="margin:0; flex:1;"></select>
-            <button class="btn-ui" onclick="addNewCategory()">+</button>
-        </div>
-        <button onclick="saveProject()" style="width:100%; background:var(--accent); color:white; border:none; padding:12px; border-radius:8px; font-weight:800; cursor:pointer;">ЗБЕРЕГТИ</button>
-        <button id="deleteBtn" onclick="deleteProject()" style="width:100%; background:none; border:1px solid #ff4d4d; color:#ff4d4d; padding:10px; border-radius:8px; margin-top:8px; display:none; font-weight:800; cursor:pointer;">ВИДАЛИТИ</button>
-        <button class="btn-ui" style="width:100%; border:none; margin-top:5px; opacity:0.5;" onclick="closeModal()">Скасувати</button>
+  <div class="modal-box">
+    <div class="modal-title" id="modal-title">Нова ідея</div>
+    <label class="field-label">Назва</label>
+    <input type="text" id="m-title" class="modal-input" placeholder="наприклад: курс зварювання" maxlength="80">
+    <label class="field-label">Категорія</label>
+    <div class="cat-select-row">
+      <select id="m-cat" class="modal-input"></select>
+      <button class="icon-btn" onclick="openCatPrompt()" title="Нова категорія">+</button>
     </div>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="saveProject()">Зберегти</button>
+      <button class="btn-danger" id="btn-delete" onclick="confirmDelete()">Видалити проєкт</button>
+      <button class="btn-ghost" onclick="closeModal()">Скасувати</button>
+    </div>
+  </div>
+</div>
+
+<div id="confirm-modal">
+  <div class="confirm-box">
+    <p>Видалити проєкт?<br><span class="cname" id="confirm-name"></span></p>
+    <div class="confirm-actions">
+      <button class="btn-ghost" onclick="closeConfirm()">Ні</button>
+      <button class="btn-danger visible" style="flex:1" onclick="doDelete()">Так, видалити</button>
+    </div>
+  </div>
+</div>
+
+<div id="cat-prompt">
+  <div class="cat-prompt-box">
+    <h4>Нова категорія</h4>
+    <label class="field-label">Назва</label>
+    <input type="text" id="cp-name" class="modal-input" placeholder="Моя категорія" maxlength="30">
+    <label class="field-label">Колір</label>
+    <div class="color-swatches" id="color-swatches"></div>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="saveCat()">Додати</button>
+      <button class="btn-ghost" onclick="closeCatPrompt()">Скасувати</button>
+    </div>
+  </div>
 </div>
 
 <script>
-    // ПАРАМЕТРИ ПІДКЛЮЧЕННЯ
-    const SB_URL = "https://mlkdphygsdfcanztbtez.supabase.co";
-    const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2RwaHlnc2RmY2FuenRidGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyODAwNTAsImV4cCI6MjA5MTg1NjA1MH0.PfjkZXua-9tp2lxVsBD3YBUNpx_USmMha5BQBZcGLFc"; 
-    const sb = supabase.createClient(SB_URL, SB_KEY);
+// ─── SUPABASE ІНІЦІАЛІЗАЦІЯ ──────────────────────────────────
+const SB_URL = "https://mlkdphygsdfcanztbtez.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2RwaHlnc2RmY2FuenRidGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyODAwNTAsImV4cCI6MjA5MTg1NjA1MH0.PfjkZXua-9tp2lxVsBD3YBUNpx_USmMha5BQBZcGLFc"; 
+const sb = supabase.createClient(SB_URL, SB_KEY);
 
-    let projects = [];
-    let editingId = null;
-    let categories = JSON.parse(localStorage.getItem('sc-cats')) || ['Навчання', 'Подорожі', 'Творчість', 'Кар\'єра'];
-    const catColors = JSON.parse(localStorage.getItem('sc-colors')) || {
-        'Навчання': '#4a9e42', 'Подорожі': '#e07b39', 'Творчість': '#c45c8a', 'Кар\'єра': '#c9a227'
-    };
+// ─── CONSTANTS ────────────────────────────────────────────────
+const MONTHS_SHORT = ['СІЧ','ЛЮТ','БЕР','КВІ','ТРА','ЧЕР','ЛИП','СЕР','ВЕР','ЖОВ','ЛИС','ГРУ'];
+const CATS_KEY = 'scp_cats_v2_1';
 
-    function toggleMenu() {
-        if (window.innerWidth <= 768) document.body.classList.toggle('sidebar-open');
-        else document.body.classList.toggle('sidebar-hidden');
-    }
+const PRESET_COLORS = [
+  '#3d7a36','#52a849','#e07b39','#5b8dd9','#c45c8a',
+  '#c9a227','#6b8f71','#8b5e8b','#3a8fa0','#b05252',
+  '#7a6e42','#4a7aa0'
+];
 
-    function toggleTheme() {
-        const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', next);
-        localStorage.setItem('sc-theme', next);
-    }
+// ─── STATE ────────────────────────────────────────────────────
+let projects  = [];   // Дані з Supabase
+let cats      = [];   // Локальні налаштування кольорів
+let editingId = null;
+let filterCatName = null;
+let dragId    = null;
+let pickedColor = PRESET_COLORS[0];
 
-    async function drop(e, dateKey) {
-        e.preventDefault();
-        const id = e.dataTransfer.getData("text");
-        if(!id) return;
-        const newDate = dateKey === 'backlog' ? null : dateKey;
-        await sb.from('projects').update({ date: newDate }).eq('id', id);
-        loadData();
-    }
+const NOW = new Date();
+const THIS_YEAR  = NOW.getFullYear();
+const THIS_MONTH = NOW.getMonth(); // 0-based
+const START_YEAR = THIS_YEAR;
 
-    async function loadData() {
-        const { data, error } = await sb.from('projects').select('*');
-        if(error) console.error(error);
-        projects = data || [];
-        render();
-    }
+// ─── AUTH & DATA LOADING ─────────────────────────────────────
+sb.auth.onAuthStateChange((event, session) => {
+  if (session) {
+    loadCatsLocally();
+    fetchProjects();
+  } else {
+    // Якщо треба, тут можна робити редирект на сторінку логіну
+  }
+});
 
-    function render(filter = null) {
-        const list = document.getElementById('cat-list');
-        const select = document.getElementById('mCat');
-        list.innerHTML = ''; select.innerHTML = '';
-        categories.forEach(c => {
-            const col = catColors[c] || '#888';
-            list.innerHTML += `<div class="cat-item" onclick="render('${c}')"><span style="width:8px;height:8px;border-radius:50%;background:${col}"></span>${c}</div>`;
-            select.innerHTML += `<option value="${c}">${c}</option>`;
-        });
-        list.innerHTML += `<div class="cat-item" style="opacity:0.5" onclick="render()">✕ Скинути</div>`;
+function logout() {
+  sb.auth.signOut().then(() => location.reload());
+}
 
-        const cont = document.getElementById('calendar-scroll');
-        cont.innerHTML = '';
-        const months = ['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
-
-        for (let y = 0; y < 6; y++) {
-            const year = 2026 + y;
-            const sec = document.createElement('div');
-            sec.className = 'year-section';
-            sec.innerHTML = `<div class="year-header" onclick="this.parentElement.classList.toggle('closed')">${year}</div>`;
-            const row = document.createElement('div');
-            row.className = 'year-row';
-            for (let m = 1; m <= 12; m++) {
-                const dKey = `${year}-${String(m).padStart(2,'0')}`;
-                const cell = document.createElement('div');
-                cell.className = 'month-cell';
-                cell.innerHTML = `<div class="month-label">${months[m-1]}</div>`;
-                cell.ondragover = e => e.preventDefault();
-                cell.ondrop = (e) => drop(e, dKey);
-                projects.filter(p => p.date === dKey).forEach(p => {
-                    if (!filter || p.cat === filter) cell.appendChild(createCard(p));
-                });
-                row.appendChild(cell);
-            }
-            sec.appendChild(row);
-            cont.appendChild(sec);
-        }
-
-        const bLog = document.getElementById('backlog');
-        bLog.innerHTML = '';
-        projects.filter(p => !p.date).forEach(p => {
-            if (!filter || p.cat === filter) bLog.appendChild(createCard(p));
-        });
-    }
-
-    function createCard(p) {
-        const el = document.createElement('div');
-        el.className = 'card';
-        el.draggable = true;
-        el.style.backgroundColor = catColors[p.cat] || '#888';
-        el.innerText = p.title;
-        el.ondragstart = (e) => e.dataTransfer.setData("text", p.id);
-        el.onclick = (e) => { e.stopPropagation(); openEditModal(p); };
-        return el;
-    }
-
-    function openModal() {
-        editingId = null;
-        document.getElementById('modal-title').innerText = "Нова ідея";
-        document.getElementById('mTitle').value = '';
-        document.getElementById('deleteBtn').style.display = 'none';
-        document.getElementById('modal').style.display = 'flex';
-    }
-
-    function openEditModal(p) {
-        editingId = p.id;
-        document.getElementById('modal-title').innerText = "Редагувати";
-        document.getElementById('mTitle').value = p.title;
-        document.getElementById('mCat').value = p.cat;
-        document.getElementById('deleteBtn').style.display = 'block';
-        document.getElementById('modal').style.display = 'flex';
-    }
-
-    function closeModal() { document.getElementById('modal').style.display = 'none'; }
-
-    async function saveProject() {
-        const title = document.getElementById('mTitle').value;
-        const cat = document.getElementById('mCat').value;
-        if(!title) return;
-        
-        const { data: { user } } = await sb.auth.getUser();
-        if (editingId) await sb.from('projects').update({ title, cat }).eq('id', editingId);
-        else await sb.from('projects').insert([{ title, cat, user_id: user.id }]);
-        
-        closeModal(); loadData();
-    }
-
-    async function deleteProject() {
-        if (confirm("Видалити?")) {
-            await sb.from('projects').delete().eq('id', editingId);
-            closeModal(); loadData();
-        }
-    }
-
-    function logout() { sb.auth.signOut().then(() => location.reload()); }
-
-    function addNewCategory() {
-        const n = prompt("Назва категорії:");
-        if (n) {
-            categories.push(n);
-            catColors[n] = `hsl(${Math.random() * 360}, 60%, 45%)`;
-            localStorage.setItem('sc-cats', JSON.stringify(categories));
-            localStorage.setItem('sc-colors', JSON.stringify(catColors));
-            render();
-        }
-    }
-
-    // Ініціалізація без зайвих перезавантажень
-    sb.auth.onAuthStateChange((event, session) => {
-        if (session) loadData();
-        else console.log("Користувач не авторизований");
+async function fetchProjects() {
+  const { data, error } = await sb.from('projects').select('*');
+  if (!error) {
+    projects = data || [];
+    
+    // Авто-відновлення категорій, якщо ви зайшли з нового пристрою
+    let changed = false;
+    projects.forEach(p => {
+      if (p.cat && !cats.find(c => c.name === p.cat)) {
+        cats.push({ name: p.cat, color: PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)] });
+        changed = true;
+      }
     });
+    if(changed) saveCatsLocally();
+    
+    render();
+  }
+}
+
+function loadCatsLocally() {
+  try {
+    const c = localStorage.getItem(CATS_KEY);
+    cats = c ? JSON.parse(c) : defaultCats();
+  } catch { cats = defaultCats(); }
+}
+
+function saveCatsLocally() {
+  localStorage.setItem(CATS_KEY, JSON.stringify(cats));
+}
+
+function defaultCats() {
+  return [
+    { name: 'Навчання',  color: '#3d7a36' },
+    { name: 'Подорожі',  color: '#e07b39' },
+    { name: 'Творчість', color: '#c45c8a' },
+    { name: 'Кар\'єра', color: '#c9a227' }
+  ];
+}
+
+function getCatColor(catName) {
+  const c = cats.find(x => x.name === catName);
+  return c ? c.color : '#555555';
+}
+
+// ─── RENDER ──────────────────────────────────────────────────
+function render() {
+  renderCatsBar();
+  renderCalendar();
+  renderBacklog();
+  renderStats();
+  renderModalSelect();
+}
+
+function renderCatsBar() {
+  const bar = document.getElementById('cats-bar');
+  bar.innerHTML = '';
+
+  cats.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'cat-pill' + (filterCatName === cat.name ? ' active' : '');
+    const dot = document.createElement('span');
+    dot.className = 'cdot';
+    dot.style.background = cat.color;
+    btn.appendChild(dot);
+    btn.appendChild(document.createTextNode(cat.name));
+    btn.addEventListener('click', () => {
+      filterCatName = filterCatName === cat.name ? null : cat.name;
+      render();
+    });
+    bar.appendChild(btn);
+  });
+
+  if (filterCatName) {
+    const rst = document.createElement('button');
+    rst.className = 'cat-reset';
+    rst.textContent = '✕ скинути';
+    rst.addEventListener('click', () => { filterCatName = null; render(); });
+    bar.appendChild(rst);
+  }
+
+  const addC = document.createElement('button');
+  addC.className = 'add-cat-btn';
+  addC.textContent = '+ категорія';
+  addC.addEventListener('click', openCatPrompt);
+  bar.appendChild(addC);
+}
+
+function renderCalendar() {
+  const scroll = document.getElementById('cal-scroll');
+  scroll.innerHTML = '';
+
+  for (let y = 0; y < 6; y++) {
+    const year = START_YEAR + y;
+    const block = document.createElement('div');
+    block.className = 'year-block';
+    block.id = `year-${year}`;
+
+    const toggle = document.createElement('div');
+    toggle.className = 'year-toggle';
+    toggle.innerHTML = `<span class="arr">▾</span><span class="yr-num${year === THIS_YEAR ? ' now' : ''}">${year}</span>`;
+    toggle.addEventListener('click', () => block.classList.toggle('closed'));
+    block.appendChild(toggle);
+
+    const mh = document.createElement('div');
+    mh.className = 'month-header';
+    MONTHS_SHORT.forEach(m => {
+      const s = document.createElement('span');
+      s.textContent = m;
+      mh.appendChild(s);
+    });
+    block.appendChild(mh);
+
+    const grid = document.createElement('div');
+    grid.className = 'year-grid';
+
+    for (let m = 0; m < 12; m++) {
+      const dateKey = `${year}-${String(m+1).padStart(2,'0')}`;
+      const isPast  = year < THIS_YEAR || (year === THIS_YEAR && m < THIS_MONTH);
+      const isNow   = year === THIS_YEAR && m === THIS_MONTH;
+
+      const cell = document.createElement('div');
+      cell.className = 'month-cell' + (isPast ? ' past' : '') + (isNow ? ' now' : '');
+      cell.dataset.key = dateKey;
+
+      const lbl = document.createElement('div');
+      lbl.className = 'mcell-label';
+      lbl.textContent = MONTHS_SHORT[m];
+      cell.appendChild(lbl);
+
+      cell.addEventListener('dragover',  e => onDragOver(e, dateKey));
+      cell.addEventListener('dragleave', onDragLeave);
+      cell.addEventListener('drop',      e => onDrop(e, dateKey));
+
+      projects
+        .filter(p => p.date === dateKey && (!filterCatName || p.cat === filterCatName))
+        .forEach(p => cell.appendChild(makeCard(p)));
+
+      grid.appendChild(cell);
+    }
+    block.appendChild(grid);
+    scroll.appendChild(block);
+  }
+}
+
+function renderBacklog() {
+  const zone = document.getElementById('backlog-zone');
+  zone.querySelectorAll('.card').forEach(c => c.remove());
+
+  const items = projects.filter(p => !p.date && (!filterCatName || p.cat === filterCatName));
+  const empty = document.getElementById('backlog-empty');
+  empty.style.display = items.length ? 'none' : '';
+
+  items.forEach(p => zone.appendChild(makeCard(p)));
+}
+
+function renderStats() {
+  const bar = document.getElementById('bottom-stat');
+  const total = projects.length;
+  const placed = projects.filter(p => p.date).length;
+  bar.innerHTML = `<div>всього: <span>${total}</span></div><div>заплановано: <span>${placed}</span></div><div>в backlog: <span>${total - placed}</span></div>`;
+}
+
+function renderModalSelect() {
+  const sel = document.getElementById('m-cat');
+  const prev = sel.value;
+  sel.innerHTML = '';
+  cats.forEach(cat => {
+    const opt = document.createElement('option');
+    opt.value = cat.name;
+    opt.textContent = cat.name;
+    sel.appendChild(opt);
+  });
+  if (prev) sel.value = prev;
+}
+
+// ─── CARD ────────────────────────────────────────────────────
+function makeCard(p) {
+  const el = document.createElement('div');
+  el.className = 'card';
+  el.draggable = true;
+  el.dataset.id = p.id;
+  el.style.backgroundColor = getCatColor(p.cat);
+
+  const txt = document.createElement('div');
+  txt.className = 'card-text';
+  txt.textContent = p.title;
+
+  const catLabel = document.createElement('div');
+  catLabel.className = 'card-cat';
+  catLabel.textContent = p.cat;
+
+  el.appendChild(txt);
+  el.appendChild(catLabel);
+
+  el.addEventListener('dragstart', e => {
+    dragId = p.id;
+    el.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', p.id);
+  });
+  el.addEventListener('dragend', () => {
+    el.classList.remove('dragging');
+    dragId = null;
+    document.querySelectorAll('.drag-over').forEach(c => c.classList.remove('drag-over'));
+  });
+  el.addEventListener('click', e => {
+    e.stopPropagation();
+    openEditModal(p);
+  });
+
+  return el;
+}
+
+// ─── DRAG & DROP ─────────────────────────────────────────────
+function onDragOver(e, key) {
+  e.preventDefault(); e.stopPropagation();
+  const el = e.currentTarget;
+  if (!el.classList.contains('drag-over')) {
+    document.querySelectorAll('.drag-over').forEach(c => c.classList.remove('drag-over'));
+    el.classList.add('drag-over');
+  }
+}
+
+function onDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+
+async function onDrop(e, dateKey) {
+  e.preventDefault(); e.stopPropagation();
+  e.currentTarget.classList.remove('drag-over');
+  const id = e.dataTransfer.getData('text/plain') || dragId;
+  if (!id) return;
+  
+  const newDate = dateKey === 'backlog' ? null : dateKey;
+  
+  // Оптимістичне оновлення UI
+  const p = projects.find(x => x.id == id);
+  if(p) p.date = newDate;
+  render();
+  
+  // Оновлення БД
+  await sb.from('projects').update({ date: newDate }).eq('id', id);
+  fetchProjects();
+}
+
+// ─── MODAL (Проєкти) ─────────────────────────────────────────
+function openNewModal() {
+  editingId = null;
+  document.getElementById('modal-title').textContent = 'Нова ідея';
+  document.getElementById('m-title').value = '';
+  document.getElementById('btn-delete').classList.remove('visible');
+  renderModalSelect();
+  document.getElementById('modal').classList.add('open');
+  setTimeout(() => document.getElementById('m-title').focus(), 80);
+}
+
+function openEditModal(p) {
+  editingId = p.id;
+  document.getElementById('modal-title').textContent = 'Редагувати';
+  document.getElementById('m-title').value = p.title;
+  renderModalSelect();
+  document.getElementById('m-cat').value = p.cat;
+  document.getElementById('btn-delete').classList.add('visible');
+  document.getElementById('modal').classList.add('open');
+  setTimeout(() => document.getElementById('m-title').focus(), 80);
+}
+
+function closeModal() { document.getElementById('modal').classList.remove('open'); editingId = null; }
+
+async function saveProject() {
+  const title = document.getElementById('m-title').value.trim();
+  const catName = document.getElementById('m-cat').value;
+  if (!title) { document.getElementById('m-title').focus(); return; }
+
+  const { data: { user } } = await sb.auth.getUser();
+  
+  if (editingId) {
+    await sb.from('projects').update({ title, cat: catName }).eq('id', editingId);
+  } else {
+    await sb.from('projects').insert([{ title, cat: catName, user_id: user.id, date: null }]);
+  }
+
+  closeModal();
+  fetchProjects();
+}
+
+function confirmDelete() {
+  const p = projects.find(x => x.id == editingId);
+  if (!p) return;
+  document.getElementById('confirm-name').textContent = p.title;
+  document.getElementById('confirm-modal').classList.add('open');
+}
+
+function closeConfirm() { document.getElementById('confirm-modal').classList.remove('open'); }
+
+async function doDelete() {
+  await sb.from('projects').delete().eq('id', editingId);
+  closeConfirm();
+  closeModal();
+  fetchProjects();
+}
+
+// ─── CATEGORY PROMPT ─────────────────────────────────────────
+function openCatPrompt() {
+  pickedColor = PRESET_COLORS[0];
+  document.getElementById('cp-name').value = '';
+  buildSwatches();
+  document.getElementById('cat-prompt').classList.add('open');
+  setTimeout(() => document.getElementById('cp-name').focus(), 80);
+}
+
+function closeCatPrompt() { document.getElementById('cat-prompt').classList.remove('open'); }
+
+function buildSwatches() {
+  const cont = document.getElementById('color-swatches');
+  cont.innerHTML = '';
+  PRESET_COLORS.forEach(col => {
+    const sw = document.createElement('div');
+    sw.className = 'swatch' + (col === pickedColor ? ' picked' : '');
+    sw.style.background = col;
+    sw.addEventListener('click', () => {
+      pickedColor = col;
+      cont.querySelectorAll('.swatch').forEach(s => s.classList.remove('picked'));
+      sw.classList.add('picked');
+    });
+    cont.appendChild(sw);
+  });
+}
+
+function saveCat() {
+  const name = document.getElementById('cp-name').value.trim();
+  if (!name) { document.getElementById('cp-name').focus(); return; }
+  
+  // Якщо така вже є, просто оновлюємо колір
+  const existing = cats.find(c => c.name === name);
+  if(existing) existing.color = pickedColor;
+  else cats.push({ name, color: pickedColor });
+  
+  saveCatsLocally();
+  closeCatPrompt();
+  render();
+}
+
+// ─── SIDEBAR & HOTKEYS ───────────────────────────────────────
+function toggleSidebar() { window.innerWidth <= 720 ? document.body.classList.toggle('sidebar-open') : document.body.classList.toggle('sidebar-hidden'); }
+function closeSidebar() { document.body.classList.remove('sidebar-open'); document.body.classList.add('sidebar-hidden'); }
+function scrollToNow() { const el = document.getElementById(`year-${THIS_YEAR}`); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeConfirm(); closeModal(); closeCatPrompt(); }
+  if (e.key === 'Enter' && document.getElementById('modal').classList.contains('open')) saveProject();
+});
 </script>
 </body>
 </html>
