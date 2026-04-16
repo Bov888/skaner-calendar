@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Planner - Auth Fixed</title>
+    <title>Scanner Planner - Stable</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;800&display=swap" rel="stylesheet">
@@ -152,8 +152,8 @@
             <span>Колір:</span>
             <input type="color" id="catColor" style="border:2px solid var(--border); width:48px; height:48px; background:none; cursor:pointer; border-radius:12px; padding:2px;">
         </div>
-        <button onclick="saveCategory()" class="btn-primary">Оновити</button>
-        <button onclick="addCategory()" style="background:none; color:var(--accent); border:none; margin-top:16px; cursor:pointer; width:100%; font-weight:600;">+ Створити нову</button>
+        <button onclick="saveCategory()" class="btn-primary">Зберегти</button>
+        <button id="deleteCatBtn" onclick="deleteCategory()" style="background:none; color:#ef4444; border:none; margin-top:16px; cursor:pointer; width:100%; font-weight:600;">Видалити категорію</button>
     </div>
 </div>
 
@@ -173,28 +173,15 @@
         const email = document.getElementById('auth-email').value;
         const password = document.getElementById('auth-password').value;
         if (!email || !password) return alert("Заповніть пошта/пароль");
-
-        const { data, error } = (type === 'login') 
-            ? await sb.auth.signInWithPassword({ email, password })
-            : await sb.auth.signUp({ email, password });
-
+        const { error } = (type === 'login') ? await sb.auth.signInWithPassword({ email, password }) : await sb.auth.signUp({ email, password });
         if (error) alert(error.message);
-        else if (type === 'signup') alert("Перевірте пошту для підтвердження!");
     }
 
-    async function logout() {
-        await sb.auth.signOut();
-        document.body.classList.remove('logged-in');
-        window.location.reload();
-    }
+    async function logout() { await sb.auth.signOut(); window.location.reload(); }
 
     sb.auth.onAuthStateChange((event, session) => {
-        if (session) {
-            document.body.classList.add('logged-in');
-            loadData();
-        } else {
-            document.body.classList.remove('logged-in');
-        }
+        if (session) { document.body.classList.add('logged-in'); loadData(); }
+        else { document.body.classList.remove('logged-in'); }
     });
 
     async function loadData() {
@@ -203,7 +190,6 @@
         render();
     }
 
-    // UI LOGIC
     function toggleFilter(catName) { activeFilter = (activeFilter === catName) ? null : catName; render(); }
     function toggleYear(year) {
         collapsedYears = collapsedYears.includes(year) ? collapsedYears.filter(y => y !== year) : [...collapsedYears, year];
@@ -217,6 +203,11 @@
         const clist = document.getElementById('cat-list'), mcat = document.getElementById('mCat');
         clist.innerHTML = ''; mcat.innerHTML = '';
         
+        // Кнопка додавання категорії
+        const addCatBtn = document.createElement('div');
+        addCatBtn.className = 'cat-item'; addCatBtn.innerHTML = '<b>+</b>'; addCatBtn.onclick = addCategory;
+        clist.appendChild(addCatBtn);
+
         categories.forEach(c => {
             const item = document.createElement('div');
             item.className = 'cat-item' + (activeFilter === c ? ' active' : '');
@@ -280,9 +271,7 @@
     function updateThemeIcon() {
         const theme = document.documentElement.getAttribute('data-theme');
         const btn = document.getElementById('themeBtn');
-        btn.innerHTML = theme === 'dark' 
-            ? `<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`
-            : `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="4.22" x2="19.78" y2="5.64"></line></svg>`;
+        btn.innerHTML = theme === 'dark' ? `<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>` : `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="4.22" x2="19.78" y2="5.64"></line></svg>`;
     }
 
     function openCatModal(name) {
@@ -291,25 +280,50 @@
         document.getElementById('catModal').style.display = 'flex';
     }
     function closeCatModal() { document.getElementById('catModal').style.display = 'none'; }
-    function saveCategory() {
-        const newName = document.getElementById('catTitle').value;
+
+    async function saveCategory() {
+        const newName = document.getElementById('catTitle').value.trim();
         const newColor = document.getElementById('catColor').value;
         if (!newName) return;
-        categories = categories.map(c => c === editingCatName ? newName : c);
-        delete catColors[editingCatName]; catColors[newName] = newColor;
+
+        // 1. Оновлення в масивах та кольорах
+        if (editingCatName !== newName) {
+            categories = categories.map(c => c === editingCatName ? newName : c);
+            delete catColors[editingCatName];
+            // 2. Оновлення в Supabase (щоб проєкти не зникли)
+            await sb.from('projects').update({ cat: newName }).eq('cat', editingCatName);
+            if (activeFilter === editingCatName) activeFilter = newName;
+        }
+        
+        catColors[newName] = newColor;
         localStorage.setItem('sc-cats-list', JSON.stringify(categories));
         localStorage.setItem('sc-cats-colors', JSON.stringify(catColors));
-        closeCatModal(); render();
+        closeCatModal(); loadData();
     }
+
+    async function deleteCategory() {
+        if (categories.length <= 1) return alert("Не можна видалити останню категорію");
+        if (confirm(`Видалити категорію "${editingCatName}"? Всі проєкти в ній залишаться, але без категорії.`)) {
+            await sb.from('projects').update({ cat: categories.find(c => c !== editingCatName) }).eq('cat', editingCatName);
+            categories = categories.filter(c => c !== editingCatName);
+            delete catColors[editingCatName];
+            localStorage.setItem('sc-cats-list', JSON.stringify(categories));
+            localStorage.setItem('sc-cats-colors', JSON.stringify(catColors));
+            if (activeFilter === editingCatName) activeFilter = null;
+            closeCatModal(); loadData();
+        }
+    }
+
     function addCategory() {
-        const name = "Нова Категорія";
-        if (!categories.includes(name)) {
+        const name = prompt("Назва нової категорії:", "Нова");
+        if (name && !categories.includes(name)) {
             categories.push(name); catColors[name] = "#10b981";
             localStorage.setItem('sc-cats-list', JSON.stringify(categories));
             localStorage.setItem('sc-cats-colors', JSON.stringify(catColors));
-            render(); openCatModal(name);
+            render();
         }
     }
+
     function openModal(p, date) {
         editingId = p ? p.id : null; selectedDate = p ? p.date : date;
         document.getElementById('mTitle').value = p ? p.title : '';
