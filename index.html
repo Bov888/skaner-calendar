@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Planner - Mobile Fixed</title>
+    <title>Scanner Planner - 2026-2031</title>
     
     <script src="https://cdn.jsdelivr.net/npm/drag-drop-touch-polyfill@1.5.0/DragDropTouch.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -47,8 +47,8 @@
         .cat-item { cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 0.7rem; font-weight: 800; }
 
         #calendar-scroll { flex: 1; overflow-y: auto; padding: 10px 15px 80px; -webkit-overflow-scrolling: touch; }
-        .year-section { margin-top: 15px; }
-        .year-header { color: var(--accent); cursor: pointer; font-size: 1.2rem; margin-bottom: 10px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+        .year-section { margin-top: 25px; }
+        .year-header { color: var(--accent); cursor: pointer; font-size: 1.4rem; margin-bottom: 12px; font-weight: 800; display: flex; align-items: center; gap: 10px; font-family: 'Outfit'; }
         .year-header::before { content: '▾'; transition: 0.2s; }
         .year-section.closed .year-header::before { transform: rotate(-90deg); }
         .year-section.closed .year-row { display: none; }
@@ -57,8 +57,8 @@
         @media (max-width: 1024px) { .year-row { grid-template-columns: repeat(6, 1fr); } }
         @media (max-width: 600px) { .year-row { grid-template-columns: repeat(4, 1fr); } }
 
-        .month-cell { background: var(--surface); border: 1px solid var(--border); aspect-ratio: 1; border-radius: 6px; position: relative; padding: 4px; min-height: 60px; }
-        .month-label { font-size: 0.6rem; color: var(--muted); position: absolute; top: 3px; right: 5px; font-weight: 800; }
+        .month-cell { background: var(--surface); border: 1px solid var(--border); aspect-ratio: 1; border-radius: 6px; position: relative; padding: 4px; min-height: 65px; }
+        .month-label { font-size: 0.6rem; color: var(--muted); position: absolute; top: 3px; right: 5px; font-weight: 800; text-transform: uppercase; }
 
         .card { 
             color: #fff; padding: 6px; border-radius: 4px; font-size: 0.65rem; margin-top: 15px; 
@@ -71,8 +71,9 @@
         
         input, select { width: 100%; padding: 12px; margin-bottom: 12px; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-family: inherit; font-weight: 600; box-sizing: border-box; }
         
-        .btn-ui { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+        .btn-ui { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 5px; }
         .btn-accent { background: var(--accent); color: white; border: none; }
+        .btn-logout { border-color: #ff5252; color: #ff5252; font-size: 0.75rem; }
     </style>
 </head>
 <body class="sidebar-hidden">
@@ -92,7 +93,7 @@
 
 <aside id="sidebar">
     <div style="padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-weight: 800;">BACKLOG</span>
+        <span style="font-weight: 800; letter-spacing: 1px;">BACKLOG</span>
         <button onclick="toggleMenu()" style="background:none; border:none; color:var(--text); font-size:1.2rem; cursor:pointer;">✕</button>
     </div>
     <div style="padding: 1rem;">
@@ -109,7 +110,9 @@
         </div>
         <div style="display:flex; gap:8px;">
             <button class="btn-ui" onclick="toggleTheme()">🌗</button>
-            <button class="btn-ui" style="color:#ff5252;" onclick="logout()">⏻</button>
+            <button class="btn-ui btn-logout" onclick="logout()">
+                <span>Вихід</span>
+            </button>
         </div>
     </header>
     <div id="cat-list"></div>
@@ -142,18 +145,14 @@
         'Навчання': '#4a9e42', 'Подорожі': '#e07b39', 'Творчість': '#c45c8a', 'Кар\'єра': '#c9a227'
     };
 
-    // AUTH LOGIC
     async function handleAuth(type) {
         const email = document.getElementById('auth-email').value;
         const password = document.getElementById('auth-pass').value;
         const msg = document.getElementById('auth-msg');
-        
         let result;
         if (type === 'signup') result = await sb.auth.signUp({ email, password });
         else result = await sb.auth.signInWithPassword({ email, password });
-
         if (result.error) msg.innerText = result.error.message;
-        else if (type === 'signup') msg.style.color = 'var(--accent)', msg.innerText = "Перевірте пошту!";
     }
 
     function toggleMenu() {
@@ -195,7 +194,8 @@
         cont.innerHTML = '';
         const months = ['січ','лют','бер','кві','тра','чер','лип','сер','вер','жов','лис','гру'];
 
-        for (let y = 0; y < 3; y++) {
+        // Додано 6 років (2026-2031)
+        for (let y = 0; y < 6; y++) {
             const year = 2026 + y;
             const sec = document.createElement('div');
             sec.className = 'year-section';
@@ -259,11 +259,9 @@
         const title = document.getElementById('mTitle').value;
         const cat = document.getElementById('mCat').value;
         if(!title) return;
-        
         const { data: { user } } = await sb.auth.getUser();
         if (editingId) await sb.from('projects').update({ title, cat }).eq('id', editingId);
         else await sb.from('projects').insert([{ title, cat, user_id: user.id }]);
-        
         closeModal(); loadData();
     }
 
@@ -287,7 +285,6 @@
         }
     }
 
-    // SESSION WATCHER
     sb.auth.onAuthStateChange((event, session) => {
         if (session) {
             document.getElementById('auth-screen').style.display = 'none';
