@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Planner - Final OS</title>
+    <title>Scanner Planner - Auth Fixed</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;800&display=swap" rel="stylesheet">
@@ -21,12 +21,16 @@
         * { box-sizing: border-box; outline: none; font-family: 'Outfit', sans-serif !important; }
         body { background: var(--bg); color: var(--text); margin: 0; height: 100vh; overflow: hidden; display: flex; -webkit-font-smoothing: antialiased; }
         
-        .app-layout { display: flex; width: 100vw; height: 100vh; overflow: hidden; }
+        /* AUTH SCREEN */
+        #auth-screen { position: fixed; inset: 0; background: var(--bg); z-index: 5000; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+        .auth-box { background: var(--surface); padding: 40px; border-radius: 24px; border: 1px solid var(--border); width: 100%; max-width: 400px; text-align: center; }
 
-        /* HEADER ALIGNMENT */
+        .app-layout { display: none; width: 100vw; height: 100vh; overflow: hidden; }
+        .logged-in .app-layout { display: flex; }
+        .logged-in #auth-screen { display: none; }
+
         header, .sidebar-header { height: 64px; display: flex; align-items: center; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 
-        /* SIDEBAR */
         #sidebar { 
             width: 260px; background: var(--sidebar); border-right: 1px solid var(--border); 
             display: flex; flex-direction: column; flex-shrink: 0;
@@ -42,7 +46,6 @@
             .sidebar-open .overlay { display: block; }
         }
 
-        /* MAIN */
         main { flex-grow: 1; display: flex; flex-direction: column; min-width: 0; }
         .top-header { padding: 0 20px; justify-content: space-between; }
         .header-controls { display: flex; align-items: center; gap: 8px; }
@@ -57,13 +60,11 @@
         .input-year { width: 75px; text-align: center; font-weight: 800; font-size: 0.95rem; }
         .btn-icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-        /* CATEGORIES & FILTERS */
         #cat-list { display: flex; gap: 8px; padding: 0 20px; height: 56px; align-items: center; overflow-x: auto; border-bottom: 1px solid var(--border); flex-shrink: 0; scrollbar-width: none; }
         .cat-item { cursor: pointer; display: flex; align-items: center; gap: 8px; white-space: nowrap; font-size: 0.8rem; font-weight: 600; padding: 6px 14px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); transition: 0.2s; user-select: none; }
         .cat-item.active { border-color: var(--accent); background: rgba(16, 185, 129, 0.1); }
         .cat-dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); }
 
-        /* CALENDAR */
         #calendar-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 20px; scroll-behavior: smooth; }
         .year-section { margin-bottom: 25px; width: 100%; }
         .year-header { color: var(--accent); font-size: 1.7rem; margin-bottom: 10px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 10px; }
@@ -83,18 +84,27 @@
 
         .card { color: #fff; padding: 8px; border-radius: 8px; font-size: 0.75rem; cursor: grab; font-weight: 600; border-left: 3px solid rgba(255,255,255,0.4); line-height: 1.2; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 
-        /* MODALS */
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 3000; backdrop-filter: blur(8px); }
         .modal-box { background: var(--surface); padding: 28px; border-radius: 24px; width: 90%; max-width: 360px; border: 1px solid var(--border); }
         .modern-input { width: 100%; padding: 14px 16px; margin-bottom: 14px; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 12px; font-size: 0.95rem; }
         .btn-primary { background: var(--accent); color: white; border: none; padding: 14px; border-radius: 12px; width: 100%; font-weight: 800; font-size: 0.95rem; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; }
     </style>
 </head>
-<body class="sidebar-open">
+<body>
+
+<div id="auth-screen">
+    <div class="auth-box">
+        <h1 style="font-weight:800; font-size:1.8rem; margin-bottom:8px;">Scanner<span style="color:var(--accent)">Planner</span></h1>
+        <p style="color:var(--muted); margin-bottom:24px; font-size:0.9rem;">Вхід у вашу екосистему планування</p>
+        <input type="email" id="auth-email" class="modern-input" placeholder="Email">
+        <input type="password" id="auth-password" class="modern-input" placeholder="Пароль">
+        <button onclick="handleAuth('login')" class="btn-primary" style="margin-bottom:12px;">Увійти</button>
+        <button onclick="handleAuth('signup')" style="background:none; border:none; color:var(--muted); cursor:pointer; font-weight:600; font-size:0.85rem;">Створити новий акаунт</button>
+    </div>
+</div>
 
 <div class="app-layout">
     <div class="overlay" onclick="toggleMenu()"></div>
-
     <aside id="sidebar" ondragover="event.preventDefault()" ondrop="handleDrop(event, null)">
         <div class="sidebar-header">
             <span style="font-weight: 800; font-size: 0.8rem; color: var(--muted); letter-spacing: 1px;">ВХІДНІ</span>
@@ -156,8 +166,36 @@
     let categories = JSON.parse(localStorage.getItem('sc-cats-list')) || ['Творчість', 'Технології', 'Бізнес', 'Особисте'];
     let catColors = JSON.parse(localStorage.getItem('sc-cats-colors')) || {'Творчість': '#a855f7', 'Технології': '#3b82f6', 'Бізнес': '#10b981', 'Особисте': '#f97316'};
     let collapsedYears = JSON.parse(localStorage.getItem('sc-collapsed-years')) || [];
-    let activeFilter = null;
-    let editingId = null, selectedDate = null, editingCatName = null;
+    let activeFilter = null, editingId = null, selectedDate = null, editingCatName = null;
+
+    // AUTH LOGIC
+    async function handleAuth(type) {
+        const email = document.getElementById('auth-email').value;
+        const password = document.getElementById('auth-password').value;
+        if (!email || !password) return alert("Заповніть пошта/пароль");
+
+        const { data, error } = (type === 'login') 
+            ? await sb.auth.signInWithPassword({ email, password })
+            : await sb.auth.signUp({ email, password });
+
+        if (error) alert(error.message);
+        else if (type === 'signup') alert("Перевірте пошту для підтвердження!");
+    }
+
+    async function logout() {
+        await sb.auth.signOut();
+        document.body.classList.remove('logged-in');
+        window.location.reload();
+    }
+
+    sb.auth.onAuthStateChange((event, session) => {
+        if (session) {
+            document.body.classList.add('logged-in');
+            loadData();
+        } else {
+            document.body.classList.remove('logged-in');
+        }
+    });
 
     async function loadData() {
         const { data } = await sb.from('projects').select('*');
@@ -165,11 +203,8 @@
         render();
     }
 
-    function toggleFilter(catName) {
-        activeFilter = (activeFilter === catName) ? null : catName;
-        render();
-    }
-
+    // UI LOGIC
+    function toggleFilter(catName) { activeFilter = (activeFilter === catName) ? null : catName; render(); }
     function toggleYear(year) {
         collapsedYears = collapsedYears.includes(year) ? collapsedYears.filter(y => y !== year) : [...collapsedYears, year];
         localStorage.setItem('sc-collapsed-years', JSON.stringify(collapsedYears));
@@ -179,7 +214,6 @@
     function render() {
         document.getElementById('yearInput').value = startYear;
         updateThemeIcon();
-        
         const clist = document.getElementById('cat-list'), mcat = document.getElementById('mCat');
         clist.innerHTML = ''; mcat.innerHTML = '';
         
@@ -203,7 +237,6 @@
             const year = startYear + y;
             const isCollapsed = collapsedYears.includes(year);
             const section = document.createElement('div'); section.className = 'year-section' + (isCollapsed ? ' year-collapsed' : '');
-            
             const header = document.createElement('div'); header.className = 'year-header';
             header.innerHTML = `<span>${year}</span><span class="arrow">▼</span>`;
             header.onclick = () => toggleYear(year);
@@ -258,7 +291,6 @@
         document.getElementById('catModal').style.display = 'flex';
     }
     function closeCatModal() { document.getElementById('catModal').style.display = 'none'; }
-
     function saveCategory() {
         const newName = document.getElementById('catTitle').value;
         const newColor = document.getElementById('catColor').value;
@@ -269,7 +301,6 @@
         localStorage.setItem('sc-cats-colors', JSON.stringify(catColors));
         closeCatModal(); render();
     }
-
     function addCategory() {
         const name = "Нова Категорія";
         if (!categories.includes(name)) {
@@ -279,7 +310,6 @@
             render(); openCatModal(name);
         }
     }
-
     function openModal(p, date) {
         editingId = p ? p.id : null; selectedDate = p ? p.date : date;
         document.getElementById('mTitle').value = p ? p.title : '';
@@ -288,7 +318,6 @@
         document.getElementById('modal').style.display = 'flex';
     }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
-
     async function saveProject() {
         const title = document.getElementById('mTitle').value, cat = document.getElementById('mCat').value;
         if(!title) return;
@@ -297,7 +326,6 @@
         else await sb.from('projects').insert([{title, cat, date: selectedDate, user_id: user.id}]);
         closeModal(); loadData();
     }
-
     async function deleteProject() { if(confirm("Видалити проєкт?")) { await sb.from('projects').delete().eq('id', editingId); closeModal(); loadData(); } }
     function updateStartYear(val) { startYear = parseInt(val); localStorage.setItem('sc-start-year', startYear); render(); }
     function toggleMenu() { document.body.classList.toggle('sidebar-hidden'); document.body.classList.toggle('sidebar-open'); }
@@ -306,9 +334,7 @@
         document.documentElement.setAttribute('data-theme', next);
         localStorage.setItem('sc-theme', next); updateThemeIcon();
     }
-    function logout() { sb.auth.signOut(); window.location.reload(); }
 
-    sb.auth.onAuthStateChange((ev, session) => { if (session) loadData(); });
     document.documentElement.setAttribute('data-theme', localStorage.getItem('sc-theme') || 'dark');
     if(window.innerWidth <= 768) document.body.className = 'sidebar-hidden';
 </script>
