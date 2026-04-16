@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Planner - Fixed</title>
+    <title>Scanner Planner - Clean UI</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;800&family=Outfit:wght@600&display=swap" rel="stylesheet">
@@ -11,22 +11,20 @@
     <style>
         :root[data-theme="dark"] {
             --bg: #0a0a0a; --surface: #141414; --border: #262626; --text: #f0f0f0;
-            --muted: #737373; --accent: #4a9e42; --sidebar: #0d0d0d;
+            --muted: #737373; --accent: #4a9e42; --sidebar: #0d0d0d; --card-bg: #1e1e1e;
         }
         :root[data-theme="light"] {
             --bg: #fdfdfd; --surface: #ffffff; --border: #e5e5e5; --text: #171717;
-            --muted: #8a8a8a; --accent: #34c759; --sidebar: #f8f8f8;
+            --muted: #8a8a8a; --accent: #34c759; --sidebar: #f8f8f8; --card-bg: #f0f0f0;
         }
 
         body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; width: 100vw; overflow: hidden; }
 
-        /* SIDEBAR LOGIC */
+        /* SIDEBAR */
         #sidebar { 
             width: 280px; min-width: 280px; background: var(--sidebar); border-right: 1px solid var(--border); 
-            display: flex; flex-direction: column; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 2000;
+            display: flex; flex-direction: column; transition: transform 0.3s ease, margin-left 0.3s ease; z-index: 2000;
         }
-        
-        /* Стан прихованого меню на ПК */
         body.sidebar-hidden #sidebar { margin-left: -280px; }
 
         @media (max-width: 768px) {
@@ -36,58 +34,94 @@
             body.sidebar-open .overlay { display: block; }
         }
 
-        main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; transition: margin-left 0.3s; }
-        .top-header { padding: 10px 1.2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); background: var(--bg); }
+        main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
         
-        #cat-list { display: flex; gap: 10px; padding: 10px 1.2rem; overflow-x: auto; background: var(--surface); border-bottom: 1px solid var(--border); scrollbar-width: none; }
-        .cat-item { cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 0.7rem; font-weight: 800; padding: 6px 12px; border-radius: 20px; background: rgba(255,255,255,0.05); border: 1px solid transparent; }
-        .cat-item:hover { border-color: var(--border); }
+        /* HEADER FIXES */
+        .top-header { 
+            padding: 12px 1rem; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 1px solid var(--border); 
+            background: var(--bg); 
+            min-height: 60px;
+            box-sizing: border-box;
+        }
+        
+        .header-group { display: flex; align-items: center; gap: 10px; }
+        
+        .btn-icon {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            transition: all 0.2s;
+        }
+        .btn-icon svg { width: 20px; height: 20px; fill: currentColor; }
+        .btn-icon:active { transform: scale(0.92); background: var(--border); }
+        
+        .btn-text {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 0 15px;
+            height: 40px;
+            border-radius: 10px;
+            font-weight: 800;
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-exit { border-color: rgba(255, 82, 82, 0.3); color: #ff5252; }
 
-        #calendar-scroll { flex: 1; overflow-y: auto; padding: 10px 15px 150px; }
-        .year-section { margin-top: 30px; }
-        .year-header { color: var(--accent); font-size: 1.5rem; margin-bottom: 15px; font-weight: 800; font-family: 'Outfit'; border-left: 4px solid var(--accent); padding-left: 10px; }
+        /* CALENDAR STYLES */
+        #cat-list { display: flex; gap: 8px; padding: 10px 1rem; overflow-x: auto; background: var(--surface); border-bottom: 1px solid var(--border); scrollbar-width: none; }
+        .cat-item { cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 0.75rem; font-weight: 700; padding: 6px 12px; border-radius: 20px; background: var(--bg); border: 1px solid var(--border); }
+
+        #calendar-scroll { flex: 1; overflow-y: auto; padding: 10px 1rem 120px; }
+        .year-header { color: var(--accent); font-size: 1.5rem; margin: 25px 0 15px; font-weight: 800; font-family: 'Outfit'; }
 
         .year-row { display: grid; grid-template-columns: repeat(12, 1fr); gap: 8px; }
-        @media (max-width: 1200px) { .year-row { grid-template-columns: repeat(6, 1fr); } }
-        @media (max-width: 768px) { .year-row { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 1100px) { .year-row { grid-template-columns: repeat(6, 1fr); } }
+        @media (max-width: 600px) { .year-row { grid-template-columns: repeat(3, 1fr); } }
 
         .month-cell { 
             background: var(--surface); border: 1px solid var(--border); 
-            border-radius: 10px; position: relative; padding: 30px 6px 6px; 
-            min-height: 90px; transition: 0.2s; cursor: cell;
+            border-radius: 12px; position: relative; padding: 28px 6px 8px; 
+            min-height: 85px; cursor: cell;
         }
-        .month-cell:hover { border-color: var(--accent); background: rgba(74, 158, 66, 0.03); }
-        .month-label { font-size: 0.65rem; color: var(--muted); position: absolute; top: 8px; right: 10px; font-weight: 800; pointer-events: none; }
+        .month-label { font-size: 0.6rem; color: var(--muted); position: absolute; top: 8px; left: 10px; font-weight: 800; text-transform: uppercase; }
 
         .card { 
-            color: #fff; padding: 8px; border-radius: 6px; font-size: 0.7rem; margin-bottom: 5px; 
-            cursor: pointer; font-weight: 700; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            border-left: 3px solid rgba(255,255,255,0.4); word-break: break-word; transition: transform 0.1s;
+            color: #fff; padding: 8px; border-radius: 8px; font-size: 0.7rem; margin-bottom: 6px; 
+            cursor: pointer; font-weight: 700; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            border-left: 3px solid rgba(255,255,255,0.4); word-break: break-word;
         }
-        .card:active { transform: scale(0.96); }
 
-        /* AUTH & MODALS */
-        #auth-screen { position: fixed; inset: 0; background: var(--bg); z-index: 5000; display: flex; align-items: center; justify-content: center; }
-        .auth-box { background: var(--surface); padding: 2.5rem; border-radius: 20px; border: 1px solid var(--border); width: 100%; max-width: 350px; text-align: center; }
-        
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 3000; padding: 20px; backdrop-filter: blur(8px); }
-        .modal-box { background: var(--surface); padding: 2rem; border-radius: 20px; width: 100%; max-width: 340px; border: 1px solid var(--border); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
-        
-        input, select { width: 100%; padding: 14px; margin-bottom: 12px; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 12px; font-family: inherit; font-weight: 600; font-size: 0.9rem; }
-        .btn-ui { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 12px; border-radius: 12px; cursor: pointer; font-weight: 800; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-accent { background: var(--accent); color: white; border: none; }
-        .btn-exit { border-color: #ff5252; color: #ff5252; width: auto; padding: 8px 15px; font-size: 0.8rem; }
+        /* MODALS */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 3000; padding: 20px; backdrop-filter: blur(5px); }
+        .modal-box { background: var(--surface); padding: 2rem; border-radius: 20px; width: 100%; max-width: 340px; border: 1px solid var(--border); }
+        input, select { width: 100%; padding: 12px; margin-bottom: 12px; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 10px; font-family: inherit; font-weight: 600; }
+        .btn-primary { background: var(--accent); color: white; border: none; padding: 14px; border-radius: 12px; width: 100%; font-weight: 800; cursor: pointer; }
     </style>
 </head>
 <body class="sidebar-show">
 
 <div id="auth-screen">
     <div class="auth-box">
-        <h2 style="font-family:'Outfit'; margin-bottom: 1.5rem;">Scanner<span style="color:var(--accent)">Planner</span></h2>
-        <input type="email" id="auth-email" placeholder="Електронна пошта">
-        <input type="password" id="auth-pass" placeholder="Пароль">
-        <button class="btn-ui btn-accent" onclick="handleAuth('login')">Увійти</button>
-        <button class="btn-ui" style="border:none; opacity:0.6; font-size:0.8rem;" onclick="handleAuth('signup')">Створити акаунт</button>
+        <h2 style="font-family:'Outfit';">Scanner<span style="color:var(--accent)">Planner</span></h2>
+        <input type="email" id="auth-email" placeholder="Email">
+        <input type="password" id="auth-pass" placeholder="Password">
+        <button class="btn-primary" onclick="handleAuth('login')">Увійти</button>
         <p id="auth-msg" style="color:#ff5252; font-size:0.8rem; margin-top:10px;"></p>
     </div>
 </div>
@@ -95,57 +129,61 @@
 <div class="overlay" onclick="toggleMenu()"></div>
 
 <aside id="sidebar">
-    <div style="padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-weight: 800; letter-spacing: 1px; font-size: 0.9rem;">BACKLOG (ІДЕЇ)</span>
-        <button onclick="toggleMenu()" style="background:none; border:none; color:var(--text); font-size:1.2rem; cursor:pointer;">✕</button>
+    <div style="padding: 1.2rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: 800; font-size: 0.8rem; letter-spacing: 1px;">BACKLOG</span>
+        <button onclick="toggleMenu()" class="btn-icon" style="border:none; background:none;">✕</button>
     </div>
     <div style="padding: 1rem;">
-        <button onclick="openModal(null, null)" class="btn-ui btn-accent">+ НОВА ІДЕЯ</button>
+        <button onclick="openModal(null, null)" class="btn-primary" style="padding: 10px;">+ НОВА ІДЕЯ</button>
     </div>
-    <div id="backlog" style="flex:1; overflow-y:auto; padding: 0 1rem 100px;"></div>
+    <div id="backlog" style="flex:1; overflow-y:auto; padding: 0 1rem;"></div>
 </aside>
 
 <main>
     <header class="top-header">
-        <div style="display:flex; gap:12px; align-items:center;">
-            <button class="btn-ui" style="width:45px; height:45px;" onclick="toggleMenu()">☰</button>
-            <h1 style="font-family:'Outfit'; font-size:1.2rem; margin:0; letter-spacing:-0.5px;">Scanner<span style="color:var(--accent)">Planner</span></h1>
+        <div class="header-group">
+            <button class="btn-icon" onclick="toggleMenu()" title="Меню">
+                <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+            </button>
+            <h1 style="font-family:'Outfit'; font-size:1.1rem; margin:0;">Scanner<span style="color:var(--accent)">Planner</span></h1>
         </div>
-        <div style="display:flex; gap:10px;">
-            <button class="btn-ui" style="width:45px;" onclick="toggleTheme()">🌗</button>
-            <button class="btn-ui btn-exit" onclick="logout()">
-                <span>Вихід</span> 󰍃
+        
+        <div class="header-group">
+            <button class="btn-icon" onclick="toggleTheme()" title="Тема">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zM12 4c-3.87 0-7 3.13-7 7s3.13 7 7 7V4z"/></svg>
+            </button>
+            <button class="btn-text btn-exit" onclick="logout()">
+                <span>Вихід</span>
+                <svg viewBox="0 0 24 24" style="width:16px;"><path d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5c-1.11 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
             </button>
         </div>
     </header>
+
     <div id="cat-list"></div>
     <div id="calendar-scroll"></div>
 </main>
 
 <div id="modal" class="modal" onclick="if(event.target==this)closeModal()">
     <div class="modal-box">
-        <h3 id="modal-title" style="margin-top:0; font-family:'Outfit';">Редагувати проєкт</h3>
-        <input type="text" id="mTitle" placeholder="Що саме плануємо?">
-        <div style="display:flex; gap:8px; margin-bottom:12px;">
-            <select id="mCat" style="margin:0;"></select>
-            <button class="btn-ui" style="width:50px; margin:0;" onclick="openCatModal()">+</button>
+        <h3 id="modal-title" style="margin-top:0; font-family:'Outfit';">Проєкт</h3>
+        <input type="text" id="mTitle" placeholder="Назва">
+        <div style="display:flex; gap:8px;">
+            <select id="mCat" style="flex:1;"></select>
+            <button class="btn-icon" onclick="openCatModal()" style="height:44px; width:50px;">+</button>
         </div>
-        <p id="mDateDisplay" style="font-size:0.75rem; color:var(--muted); margin-bottom:15px; background:var(--bg); padding:8px; border-radius:8px;"></p>
-        <button onclick="saveProject()" class="btn-ui btn-accent">ЗБЕРЕГТИ</button>
-        <button id="deleteBtn" onclick="deleteProject()" style="border-color:#ff4d4d; color:#ff4d4d; margin-top:10px;" class="btn-ui">ВИДАЛИТИ</button>
+        <p id="mDateDisplay" style="font-size:0.7rem; color:var(--muted); margin: 10px 0;"></p>
+        <button onclick="saveProject()" class="btn-primary">ЗБЕРЕГТИ</button>
+        <button id="deleteBtn" onclick="deleteProject()" style="background:none; color:#ff5252; border:none; margin-top:15px; cursor:pointer; width:100%; font-weight:800;">Видалити проєкт</button>
     </div>
 </div>
 
 <div id="cat-modal" class="modal">
     <div class="modal-box">
-        <h3 style="margin-top:0;">Налаштування категорій</h3>
-        <input type="text" id="catName" placeholder="Назва категорії">
-        <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px; background:var(--bg); padding:10px; border-radius:12px;">
-            <span style="font-size:0.8rem;">Колір:</span>
-            <input type="color" id="catColor" value="#4a9e42" style="width:60px; height:40px; padding:0; border:none; background:none;">
-        </div>
-        <button onclick="saveCategory()" class="btn-ui btn-accent">ЗБЕРЕГТИ</button>
-        <button onclick="closeCatModal()" class="btn-ui" style="border:none; margin-top:5px; opacity:0.6;">Скасувати</button>
+        <h3 style="margin-top:0;">Категорія</h3>
+        <input type="text" id="catName" placeholder="Назва">
+        <input type="color" id="catColor" value="#4a9e42" style="height:50px; border:none; background:none; cursor:pointer;">
+        <button onclick="saveCategory()" class="btn-primary" style="margin-top:15px;">ДОДАТИ</button>
+        <button onclick="closeCatModal()" style="background:none; border:none; color:var(--text); width:100%; margin-top:10px; cursor:pointer; opacity:0.6;">Скасувати</button>
     </div>
 </div>
 
@@ -163,18 +201,14 @@
     async function handleAuth(type) {
         const email = document.getElementById('auth-email').value;
         const password = document.getElementById('auth-pass').value;
-        const msg = document.getElementById('auth-msg');
         let res = (type === 'signup') ? await sb.auth.signUp({email, password}) : await sb.auth.signInWithPassword({email, password});
-        if (res.error) msg.innerText = res.error.message;
+        if (res.error) document.getElementById('auth-msg').innerText = res.error.message;
     }
     function logout() { sb.auth.signOut(); window.location.reload(); }
 
     function toggleMenu() {
-        if (window.innerWidth <= 768) {
-            document.body.classList.toggle('sidebar-open');
-        } else {
-            document.body.classList.toggle('sidebar-hidden');
-        }
+        if (window.innerWidth <= 768) { document.body.classList.toggle('sidebar-open'); }
+        else { document.body.classList.toggle('sidebar-hidden'); }
     }
 
     async function loadData() {
@@ -184,54 +218,51 @@
     }
 
     function render() {
+        // Cats
         const clist = document.getElementById('cat-list');
         const sel = document.getElementById('mCat');
         clist.innerHTML = ''; sel.innerHTML = '';
         categories.forEach(c => {
-            const col = catColors[c];
-            clist.innerHTML += `<div class="cat-item" onclick="openCatModal('${c}')"><span style="width:10px;height:10px;border-radius:50%;background:${col}"></span>${c}</div>`;
+            clist.innerHTML += `<div class="cat-item" onclick="openCatModal('${c}')"><span style="width:8px;height:8px;border-radius:50%;background:${catColors[c]}"></span>${c}</div>`;
             sel.innerHTML += `<option value="${c}">${c}</option>`;
         });
 
+        // Calendar
         const cont = document.getElementById('calendar-scroll');
         cont.innerHTML = '';
         const months = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
 
         for (let y = 0; y < 6; y++) {
             const year = 2026 + y;
-            const sec = document.createElement('div');
-            sec.className = 'year-section';
-            sec.innerHTML = `<div class="year-header">${year}</div>`;
+            cont.innerHTML += `<div class="year-header">${year}</div>`;
             const row = document.createElement('div');
             row.className = 'year-row';
-            
             for (let m = 1; m <= 12; m++) {
                 const dKey = `${year}-${String(m).padStart(2,'0')}`;
                 const cell = document.createElement('div');
                 cell.className = 'month-cell';
                 cell.innerHTML = `<div class="month-label">${months[m-1]}</div>`;
                 cell.onclick = (e) => { if(e.target === cell) openModal(null, dKey); };
-
                 projects.filter(p => p.date === dKey).forEach(p => {
                     const card = document.createElement('div');
                     card.className = 'card';
-                    card.style.backgroundColor = catColors[p.cat] || '#888';
+                    card.style.backgroundColor = catColors[p.cat];
                     card.innerText = p.title;
                     card.onclick = (e) => { e.stopPropagation(); openModal(p); };
                     cell.appendChild(card);
                 });
                 row.appendChild(cell);
             }
-            sec.appendChild(row);
-            cont.appendChild(sec);
+            cont.appendChild(row);
         }
 
+        // Backlog
         const blog = document.getElementById('backlog');
         blog.innerHTML = '';
         projects.filter(p => !p.date).forEach(p => {
             const card = document.createElement('div');
             card.className = 'card';
-            card.style.backgroundColor = catColors[p.cat] || '#888';
+            card.style.backgroundColor = catColors[p.cat];
             card.innerText = p.title;
             card.onclick = () => openModal(p);
             blog.appendChild(card);
@@ -243,29 +274,23 @@
         selectedDate = p ? p.date : date;
         document.getElementById('mTitle').value = p ? p.title : '';
         document.getElementById('mCat').value = p ? p.cat : categories[0];
-        document.getElementById('mDateDisplay').innerText = selectedDate ? `📅 Дата: ${selectedDate}` : '💡 Зберігається в ідеях (без дати)';
+        document.getElementById('mDateDisplay').innerText = selectedDate ? `📅 Плануємо на ${selectedDate}` : '💡 Без дати (у списку ідей)';
         document.getElementById('deleteBtn').style.display = p ? 'block' : 'none';
         document.getElementById('modal').style.display = 'flex';
     }
-
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
 
     async function saveProject() {
         const title = document.getElementById('mTitle').value;
         const cat = document.getElementById('mCat').value;
-        if(!title) return;
         const { data: { user } } = await sb.auth.getUser();
-        const payload = { title, cat, date: selectedDate, user_id: user.id };
-        if(editingId) await sb.from('projects').update(payload).eq('id', editingId);
-        else await sb.from('projects').insert([payload]);
+        if(editingId) await sb.from('projects').update({title, cat, date: selectedDate}).eq('id', editingId);
+        else await sb.from('projects').insert([{title, cat, date: selectedDate, user_id: user.id}]);
         closeModal(); loadData();
     }
 
     async function deleteProject() {
-        if(confirm("Видалити цей проєкт?")) {
-            await sb.from('projects').delete().eq('id', editingId);
-            closeModal(); loadData();
-        }
+        if(confirm("Видалити?")) { await sb.from('projects').delete().eq('id', editingId); closeModal(); loadData(); }
     }
 
     let editingCat = null;
@@ -283,9 +308,7 @@
         if(editingCat && editingCat !== name) {
             categories = categories.map(c => c === editingCat ? name : c);
             delete catColors[editingCat];
-        } else if(!categories.includes(name)) {
-            categories.push(name);
-        }
+        } else if(!categories.includes(name)) categories.push(name);
         catColors[name] = color;
         localStorage.setItem('sc-cats', JSON.stringify(categories));
         localStorage.setItem('sc-colors', JSON.stringify(catColors));
