@@ -1,286 +1,246 @@
 <!DOCTYPE html>
-<html lang="uk">
+<html lang="uk" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scanner Planner - Clean Architecture</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Scanner Planner - Final OS</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg-primary: #0a0a0c;
-            --bg-secondary: #141417;
-            --line-color: #26262b;
-            --accent-glow: #10b981;
-            --text-main: #ffffff;
-            --text-dim: #71717a;
-            --sidebar-w: 280px;
-            --header-h: 64px;
+        :root[data-theme="dark"] {
+            --bg: #09090b; --surface: #18181b; --border: #27272a; --text: #fafafa;
+            --muted: #71717a; --accent: #10b981; --panel: #111113;
         }
-
-        [data-theme="light"] {
-            --bg-primary: #ffffff;
-            --bg-secondary: #f4f4f5;
-            --line-color: #e4e4e7;
-            --text-main: #09090b;
-            --text-dim: #71717a;
+        :root[data-theme="light"] {
+            --bg: #ffffff; --surface: #f4f4f5; --border: #e4e4e7; --text: #09090b;
+            --muted: #71717a; --accent: #10b981; --panel: #f9f9fb;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; }
-        body { background: var(--bg-primary); color: var(--text-main); height: 100vh; overflow: hidden; }
+        body { background: var(--bg); color: var(--text); height: 100vh; display: flex; overflow: hidden; }
 
-        /* --- AUTH LAYER --- */
-        #gatekeeper {
-            position: fixed; inset: 0; background: var(--bg-primary); 
-            display: flex; align-items: center; justify-content: center; z-index: 10000;
-        }
-        .gate-card {
-            background: var(--bg-secondary); padding: 40px; border-radius: 28px;
-            box-shadow: 0 0 0 1px var(--line-color); width: 100%; max-width: 360px;
-        }
-        .input-field {
-            width: 100%; padding: 14px; margin-bottom: 12px; border-radius: 12px;
-            background: var(--bg-primary); color: var(--text-main); border: none;
-            outline: 1px solid var(--line-color); font-size: 16px;
-        }
-        .input-field:focus { outline: 2px solid var(--accent-glow); }
-        .primary-btn {
-            width: 100%; padding: 14px; border-radius: 12px; background: var(--accent-glow);
-            color: #000; font-weight: 900; cursor: pointer; text-transform: uppercase;
-        }
+        /* --- AUTH --- */
+        #auth-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 10000; display: flex; align-items: center; justify-content: center; }
+        .auth-form { background: var(--surface); padding: 32px; border-radius: 24px; box-shadow: 0 0 0 1px var(--border); width: 100%; max-width: 340px; }
 
-        /* --- MAIN LAYOUT --- */
-        .sc-wrapper { display: flex; width: 100vw; height: 100vh; opacity: 0; pointer-events: none; }
-        .authorized .sc-wrapper { opacity: 1; pointer-events: all; }
-        .authorized #gatekeeper { display: none; }
-
-        #sc-sidebar {
-            width: var(--sidebar-w); background: var(--bg-primary); flex-shrink: 0;
-            outline: 1px solid var(--line-color); display: flex; flex-direction: column;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 500;
+        /* --- NAVIGATION & SIDEBAR --- */
+        #main-sidebar {
+            width: 280px; background: var(--panel); flex-shrink: 0;
+            box-shadow: 1px 0 0 0 var(--border);
+            display: flex; flex-direction: column; z-index: 500;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+        .sidebar-hidden #main-sidebar { transform: translateX(-280px); margin-right: -280px; }
 
         @media (max-width: 800px) {
-            #sc-sidebar { position: fixed; left: 0; top: 0; bottom: 0; transform: translateX(-100%); }
-            .menu-active #sc-sidebar { transform: translateX(0); }
-            .sc-overlay { 
-                position: fixed; inset: 0; background: rgba(0,0,0,0.8); 
-                backdrop-filter: blur(4px); display: none; z-index: 400; 
-            }
-            .menu-active .sc-overlay { display: block; }
+            #main-sidebar { position: fixed; left: 0; height: 100%; }
+            .sidebar-hidden #main-sidebar { transform: translateX(-100%); margin-right: 0; }
+            #mobile-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 400; display: none; }
+            body:not(.sidebar-hidden) #mobile-overlay { display: block; }
         }
 
-        .sc-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-
-        /* --- UI ELEMENTS --- */
-        .sc-bar { 
-            height: var(--header-h); display: flex; align-items: center; 
-            padding: 0 20px; outline: 1px solid var(--line-color); flex-shrink: 0;
-        }
-
-        .icon-btn {
-            width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
-            border-radius: 10px; background: var(--bg-secondary); cursor: pointer;
-            outline: 1px solid var(--line-color); color: var(--text-main);
-        }
-        .icon-btn svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2.5; }
-
-        .sc-categories { gap: 10px; overflow-x: auto; scrollbar-width: none; }
-        .cat-item {
-            padding: 8px 16px; border-radius: 10px; background: var(--bg-secondary);
-            outline: 1px solid var(--line-color); white-space: nowrap; cursor: pointer;
-            font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px;
-        }
-
-        /* --- GRID --- */
-        #sc-content { flex: 1; overflow-y: auto; padding: 24px; }
-        .year-block { margin-bottom: 48px; }
-        .year-num { font-size: 32px; font-weight: 900; color: var(--accent-glow); margin-bottom: 20px; }
+        /* --- UI COMPONENTS --- */
+        .bar-64 { height: 64px; display: flex; align-items: center; padding: 0 20px; box-shadow: 0 1px 0 0 var(--border); flex-shrink: 0; }
         
-        .month-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
-        .month-card {
-            background: var(--bg-secondary); border-radius: 20px; padding: 40px 12px 12px;
-            outline: 1px solid var(--line-color); position: relative; min-height: 120px;
+        .btn-ui {
+            width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+            background: var(--surface); border-radius: 10px; cursor: pointer;
+            box-shadow: 0 0 0 1px var(--border); color: var(--text); transition: 0.2s;
         }
-        .month-card::before {
+        .btn-ui:hover { box-shadow: 0 0 0 1px var(--accent); color: var(--accent); }
+        .btn-ui svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5; }
+
+        .btn-action {
+            width: 100%; height: 44px; background: var(--accent); color: #fff; border-radius: 12px;
+            font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 13px;
+        }
+
+        /* --- CONTENT --- */
+        main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+        #scroll-area { flex: 1; overflow-y: auto; padding: 24px; }
+        
+        .cat-row { gap: 8px; overflow-x: auto; scrollbar-width: none; }
+        .cat-btn {
+            padding: 8px 14px; border-radius: 8px; background: var(--surface);
+            box-shadow: 0 0 0 1px var(--border); font-size: 13px; font-weight: 700;
+            white-space: nowrap; cursor: pointer; display: flex; align-items: center; gap: 6px;
+        }
+
+        .year-section { margin-bottom: 40px; }
+        .year-title { font-size: 28px; font-weight: 900; color: var(--accent); margin-bottom: 20px; }
+        
+        .calendar-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+        .month-box {
+            background: var(--surface); border-radius: 16px; padding: 35px 10px 10px;
+            box-shadow: 0 0 0 1px var(--border); position: relative; min-height: 110px;
+        }
+        .month-box::after {
             content: attr(data-label); position: absolute; top: 12px; left: 12px;
-            font-size: 10px; font-weight: 900; color: var(--text-dim); text-transform: uppercase;
+            font-size: 10px; font-weight: 900; color: var(--muted);
         }
 
-        .proj-card {
-            padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: 700;
-            color: white; margin-bottom: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        .proj-tag {
+            padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 700;
+            color: #fff; margin-bottom: 6px; border-left: 3px solid rgba(255,255,255,0.4);
         }
 
-        /* --- MODAL --- */
-        #sc-modal {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
-            display: none; align-items: center; justify-content: center; z-index: 9000;
+        /* --- FORMS --- */
+        .input-ui {
+            width: 100%; padding: 12px; margin-bottom: 12px; border-radius: 10px;
+            background: var(--bg); color: var(--text); box-shadow: 0 0 0 1px var(--border);
+        }
+        .modal-wrap {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+            display: none; align-items: center; justify-content: center; z-index: 2000;
         }
     </style>
 </head>
-<body>
+<body class="sidebar-hidden">
 
-<div id="gatekeeper">
-    <div class="gate-card">
-        <h2 style="margin-bottom: 24px; text-align: center;">Вітаємо</h2>
-        <input type="email" id="log-email" class="input-field" placeholder="Email">
-        <input type="password" id="log-pass" class="input-field" placeholder="Пароль">
-        <button onclick="handleLogin()" class="primary-btn">Увійти</button>
-        <div id="log-error" style="color: #ff4d4d; font-size: 12px; margin-top: 12px; text-align: center;"></div>
+<div id="auth-overlay">
+    <div class="auth-form">
+        <h2 style="margin-bottom: 20px; text-align: center;">Вхід</h2>
+        <input type="email" id="auth-e" class="input-ui" placeholder="Email">
+        <input type="password" id="auth-p" class="input-ui" placeholder="Пароль">
+        <button onclick="doLogin()" class="btn-action">Продовжити</button>
+        <div id="auth-error" style="color: #ff4d4d; font-size: 12px; margin-top: 10px; text-align: center;"></div>
     </div>
 </div>
 
-<div class="sc-wrapper">
-    <div class="sc-overlay" onclick="toggleMenu()"></div>
-    
-    <aside id="sc-sidebar">
-        <div class="sc-bar" style="justify-content: space-between;">
-            <span style="font-weight: 900; color: var(--text-dim); font-size: 12px;">БЕКЛОГ</span>
-            <div class="icon-btn" onclick="toggleMenu()" style="outline: none;">
-                <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
-            </div>
-        </div>
-        <div style="padding: 20px;">
-            <button onclick="openModal()" class="primary-btn">+ ПРОЄКТ</button>
-        </div>
-        <div id="sc-backlog" style="flex:1; overflow-y:auto; padding: 0 20px;"></div>
-    </aside>
+<div id="mobile-overlay" onclick="toggleSidebar()"></div>
 
-    <main class="sc-main">
-        <header class="sc-bar" style="justify-content: space-between;">
-            <div style="display:flex; align-items:center; gap:16px;">
-                <div class="icon-btn" onclick="toggleMenu()">
-                    <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-                </div>
-                <h1 style="font-size: 20px; font-weight: 900; letter-spacing: -0.5px;">Scanner<span style="color:var(--accent-glow)">Planner</span></h1>
-            </div>
-            <div style="display:flex; align-items:center; gap:12px;">
-                <input type="number" id="sc-year-selector" class="input-field" style="width: 80px; margin:0; height: 40px; text-align: center;" value="2026" onchange="refreshUI()">
-                <div class="icon-btn" onclick="handleLogout()">
-                    <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-                </div>
-            </div>
-        </header>
-        <nav class="sc-bar sc-categories" id="sc-cat-nav"></nav>
-        <div id="sc-content"></div>
-    </main>
-</div>
+<aside id="main-sidebar">
+    <div class="bar-64" style="justify-content: space-between;">
+        <span style="font-weight: 900; color: var(--muted); font-size: 12px;">БЕКЛОГ</span>
+        <div class="btn-ui" onclick="toggleSidebar()" style="box-shadow: none;"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+    </div>
+    <div style="padding: 20px;">
+        <button onclick="openModal('proj')" class="btn-action" style="margin-bottom: 10px;">+ Проєкт</button>
+        <button onclick="openModal('cat')" class="btn-action" style="background: var(--surface); color: var(--text); border: 1px solid var(--border);">+ Категорія</button>
+    </div>
+    <div id="sidebar-list" style="flex:1; overflow-y:auto; padding: 0 20px;"></div>
+</aside>
 
-<div id="sc-modal" onclick="if(event.target==this)closeModal()">
-    <div class="gate-card">
-        <h3 style="margin-bottom: 20px;">Новий проєкт</h3>
-        <input type="text" id="proj-title" class="input-field" placeholder="Назва...">
-        <select id="proj-cat" class="input-field"></select>
-        <button onclick="saveNewProject()" class="primary-btn">Зберегти</button>
+<main>
+    <header class="bar-64" style="justify-content: space-between;">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div class="btn-ui" onclick="toggleSidebar()"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></div>
+            <h1 style="font-size: 18px; font-weight: 900;">Scanner<span style="color:var(--accent)">Planner</span></h1>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <input type="number" id="yr-set" class="input-ui" style="width: 75px; margin:0; height: 40px; text-align: center; font-weight: 700;" value="2026" onchange="renderAll()">
+            <div class="btn-ui" onclick="changeTheme()"><svg viewBox="0 0 24 24"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.02 0l-.707-.707M6.343 6.343l-.707-.707"/></svg></div>
+            <div class="btn-ui" onclick="doLogout()"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></div>
+        </div>
+    </header>
+    <nav class="bar-64 cat-row" id="cat-nav"></nav>
+    <div id="scroll-area"></div>
+</main>
+
+<div id="m-wrap" class="modal-wrap" onclick="if(event.target==this)closeModal()">
+    <div class="auth-form" id="m-proj" style="display:none;">
+        <h3 style="margin-bottom: 15px;">Новий проєкт</h3>
+        <input type="text" id="p-title" class="input-ui" placeholder="Назва...">
+        <select id="p-cat" class="input-ui"></select>
+        <button onclick="saveProj()" class="btn-action">Зберегти</button>
+    </div>
+    <div class="auth-form" id="m-cat" style="display:none;">
+        <h3 style="margin-bottom: 15px;">Нова категорія</h3>
+        <input type="text" id="c-name" class="input-ui" placeholder="Назва (Робота, Навчання...)">
+        <input type="color" id="c-color" class="input-ui" style="height: 50px; padding: 5px;" value="#10b981">
+        <button onclick="saveCat()" class="btn-action">Створити</button>
     </div>
 </div>
 
 <script>
-    const CLIENT_URL = "https://mlkdphygsdfcanztbtez.supabase.co";
-    const CLIENT_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2RwaHlnc2RmY2FuenRidGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyODAwNTAsImV4cCI6MjA5MTg1NjA1MH0.PfjkZXua-9tp2lxVsBD3YBUNpx_USmMha5BQBZcGLFc";
-    const client = supabase.createClient(CLIENT_URL, CLIENT_KEY);
+    const S_URL = "https://mlkdphygsdfcanztbtez.supabase.co";
+    const S_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2RwaHlnc2RmY2FuenRidGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyODAwNTAsImV4cCI6MjA5MTg1NjA1MH0.PfjkZXua-9tp2lxVsBD3YBUNpx_USmMha5BQBZcGLFc";
+    const sb = supabase.createClient(S_URL, S_KEY);
 
-    let db_projects = [], db_categories = [];
-    let active_date = null;
+    let data_p = [], data_c = [], sel_date = null;
 
-    // --- SYSTEM LOGIC ---
-    function toggleMenu() { document.body.classList.toggle('menu-active'); }
+    function toggleSidebar() { document.body.classList.toggle('sidebar-hidden'); }
     
-    async function handleLogin() {
-        const email = document.getElementById('log-email').value;
-        const password = document.getElementById('log-pass').value;
-        const { error } = await client.auth.signInWithPassword({ email, password });
-        if (error) document.getElementById('log-error').innerText = error.message;
+    function changeTheme() {
+        const t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', t);
     }
 
-    function handleLogout() { client.auth.signOut(); window.location.reload(); }
+    async function doLogin() {
+        const e = document.getElementById('auth-e').value, p = document.getElementById('auth-p').value;
+        const { error } = await sb.auth.signInWithPassword({ email: e, password: p });
+        if (error) document.getElementById('auth-error').innerText = error.message;
+    }
 
-    client.auth.onAuthStateChange((event, session) => {
-        if (session) {
-            document.body.classList.add('authorized');
-            syncData();
-        } else {
-            document.body.classList.remove('authorized');
-        }
+    function doLogout() { sb.auth.signOut(); window.location.reload(); }
+
+    sb.auth.onAuthStateChange((ev, session) => {
+        if (session) { document.getElementById('auth-overlay').style.display = 'none'; sync(); }
     });
 
-    // --- DATA LOGIC ---
-    async function syncData() {
-        const [p, c] = await Promise.all([
-            client.from('projects').select('*'),
-            client.from('categories').select('*').order('created_at')
-        ]);
-        db_projects = p.data || [];
-        db_categories = c.data || [];
-        refreshUI();
+    async function sync() {
+        const [p, c] = await Promise.all([sb.from('projects').select('*'), sb.from('categories').select('*')]);
+        data_p = p.data || []; data_c = c.data || [];
+        renderAll();
     }
 
-    function refreshUI() {
-        const year = parseInt(document.getElementById('sc-year-selector').value);
-        const catNav = document.getElementById('sc-cat-nav');
-        const projCat = document.getElementById('proj-cat');
-        
-        catNav.innerHTML = ''; projCat.innerHTML = '';
-        db_categories.forEach(c => {
-            catNav.innerHTML += `<div class="cat-item"><div style="width:8px; height:8px; background:${c.color}; border-radius:50%"></div>${c.name}</div>`;
-            projCat.innerHTML += `<option value="${c.name}">${c.name}</option>`;
+    function renderAll() {
+        const yr = parseInt(document.getElementById('yr-set').value);
+        const nav = document.getElementById('cat-nav'), sel = document.getElementById('p-cat');
+        nav.innerHTML = ''; sel.innerHTML = '';
+        data_c.forEach(c => {
+            nav.innerHTML += `<div class="cat-btn"><div style="width:8px; height:8px; border-radius:50%; background:${c.color}"></div>${c.name}</div>`;
+            sel.innerHTML += `<option value="${c.name}">${c.name}</option>`;
         });
 
-        const content = document.getElementById('sc-content');
-        content.innerHTML = '';
-        const mNames = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
+        const area = document.getElementById('scroll-area'); area.innerHTML = '';
+        const mNames = ['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'];
 
-        [year, year+1].forEach(y => {
-            const wrap = document.createElement('div');
-            wrap.className = 'year-block';
-            wrap.innerHTML = `<div class="year-num">${y}</div>`;
-            const grid = document.createElement('div');
-            grid.className = 'month-grid';
-            
+        [yr, yr+1].forEach(y => {
+            const wrap = document.createElement('div'); wrap.className = 'year-section';
+            wrap.innerHTML = `<div class="year-title">${y}</div>`;
+            const grid = document.createElement('div'); grid.className = 'calendar-grid';
             for(let i=1; i<=12; i++) {
-                const mCode = `${y}-${String(i).padStart(2,'0')}`;
-                const mDiv = document.createElement('div');
-                mDiv.className = 'month-card';
-                mDiv.setAttribute('data-label', mNames[i-1]);
-                mDiv.onclick = () => openModal(mCode);
-                
-                db_projects.filter(p => p.date === mCode).forEach(p => {
-                    const c = db_categories.find(cat => cat.name === p.cat);
-                    mDiv.innerHTML += `<div class="proj-card" style="background:${c?.color || '#333'}">${p.title}</div>`;
+                const code = `${y}-${String(i).padStart(2,'0')}`;
+                const box = document.createElement('div'); box.className = 'month-box';
+                box.setAttribute('data-label', mNames[i-1]);
+                box.onclick = () => openModal('proj', code);
+                data_p.filter(p => p.date === code).forEach(p => {
+                    const c = data_c.find(cat => cat.name === p.cat);
+                    box.innerHTML += `<div class="proj-tag" style="background:${c?.color || '#444'}">${p.title}</div>`;
                 });
-                grid.appendChild(mDiv);
+                grid.appendChild(box);
             }
-            wrap.appendChild(grid);
-            content.appendChild(wrap);
+            wrap.appendChild(grid); area.appendChild(wrap);
         });
 
-        const bl = document.getElementById('sc-backlog');
-        bl.innerHTML = '';
-        db_projects.filter(p => !p.date).forEach(p => {
-            const c = db_categories.find(cat => cat.name === p.cat);
-            bl.innerHTML += `<div class="proj-card" style="background:${c?.color || '#333'}">${p.title}</div>`;
+        const bl = document.getElementById('sidebar-list'); bl.innerHTML = '';
+        data_p.filter(p => !p.date).forEach(p => {
+            const c = data_c.find(cat => cat.name === p.cat);
+            bl.innerHTML += `<div class="proj-tag" style="background:${c?.color || '#444'}">${p.title}</div>`;
         });
     }
 
-    // --- MODAL LOGIC ---
-    function openModal(date = null) {
-        active_date = date;
-        document.getElementById('sc-modal').style.display = 'flex';
+    function openModal(type, date = null) {
+        sel_date = date;
+        document.getElementById('m-wrap').style.display = 'flex';
+        document.getElementById('m-proj').style.display = type === 'proj' ? 'block' : 'none';
+        document.getElementById('m-cat').style.display = type === 'cat' ? 'block' : 'none';
     }
-    function closeModal() { document.getElementById('sc-modal').style.display = 'none'; }
+    function closeModal() { document.getElementById('m-wrap').style.display = 'none'; }
 
-    async function saveNewProject() {
-        const title = document.getElementById('proj-title').value;
-        const cat = document.getElementById('proj-cat').value;
-        const user = (await client.auth.getUser()).data.user;
-        
-        await client.from('projects').insert([{
-            title, cat, date: active_date, user_id: user.id
-        }]);
-        
-        closeModal();
-        syncData();
+    async function saveProj() {
+        const t = document.getElementById('p-title').value, c = document.getElementById('p-cat').value;
+        const u = (await sb.auth.getUser()).data.user;
+        await sb.from('projects').insert([{ title: t, cat: c, date: sel_date, user_id: u.id }]);
+        closeModal(); sync();
+    }
+
+    async function saveCat() {
+        const n = document.getElementById('c-name').value, c = document.getElementById('c-color').value;
+        const u = (await sb.auth.getUser()).data.user;
+        await sb.from('categories').insert([{ name: n, color: c, user_id: u.id }]);
+        closeModal(); sync();
     }
 </script>
 </body>
