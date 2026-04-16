@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Planner - Perfect Alignment</title>
+    <title>Scanner Planner - Final OS</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;800&display=swap" rel="stylesheet">
@@ -23,14 +23,8 @@
         
         .app-layout { display: flex; width: 100vw; height: 100vh; overflow: hidden; }
 
-        /* ВСТАНОВЛЮЄМО ЄДИНУ ВИСОТУ ШАПКИ ДЛЯ СИМЕТРІЇ */
-        header, .sidebar-header { 
-            height: 64px; 
-            display: flex; 
-            align-items: center; 
-            border-bottom: 1px solid var(--border); 
-            flex-shrink: 0;
-        }
+        /* HEADER ALIGNMENT */
+        header, .sidebar-header { height: 64px; display: flex; align-items: center; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 
         /* SIDEBAR */
         #sidebar { 
@@ -48,10 +42,9 @@
             .sidebar-open .overlay { display: block; }
         }
 
-        /* MAIN CONTENT */
+        /* MAIN */
         main { flex-grow: 1; display: flex; flex-direction: column; min-width: 0; }
         .top-header { padding: 0 20px; justify-content: space-between; }
-        
         .header-controls { display: flex; align-items: center; gap: 8px; }
 
         .btn-icon, .input-year { 
@@ -64,15 +57,13 @@
         .input-year { width: 75px; text-align: center; font-weight: 800; font-size: 0.95rem; }
         .btn-icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-        /* CATEGORIES BAR - тепер лінія ідеально стикується з лінією хедера */
-        #cat-list { 
-            display: flex; gap: 8px; padding: 0 20px; height: 56px; align-items: center;
-            overflow-x: auto; border-bottom: 1px solid var(--border); flex-shrink: 0; scrollbar-width: none; 
-        }
-        .cat-item { cursor: pointer; display: flex; align-items: center; gap: 8px; white-space: nowrap; font-size: 0.8rem; font-weight: 600; padding: 6px 14px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); transition: 0.2s; }
-        .cat-item:hover { border-color: var(--accent); }
+        /* CATEGORIES & FILTERS */
+        #cat-list { display: flex; gap: 8px; padding: 0 20px; height: 56px; align-items: center; overflow-x: auto; border-bottom: 1px solid var(--border); flex-shrink: 0; scrollbar-width: none; }
+        .cat-item { cursor: pointer; display: flex; align-items: center; gap: 8px; white-space: nowrap; font-size: 0.8rem; font-weight: 600; padding: 6px 14px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); transition: 0.2s; user-select: none; }
+        .cat-item.active { border-color: var(--accent); background: rgba(16, 185, 129, 0.1); }
+        .cat-dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); }
 
-        /* CALENDAR AREA */
+        /* CALENDAR */
         #calendar-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 20px; scroll-behavior: smooth; }
         .year-section { margin-bottom: 25px; width: 100%; }
         .year-header { color: var(--accent); font-size: 1.7rem; margin-bottom: 10px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 10px; }
@@ -85,13 +76,12 @@
             padding: 32px 8px 8px; position: relative; min-height: 115px; flex: 1 1 0; min-width: 0;
             display: flex; flex-direction: column; gap: 6px; transition: 0.2s;
         }
-        .month-label { font-size: 0.7rem; color: var(--muted); position: absolute; top: 12px; left: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+        .month-cell.drag-over { border-color: var(--accent); background: rgba(16, 185, 129, 0.05); }
+        .month-label { font-size: 0.7rem; color: var(--muted); position: absolute; top: 12px; left: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; pointer-events: none; }
 
-        @media (max-width: 768px) {
-            .year-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-        }
+        @media (max-width: 768px) { .year-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; } }
 
-        .card { color: #fff; padding: 8px; border-radius: 8px; font-size: 0.75rem; cursor: grab; font-weight: 600; border-left: 3px solid rgba(255,255,255,0.4); line-height: 1.2; }
+        .card { color: #fff; padding: 8px; border-radius: 8px; font-size: 0.75rem; cursor: grab; font-weight: 600; border-left: 3px solid rgba(255,255,255,0.4); line-height: 1.2; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 
         /* MODALS */
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 3000; backdrop-filter: blur(8px); }
@@ -138,7 +128,7 @@
         <h3 id="modal-title" style="margin-top:0; font-weight:800; font-size:1.4rem;">Проєкт</h3>
         <input type="text" id="mTitle" class="modern-input" placeholder="Назва">
         <select id="mCat" class="modern-input" style="font-weight:600;"></select>
-        <p id="mDateDisplay" style="font-size:0.85rem; color:var(--muted); margin-bottom: 20px;"></p>
+        <p id="mDateDisplay" style="font-size:0.85rem; color:var(--muted); margin-bottom: 20px; font-weight:500;"></p>
         <button onclick="saveProject()" class="btn-primary">Зберегти</button>
         <button id="deleteBtn" onclick="deleteProject()" style="background:none; color:#ef4444; border:none; margin-top:16px; cursor:pointer; width:100%; font-weight:600;">Видалити</button>
     </div>
@@ -148,9 +138,9 @@
     <div class="modal-box">
         <h3 style="margin-top:0; font-weight:800; font-size:1.4rem;">Категорія</h3>
         <input type="text" id="catTitle" class="modern-input" placeholder="Назва">
-        <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px; font-weight:600;">
             <span>Колір:</span>
-            <input type="color" id="catColor" style="border:2px solid var(--border); width:48px; height:48px; background:none; cursor:pointer; border-radius:12px;">
+            <input type="color" id="catColor" style="border:2px solid var(--border); width:48px; height:48px; background:none; cursor:pointer; border-radius:12px; padding:2px;">
         </div>
         <button onclick="saveCategory()" class="btn-primary">Оновити</button>
         <button onclick="addCategory()" style="background:none; color:var(--accent); border:none; margin-top:16px; cursor:pointer; width:100%; font-weight:600;">+ Створити нову</button>
@@ -166,11 +156,17 @@
     let categories = JSON.parse(localStorage.getItem('sc-cats-list')) || ['Творчість', 'Технології', 'Бізнес', 'Особисте'];
     let catColors = JSON.parse(localStorage.getItem('sc-cats-colors')) || {'Творчість': '#a855f7', 'Технології': '#3b82f6', 'Бізнес': '#10b981', 'Особисте': '#f97316'};
     let collapsedYears = JSON.parse(localStorage.getItem('sc-collapsed-years')) || [];
+    let activeFilter = null;
     let editingId = null, selectedDate = null, editingCatName = null;
 
     async function loadData() {
         const { data } = await sb.from('projects').select('*');
         projects = data || [];
+        render();
+    }
+
+    function toggleFilter(catName) {
+        activeFilter = (activeFilter === catName) ? null : catName;
         render();
     }
 
@@ -186,13 +182,22 @@
         
         const clist = document.getElementById('cat-list'), mcat = document.getElementById('mCat');
         clist.innerHTML = ''; mcat.innerHTML = '';
+        
         categories.forEach(c => {
-            clist.innerHTML += `<div class="cat-item" onclick="openCatModal('${c}')"><span style="width:10px;height:10px;border-radius:50%;background:${catColors[c]}"></span>${c}</div>`;
+            const item = document.createElement('div');
+            item.className = 'cat-item' + (activeFilter === c ? ' active' : '');
+            if (activeFilter && activeFilter !== c) item.style.opacity = '0.4';
+            item.innerHTML = `
+                <div class="cat-dot" style="background:${catColors[c]}" onclick="event.stopPropagation(); openCatModal('${c}')"></div>
+                <span onclick="toggleFilter('${c}')">${c}</span>
+            `;
+            clist.appendChild(item);
             mcat.innerHTML += `<option value="${c}">${c}</option>`;
         });
 
         const cont = document.getElementById('calendar-scroll'); cont.innerHTML = '';
         const monthsNames = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
+        const displayProjects = activeFilter ? projects.filter(p => p.cat === activeFilter) : projects;
 
         for (let y = 0; y < 6; y++) {
             const year = startYear + y;
@@ -214,7 +219,7 @@
                     cell.addEventListener('dragover', (e) => { e.preventDefault(); cell.classList.add('drag-over'); });
                     cell.addEventListener('dragleave', () => cell.classList.remove('drag-over'));
                     cell.addEventListener('drop', (e) => handleDrop(e, dKey));
-                    projects.filter(p => p.date === dKey).forEach(p => cell.appendChild(createCard(p)));
+                    displayProjects.filter(p => p.date === dKey).forEach(p => cell.appendChild(createCard(p)));
                     row.appendChild(cell);
                 }
                 section.appendChild(row);
@@ -222,7 +227,7 @@
             cont.appendChild(section);
         }
         const blog = document.getElementById('backlog'); blog.innerHTML = '';
-        projects.filter(p => !p.date).forEach(p => blog.appendChild(createCard(p)));
+        displayProjects.filter(p => !p.date).forEach(p => blog.appendChild(createCard(p)));
     }
 
     function createCard(p) {
