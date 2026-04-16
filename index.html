@@ -1,317 +1,247 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Scanner Planner - Mobile Fix</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <style>
-        :root[data-theme="dark"] {
-            --bg: #09090b; --surface: #121214; --border: #222225; --text: #e4e4e7;
-            --muted: #71717a; --accent: #10b981; --error: #ef4444; --btn-text: #ffffff;
-        }
-        :root[data-theme="light"] {
-            --bg: #ffffff; --surface: #f4f4f5; --border: #e4e4e7; --text: #18181b;
-            --muted: #a1a1aa; --accent: #059669; --error: #dc2626; --btn-text: #ffffff;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Scanner Planner FIXED</title>
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; border: none; outline: none; }
-        
-        /* Виправлення висоти для мобільних */
-        body { 
-            background: var(--bg); 
-            color: var(--text); 
-            height: 100vh; 
-            height: 100dvh; 
-            overflow: hidden; 
-            display: flex; 
-            transition: background 0.3s ease; 
-        }
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-        #auth-gate { 
-            position: fixed; inset: 0; background: var(--bg); z-index: 20000; 
-            display: none; align-items: center; justify-content: center; padding: 20px;
-        }
-        .auth-card { 
-            background: var(--surface); padding: 32px; border-radius: 24px; 
-            border: 1px solid var(--border); width: 100%; max-width: 360px; 
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-        }
+<style>
+:root{
+--bg:#09090b;--surface:#121214;--border:#222225;--text:#e4e4e7;
+--muted:#71717a;--accent:#10b981;--error:#ef4444;
+}
 
-        #sidebar { 
-            width: 260px; background: var(--surface); border-right: 1px solid var(--border);
-            display: flex; flex-direction: column; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-            position: absolute; top: 0; bottom: 0; left: 0; z-index: 5000;
-        }
-        .sidebar-closed #sidebar { transform: translateX(-100%); }
-        
-        main { 
-            flex: 1; 
-            display: flex; 
-            flex-direction: column; 
-            min-width: 0; 
-            position: relative; 
-            width: 100%;
-            height: 100%;
-        }
-        
-        @media (min-width: 1025px) {
-            #sidebar { position: relative; }
-            .sidebar-closed #sidebar { display: none; }
-        }
+*{margin:0;padding:0;box-sizing:border-box;font-family:sans-serif}
 
-        /* Захист шапки від зникнення */
-        .bar { 
-            height: 60px; 
-            min-height: 60px; 
-            display: flex; 
-            align-items: center; 
-            padding: 0 16px; 
-            border-bottom: 1px solid var(--border); 
-            gap: 12px; 
-            flex-shrink: 0; 
-            background: var(--bg); 
-            z-index: 100;
-        }
-        
-        .logo { font-weight: 800; font-size: 1.1rem; flex: 1; }
-        .logo span { color: var(--accent); }
+body{
+background:var(--bg);
+color:var(--text);
+display:flex;
+height:100dvh;
+overflow:hidden;
+}
 
-        .btn { 
-            width: 38px; height: 38px; border-radius: 10px; background: var(--surface); 
-            border: 1px solid var(--border); color: var(--text); cursor: pointer;
-            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-        }
-        .btn svg { width: 20px; height: 20px; }
+#auth-gate{
+position:fixed;inset:0;
+display:none;
+align-items:center;
+justify-content:center;
+background:var(--bg);
+z-index:9999;
+}
 
-        .settings-box { padding: 16px; border-bottom: 1px solid var(--border); }
-        .year-input { 
-            width: 100%; background: var(--bg); border: 1px solid var(--border); 
-            color: var(--accent); font-weight: 800; border-radius: 12px; padding: 10px; text-align: center; margin-top: 8px;
-        }
+.card{
+background:var(--surface);
+padding:20px;
+border-radius:12px;
+border:1px solid var(--border);
+width:300px;
+display:flex;
+flex-direction:column;
+gap:10px;
+}
 
-        #cat-strip { padding: 0 12px; height: 44px; min-height: 44px; display: flex; align-items: center; gap: 8px; overflow-x: auto; border-bottom: 1px solid var(--border); scrollbar-width: none; flex-shrink: 0; }
-        .cat-chip { padding: 5px 12px; border-radius: 8px; background: var(--surface); font-size: 11px; font-weight: 600; border: 1px solid var(--border); cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
-        .cat-chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+input{
+padding:10px;
+border-radius:8px;
+border:1px solid var(--border);
+background:var(--bg);
+color:var(--text);
+}
 
-        #view { flex: 1; overflow-y: auto; padding: 16px; -webkit-overflow-scrolling: touch; }
-        .year-sec { margin-bottom: 16px; }
-        .year-title { font-size: 24px; font-weight: 800; color: var(--accent); margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
-        .year-sec.collapsed .calendar-grid { display: none; }
+button{
+padding:10px;
+border:none;
+border-radius:8px;
+background:var(--accent);
+color:#fff;
+cursor:pointer;
+}
 
-        .calendar-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 8px; }
-        @media (max-width: 1024px) { .calendar-grid { grid-template-columns: repeat(3, 1fr); } }
+#sidebar{
+width:240px;
+background:var(--surface);
+border-right:1px solid var(--border);
+overflow:auto;
+}
 
-        .month-cell {
-            background: var(--surface); border-radius: 14px; padding: 28px 8px 8px;
-            border: 1px solid var(--border); position: relative; min-height: 100px;
-        }
-        .month-cell::before {
-            content: attr(data-label); position: absolute; top: 10px; left: 10px;
-            font-size: 9px; font-weight: 800; color: var(--muted); text-transform: uppercase;
-        }
+#view{
+flex:1;
+overflow:auto;
+padding:16px;
+}
 
-        .proj {
-            padding: 6px 8px; border-radius: 6px; font-size: 10px; font-weight: 600;
-            color: #fff; margin-bottom: 4px; border-left: 3px solid rgba(0,0,0,0.2);
-        }
+.month{
+border:1px solid var(--border);
+padding:8px;
+margin-bottom:8px;
+cursor:pointer;
+}
 
-        .p-btn { width: 100%; padding: 12px; border-radius: 12px; background: var(--accent); color: var(--btn-text) !important; font-weight: 800; cursor: pointer; font-size: 12px; text-transform: uppercase; border: none; text-align: center; }
-        .sec-btn { width: 100%; padding: 12px; border-radius: 12px; background: var(--bg); color: var(--text); font-weight: 800; cursor: pointer; font-size: 12px; text-transform: uppercase; border: 1px solid var(--border); }
-        .inp { width: 100%; padding: 12px; margin-bottom: 12px; border-radius: 12px; background: var(--bg); color: var(--text); border: 1px solid var(--border); font-size: 14px; }
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 10000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
-    </style>
+.proj{
+background:var(--accent);
+margin:4px 0;
+padding:4px;
+font-size:12px;
+cursor:pointer;
+}
+</style>
 </head>
-<body class="sidebar-closed">
+
+<body>
 
 <div id="auth-gate">
-    <div class="auth-card">
-        <h1 class="logo" style="margin-bottom: 24px; font-size: 28px; text-align: center;">Scanner<span>Planner</span></h1>
-        <div style="margin-bottom: 16px;">
-            <label style="font-size: 11px; font-weight: 800; color: var(--muted); display: block; margin-bottom: 6px;">ЕЛЕКТРОННА ПОШТА</label>
-            <input type="email" id="email" class="inp" placeholder="email@example.com">
-        </div>
-        <div style="margin-bottom: 24px;">
-            <label style="font-size: 11px; font-weight: 800; color: var(--muted); display: block; margin-bottom: 6px;">ПАРОЛЬ</label>
-            <input type="password" id="pass" class="inp" placeholder="••••••••">
-        </div>
-        <button onclick="login()" class="p-btn">Увійти в систему</button>
-        <p id="auth-err" style="color:var(--error); margin-top: 16px; font-size: 12px; text-align: center; font-weight: 600;"></p>
-    </div>
+<div class="card">
+<input id="email" placeholder="Email">
+<input id="pass" type="password" placeholder="Password">
+<button id="login-btn">Увійти</button>
+<div id="auth-error" style="color:var(--error);font-size:12px;"></div>
+</div>
 </div>
 
-<aside id="sidebar">
-    <div class="bar" style="justify-content: space-between;">
-        <span style="font-weight: 800; color: var(--muted); font-size: 10px; letter-spacing: 1px;">МЕНЮ</span>
-        <div class="btn" onclick="toggleSidebar()" style="border:none;">✕</div>
-    </div>
-    <div class="settings-box">
-        <label style="font-size: 10px; font-weight: 800; color: var(--muted);">РІК ПОЧАТКУ ПЛАНУВАННЯ</label>
-        <input type="number" id="start-year" class="year-input" value="2026" onchange="render()">
-    </div>
-    <div style="padding: 16px; display: flex; flex-direction: column; gap: 8px;">
-        <button onclick="openModal('proj', null)" class="p-btn">+ Новий проєкт</button>
-        <button onclick="openModal('cat', null)" class="sec-btn">+ Категорія</button>
-    </div>
-    <div style="padding: 8px 16px;"><span style="font-weight: 800; color: var(--muted); font-size: 10px;">БЕКЛОГ</span></div>
-    <div id="backlog" style="flex:1; overflow-y:auto; padding: 0 16px 20px;"></div>
-</aside>
-
-<main>
-    <header class="bar">
-        <div class="btn" onclick="toggleSidebar()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 6h16M4 12h16M4 18h16"/></svg></div>
-        <h2 class="logo">Scanner<span>Planner</span></h2>
-        <div class="btn" onclick="toggleTheme()" id="theme-btn"></div>
-        <div class="btn" onclick="logout()" style="color: var(--error); border-color: transparent;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></div>
-    </header>
-    <div id="cat-strip"></div>
-    <div id="view"></div>
-</main>
-
-<div id="modal" class="modal" onclick="if(event.target==this)closeModal()">
-    <div class="auth-card" id="m-body" style="text-align: left;"></div>
+<div id="sidebar">
+<button id="add-btn">+ Проєкт</button>
 </div>
+
+<div id="view">Loading...</div>
 
 <script>
-    const S_URL = "https://mlkdphygsdfcanztbtez.supabase.co";
-    const S_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2RwaHlnc2RmY2FuenRidGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyODAwNTAsImV4cCI6MjA5MTg1NjA1MH0.PfjkZXua-9tp2lxVsBD3YBUNpx_USmMha5BQBZcGLFc";
-    const sb = supabase.createClient(S_URL, S_KEY);
+const S_URL = "https://mlkdphygsdfcanztbtez.supabase.co";
+const S_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2RwaHlnc2RmY2FuenRidGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyODAwNTAsImV4cCI6MjA5MTg1NjA1MH0.PfjkZXua-9tp2lxVsBD3YBUNpx_USmMha5BQBZcGLFc";
+const sb = supabase.createClient(S_URL, S_KEY);
 
-    let projects = [], categories = [], filter = null, activeDate = null;
+let state = {
+user:null,
+projects:[],
+loading:false
+};
 
-    function getSystemTheme() { return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
-    function initTheme() {
-        const theme = localStorage.getItem('theme') || getSystemTheme();
-        document.documentElement.setAttribute('data-theme', theme);
-        renderThemeBtn();
-    }
-    function toggleTheme() {
-        const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', next);
-        localStorage.setItem('theme', next);
-        renderThemeBtn();
-    }
-    function renderThemeBtn() {
-        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        document.getElementById('theme-btn').innerHTML = isDark 
-            ? `<svg viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`
-            : `<svg viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`;
-    }
+async function init(){
+const {data:{session}} = await sb.auth.getSession();
 
-    async function login() {
-        const { error } = await sb.auth.signInWithPassword({ email: email.value, password: pass.value });
-        if (error) document.getElementById('auth-err').innerText = "Помилка: " + error.message;
-    }
-    async function logout() { await sb.auth.signOut(); localStorage.clear(); window.location.reload(); }
-    
-    sb.auth.onAuthStateChange((ev, sess) => {
-        document.getElementById('auth-gate').style.display = sess ? 'none' : 'flex';
-        if (sess) sync();
-        initTheme();
-    });
+if(!session){
+showAuth();
+return;
+}
 
-    function toggleSidebar() { document.body.classList.toggle('sidebar-closed'); }
+state.user = session.user;
+await sync();
+}
 
-    async function sync() {
-        const [p, c] = await Promise.all([sb.from('projects').select('*'), sb.from('categories').select('*')]);
-        projects = p.data || []; categories = c.data || [];
-        render();
-    }
+function showAuth(){
+document.getElementById('auth-gate').style.display='flex';
+}
 
-    function render() {
-        const start = parseInt(document.getElementById('start-year').value) || 2026;
-        const strip = document.getElementById('cat-strip'); strip.innerHTML = '';
-        categories.forEach(c => {
-            const chip = document.createElement('div'); chip.className = `cat-chip ${filter === c.name ? 'active' : ''}`;
-            const dot = document.createElement('div'); dot.style.cssText = `width:8px;height:8px;border-radius:50%;background:${c.color};cursor:pointer;`;
-            dot.onclick = (e) => { e.stopPropagation(); openModal('cat', null, c); };
-            const txt = document.createElement('span'); txt.innerText = c.name;
-            txt.onclick = () => { filter = filter === c.name ? null : c.name; render(); };
-            chip.appendChild(dot); chip.appendChild(txt); strip.appendChild(chip);
-        });
+function hideAuth(){
+document.getElementById('auth-gate').style.display='none';
+}
 
-        const view = document.getElementById('view'); view.innerHTML = '';
-        const mNames = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
-        const list = filter ? projects.filter(p => p.cat === filter) : projects;
+document.getElementById('login-btn').onclick = async ()=>{
+const email = document.getElementById('email').value;
+const password = document.getElementById('pass').value;
 
-        for (let i = 0; i < 6; i++) {
-            const y = start + i;
-            const sec = document.createElement('div'); sec.className = 'year-sec';
-            sec.innerHTML = `<h2 class="year-title" onclick="this.parentElement.classList.toggle('collapsed')">${y}</h2>`;
-            const grid = document.createElement('div'); grid.className = 'calendar-grid';
-            for (let m = 1; m <= 12; m++) {
-                const code = `${y}-${String(m).padStart(2,'0')}`;
-                const cell = document.createElement('div'); cell.className = 'month-cell';
-                cell.setAttribute('data-label', mNames[m-1]);
-                cell.onclick = (e) => { if(e.target === cell) openModal('proj', code); };
-                cell.ondragover = (e) => e.preventDefault();
-                cell.ondrop = async (e) => {
-                    const pid = e.dataTransfer.getData('pid');
-                    await sb.from('projects').update({ date: code }).eq('id', pid); sync();
-                };
-                list.filter(p => p.date === code).forEach(p => {
-                    const c = categories.find(cat => cat.name === p.cat);
-                    const el = document.createElement('div'); el.className = 'proj';
-                    el.style.background = c?.color || '#444'; el.innerText = p.title;
-                    el.draggable = true;
-                    el.ondragstart = (e) => e.dataTransfer.setData('pid', p.id);
-                    el.onclick = (e) => { e.stopPropagation(); openModal('proj', code, p); };
-                    cell.appendChild(el);
-                });
-                grid.appendChild(cell);
-            }
-            sec.appendChild(grid); view.appendChild(sec);
-        }
+const {error} = await sb.auth.signInWithPassword({email,password});
 
-        const bl = document.getElementById('backlog'); bl.innerHTML = '';
-        list.filter(p => !p.date).forEach(p => {
-            const c = categories.find(cat => cat.name === p.cat);
-            const el = document.createElement('div'); el.className = 'proj';
-            el.style.background = c?.color || '#444'; el.innerText = p.title;
-            el.draggable = true;
-            el.ondragstart = (e) => e.dataTransfer.setData('pid', p.id);
-            el.onclick = () => openModal('proj', null, p);
-            bl.appendChild(el);
-        });
-    }
+if(error){
+document.getElementById('auth-error').innerText = error.message;
+return;
+}
 
-    function openModal(type, date, item = null) {
-        activeDate = date;
-        const body = document.getElementById('m-body');
-        document.getElementById('modal').style.display = 'flex';
-        if (type === 'proj') {
-            body.innerHTML = `<h3 style="margin-bottom:16px;">${item?'Редагувати':'Новий'} проєкт</h3>
-                <input id="f-t" class="inp" value="${item?.title||''}" placeholder="Назва проєкту">
-                <select id="f-c" class="inp">${categories.map(c=>`<option ${item?.cat===c.name?'selected':''}>${c.name}</option>`).join('')}</select>
-                <button onclick="saveProj('${item?.id||''}')" class="p-btn">Зберегти</button>
-                ${item?`<button onclick="del('projects','${item.id}')" style="color:var(--error);background:none;width:100%;margin-top:12px;cursor:pointer;font-size:11px;font-weight:800;">ВИДАЛИТИ</button>`:''}`;
-        } else {
-            body.innerHTML = `<h3 style="margin-bottom:16px;">${item?'Редагувати':'Нова'} категорія</h3>
-                <input id="f-n" class="inp" value="${item?.name||''}" placeholder="Назва категорії">
-                <input id="f-co" type="color" class="inp" style="height:45px; padding:4px;" value="${item?.color||'#10b981'}">
-                <button onclick="saveCat('${item?.id||''}')" class="p-btn">Зберегти</button>
-                ${item?`<button onclick="del('categories','${item.id}')" style="color:var(--error);background:none;width:100%;margin-top:12px;cursor:pointer;font-size:11px;font-weight:800;">ВИДАЛИТИ</button>`:''}`;
-        }
-    }
+location.reload();
+};
 
-    async function saveProj(id) {
-        const user = (await sb.auth.getUser()).data.user;
-        const d = { title: document.getElementById('f-t').value, cat: document.getElementById('f-c').value, date: activeDate || null, user_id: user.id };
-        if(id) await sb.from('projects').update(d).eq('id', id); else await sb.from('projects').insert([d]);
-        closeModal(); sync();
-    }
+async function sync(){
+setLoading(true);
 
-    async function saveCat(id) {
-        const user = (await sb.auth.getUser()).data.user;
-        const d = { name: document.getElementById('f-n').value, color: document.getElementById('f-co').value, user_id: user.id };
-        if(id) await sb.from('categories').update(d).eq('id', id); else await sb.from('categories').insert([d]);
-        closeModal(); sync();
-    }
+const {data,error} = await sb.from('projects').select('*');
 
-    async function del(t, id) { if(confirm('Видалити безповоротно?')) { await sb.from(t).delete().eq('id', id); closeModal(); sync(); } }
-    function closeModal() { document.getElementById('modal').style.display = 'none'; }
-    initTheme();
+if(error){
+alert("Помилка завантаження");
+console.error(error);
+setLoading(false);
+return;
+}
+
+state.projects = data || [];
+setLoading(false);
+render();
+}
+
+function setLoading(v){
+state.loading = v;
+if(v){
+document.getElementById('view').innerHTML = "Loading...";
+}
+}
+
+function render(){
+const view = document.getElementById('view');
+view.innerHTML = "";
+
+for(let m=1;m<=12;m++){
+const div = document.createElement('div');
+div.className='month';
+div.innerText = "Місяць "+m;
+
+div.onclick = ()=>createProject(m);
+
+state.projects
+.filter(p=>p.month===m)
+.forEach(p=>{
+const el = document.createElement('div');
+el.className='proj';
+el.innerText = p.title;
+
+el.onclick = (e)=>{
+e.stopPropagation();
+editProject(p);
+};
+
+div.appendChild(el);
+});
+
+view.appendChild(div);
+}
+}
+
+async function createProject(month){
+const title = prompt("Назва проєкту");
+if(!title) return;
+
+const {error} = await sb.from('projects').insert([{
+title,
+month,
+user_id: state.user.id
+}]);
+
+if(error){
+alert(error.message);
+return;
+}
+
+sync();
+}
+
+async function editProject(p){
+const title = prompt("Редагувати", p.title);
+if(!title) return;
+
+const {error} = await sb.from('projects')
+.update({title})
+.eq('id',p.id);
+
+if(error){
+alert(error.message);
+return;
+}
+
+sync();
+}
+
+init();
 </script>
+
 </body>
 </html>
