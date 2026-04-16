@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Planner - Clean Edition</title>
+    <title>Scanner Planner - Elite Compact</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
         :root[data-theme="dark"] {
-            --bg: #09090b; --surface: #141416; --border: #27272a; --text: #fafafa;
-            --muted: #71717a; --accent: #10b981; --error: #f43f5e;
+            --bg: #0c0c0e; --surface: #161618; --border: #232326; --text: #ececec;
+            --muted: #808089; --accent: #10b981; --error: #f43f5e;
         }
         :root[data-theme="light"] {
-            --bg: #ffffff; --surface: #f4f4f5; --border: #e4e4e7; --text: #09090b;
-            --muted: #71717a; --accent: #10b981; --error: #f43f5e;
+            --bg: #fcfcfc; --surface: #f1f1f3; --border: #e2e2e5; --text: #18181b;
+            --muted: #71717a; --accent: #059669; --error: #e11d48;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; border: none; outline: none; }
@@ -21,116 +21,112 @@
 
         /* AUTH GATE */
         #auth-gate { position: fixed; inset: 0; background: var(--bg); z-index: 10000; display: flex; align-items: center; justify-content: center; }
-        .auth-card { background: var(--surface); padding: 35px; border-radius: 28px; box-shadow: 0 0 0 1px var(--border); width: 90%; max-width: 360px; text-align: center; }
+        .auth-card { background: var(--surface); padding: 30px; border-radius: 24px; border: 1px solid var(--border); width: 90%; max-width: 340px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
 
-        /* SIDEBAR (OVERLAY ON MOBILE) */
+        /* SIDEBAR */
         #sidebar { 
-            width: 280px; background: var(--surface); flex-shrink: 0; border-right: 1px solid var(--border);
+            width: 260px; background: var(--surface); flex-shrink: 0; border-right: 1px solid var(--border);
             display: flex; flex-direction: column; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
             position: absolute; top: 0; bottom: 0; left: 0; z-index: 5000;
         }
         .sidebar-closed #sidebar { transform: translateX(-100%); }
-        main { flex: 1; display: flex; flex-direction: column; min-width: 0; transition: margin-left 0.3s ease; }
+        main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
         
         @media (min-width: 1025px) {
             #sidebar { position: relative; }
             .sidebar-closed #sidebar { display: none; }
         }
 
-        /* UI ELEMENTS */
-        .bar { height: 64px; display: flex; align-items: center; padding: 0 15px; border-bottom: 1px solid var(--border); gap: 12px; flex-shrink: 0; }
-        .logo { font-weight: 900; font-size: 1.2rem; letter-spacing: -0.5px; }
+        /* TOP BARS */
+        .bar { height: 56px; display: flex; align-items: center; padding: 0 15px; border-bottom: 1px solid var(--border); gap: 10px; flex-shrink: 0; }
+        .logo { font-weight: 800; font-size: 1.1rem; letter-spacing: -0.5px; }
         .logo span { color: var(--accent); }
 
         .btn { 
-            width: 40px; height: 40px; border-radius: 12px; background: var(--surface); 
+            width: 36px; height: 36px; border-radius: 10px; background: var(--surface); 
             border: 1px solid var(--border); color: var(--text); cursor: pointer;
             display: flex; align-items: center; justify-content: center; transition: 0.2s;
         }
-        .btn:active { transform: scale(0.95); }
-        .btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; }
+        .btn:hover { border-color: var(--accent); }
+        .btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5; }
+
+        /* YEAR SELECTOR STRIP */
+        #year-selector { padding: 0 15px; height: 44px; display: flex; align-items: center; gap: 6px; overflow-x: auto; border-bottom: 1px solid var(--border); scrollbar-width: none; }
+        .year-btn { padding: 4px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; border: 1px solid var(--border); cursor: pointer; white-space: nowrap; transition: 0.2s; color: var(--muted); }
+        .year-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
 
         /* CATEGORIES */
-        #cat-strip { padding: 0 15px; height: 50px; display: flex; align-items: center; gap: 8px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--border); }
-        .cat-chip { 
-            padding: 6px 14px; border-radius: 20px; background: var(--surface); font-size: 12px; font-weight: 700;
-            border: 1px solid var(--border); cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 8px;
-        }
+        #cat-strip { padding: 0 15px; height: 44px; display: flex; align-items: center; gap: 6px; overflow-x: auto; border-bottom: 1px solid var(--border); scrollbar-width: none; }
+        .cat-chip { padding: 4px 10px; border-radius: 8px; background: var(--surface); font-size: 11px; font-weight: 600; border: 1px solid var(--border); cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
         .cat-chip.active { background: var(--accent); color: #000; border-color: var(--accent); }
-        .dot { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.2); }
+        .dot { width: 8px; height: 8px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); }
 
-        /* YEAR SECTIONS (CLEAN) */
-        #view { flex: 1; overflow-y: auto; padding: 20px; }
-        .year-label { 
-            font-size: 28px; font-weight: 900; color: var(--accent); 
-            margin: 20px 0 15px; cursor: pointer; display: inline-block;
-            transition: opacity 0.2s;
-        }
-        .year-label:hover { opacity: 0.7; }
-        
-        .calendar-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 8px; }
+        /* VIEW & GRID */
+        #view { flex: 1; overflow-y: auto; padding: 15px; scroll-behavior: smooth; }
+        .year-sec { margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        .year-title { font-size: 20px; font-weight: 800; color: var(--accent); margin-bottom: 10px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .year-title::after { content: '▼'; font-size: 10px; transition: transform 0.3s; opacity: 0.5; }
+        .year-sec.collapsed .year-title::after { transform: rotate(-90deg); }
         .year-sec.collapsed .calendar-grid { display: none; }
-        .year-sec.collapsed .year-label { opacity: 0.4; margin-bottom: 5px; }
 
-        @media (max-width: 1024px) {
-            .calendar-grid { grid-template-columns: repeat(3, 1fr); }
-        }
+        .calendar-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 6px; }
+        @media (max-width: 1024px) { .calendar-grid { grid-template-columns: repeat(3, 1fr); } }
 
         .month-cell {
-            background: var(--surface); border-radius: 14px; padding: 28px 8px 8px;
-            border: 1px solid var(--border); position: relative; min-height: 110px;
+            background: var(--surface); border-radius: 12px; padding: 24px 6px 6px;
+            border: 1px solid var(--border); position: relative; min-height: 90px; transition: 0.2s;
         }
+        .month-cell:hover { border-color: var(--muted); }
         .month-cell::before {
-            content: attr(data-label); position: absolute; top: 10px; left: 10px;
-            font-size: 9px; font-weight: 900; color: var(--muted); text-transform: uppercase;
+            content: attr(data-label); position: absolute; top: 6px; left: 8px;
+            font-size: 8px; font-weight: 800; color: var(--muted); text-transform: uppercase;
         }
 
         .proj {
-            padding: 6px 8px; border-radius: 8px; font-size: 10px; font-weight: 700;
-            color: #fff; margin-bottom: 5px; cursor: grab;
-            border-left: 3px solid rgba(0,0,0,0.2); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            padding: 4px 6px; border-radius: 6px; font-size: 10px; font-weight: 600;
+            color: #fff; margin-bottom: 4px; cursor: grab;
+            border-left: 3px solid rgba(0,0,0,0.2); box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         /* MODALS */
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 10000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
-        .inp { width: 100%; padding: 14px; margin-bottom: 12px; border-radius: 12px; background: var(--bg); color: var(--text); border: 1px solid var(--border); font-size: 16px; }
-        .p-btn { width: 100%; padding: 14px; border-radius: 12px; background: var(--accent); color: #000; font-weight: 900; cursor: pointer; text-transform: uppercase; }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 10000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(6px); }
+        .inp { width: 100%; padding: 10px; margin-bottom: 8px; border-radius: 10px; background: var(--bg); color: var(--text); border: 1px solid var(--border); font-size: 14px; }
+        .p-btn { width: 100%; padding: 10px; border-radius: 10px; background: var(--accent); color: #000; font-weight: 800; cursor: pointer; text-transform: uppercase; font-size: 12px; }
     </style>
 </head>
 <body class="sidebar-closed">
 
 <div id="auth-gate">
     <div class="auth-card">
-        <h1 class="logo" style="margin-bottom: 30px; font-size: 28px;">Scanner<span>Planner</span></h1>
+        <h1 class="logo" style="margin-bottom: 20px; font-size: 24px;">Scanner<span>Planner</span></h1>
         <input type="email" id="email" class="inp" placeholder="Email">
         <input type="password" id="pass" class="inp" placeholder="Пароль">
         <button onclick="login()" class="p-btn">Увійти</button>
-        <p id="auth-err" style="color:var(--error); margin-top: 15px; font-size: 12px;"></p>
+        <p id="auth-err" style="color:var(--error); margin-top: 10px; font-size: 11px;"></p>
     </div>
 </div>
 
 <aside id="sidebar">
     <div class="bar" style="justify-content: space-between;">
-        <span style="font-weight: 900; color: var(--muted); font-size: 11px;">BACKLOG</span>
+        <span style="font-weight: 800; color: var(--muted); font-size: 10px; letter-spacing: 1px;">BACKLOG</span>
         <div class="btn" onclick="toggleSidebar()" style="border:none;">✕</div>
     </div>
-    <div style="padding: 20px;">
+    <div style="padding: 15px;">
         <button onclick="openModal('proj', null)" class="p-btn">+ Проєкт</button>
-        <button onclick="openModal('cat', null)" class="p-btn" style="background:var(--bg); color:var(--text); margin-top:10px; border: 1px solid var(--border);">+ Категорія</button>
+        <button onclick="openModal('cat', null)" class="p-btn" style="background:var(--bg); color:var(--text); margin-top:8px; border: 1px solid var(--border);">+ Категорія</button>
     </div>
-    <div id="backlog" style="flex:1; overflow-y:auto; padding: 0 20px;"></div>
+    <div id="backlog" style="flex:1; overflow-y:auto; padding: 0 15px;"></div>
 </aside>
 
 <main>
     <header class="bar">
         <div class="btn" onclick="toggleSidebar()"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></div>
         <h2 class="logo" style="flex:1;">Scanner<span>Planner</span></h2>
-        
-        <div class="btn" onclick="toggleTheme()" id="theme-btn">
-            </div>
-
+        <div class="btn" onclick="toggleTheme()" id="theme-btn"></div>
         <div class="btn" onclick="logout()" style="color: var(--error); border-color: transparent;"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></div>
     </header>
+    
+    <div id="year-selector"></div>
     <div id="cat-strip"></div>
     <div id="view"></div>
 </main>
@@ -147,20 +143,17 @@
     let projects = [], categories = [], filter = null, activeDate = null;
 
     function toggleSidebar() { document.body.classList.toggle('sidebar-closed'); }
-    
     function toggleTheme() {
         const d = document.documentElement;
-        const newTheme = d.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-        d.setAttribute('data-theme', newTheme);
+        d.setAttribute('data-theme', d.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
         renderThemeBtn();
     }
 
     function renderThemeBtn() {
         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        // НОВА ІКОНКА (ОБОВ'ЯЗКОВО)
         document.getElementById('theme-btn').innerHTML = isDark 
-            ? `<svg viewBox="0 0 24 24" style="stroke: #fbbf24"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.02 0l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>` // Сяюче сонце
-            : `<svg viewBox="0 0 24 24" style="stroke: #6366f1"><path d="M12 3c.132 0 .263 0 .393.007a9 9 0 1010.6 10.607 7.5 7.5 0 11-10.993-10.614z"/></svg>`; // Глибокий місяць
+            ? `<svg viewBox="0 0 24 24" style="stroke: #fbbf24"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>`
+            : `<svg viewBox="0 0 24 24" style="stroke: #6366f1"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>`;
     }
 
     async function login() {
@@ -181,6 +174,16 @@
     }
 
     function render() {
+        // Years Strip
+        const ys = document.getElementById('year-selector'); ys.innerHTML = '';
+        for(let i=0; i<6; i++) {
+            const y = 2026 + i;
+            const btn = document.createElement('div'); btn.className = 'year-btn'; btn.innerText = y;
+            btn.onclick = () => document.getElementById(`year-${y}`).scrollIntoView({ behavior: 'smooth' });
+            ys.appendChild(btn);
+        }
+
+        // Categories Strip
         const strip = document.getElementById('cat-strip'); strip.innerHTML = '';
         categories.forEach(c => {
             const chip = document.createElement('div'); 
@@ -196,8 +199,8 @@
 
         for (let i = 0; i < 6; i++) {
             const y = 2026 + i;
-            const sec = document.createElement('div'); sec.className = 'year-sec';
-            sec.innerHTML = `<h2 class="year-label" onclick="this.parentElement.classList.toggle('collapsed')">${y}</h2>`;
+            const sec = document.createElement('div'); sec.className = 'year-sec'; sec.id = `year-${y}`;
+            sec.innerHTML = `<h2 class="year-title" onclick="this.parentElement.classList.toggle('collapsed')">${y}</h2>`;
             const grid = document.createElement('div'); grid.className = 'calendar-grid';
             
             for (let m = 1; m <= 12; m++) {
@@ -205,12 +208,10 @@
                 const cell = document.createElement('div'); cell.className = 'month-cell';
                 cell.setAttribute('data-label', mNames[m-1]);
                 cell.onclick = (e) => { if(e.target === cell) openModal('proj', code); };
-                
-                cell.ondragover = (e) => { e.preventDefault(); };
+                cell.ondragover = (e) => e.preventDefault();
                 cell.ondrop = async (e) => {
                     const pid = e.dataTransfer.getData('pid');
-                    await sb.from('projects').update({ date: code }).eq('id', pid);
-                    sync();
+                    await sb.from('projects').update({ date: code }).eq('id', pid); sync();
                 };
 
                 list.filter(p => p.date === code).forEach(p => {
@@ -243,30 +244,24 @@
         activeDate = date;
         const body = document.getElementById('m-body');
         document.getElementById('modal').style.display = 'flex';
-        
         if (type === 'proj') {
             body.innerHTML = `<h3>${item?'Редагувати':'Новий'} проєкт</h3>
                 <input id="f-t" class="inp" value="${item?.title||''}" placeholder="Назва...">
                 <select id="f-c" class="inp">${categories.map(c=>`<option ${item?.cat===c.name?'selected':''}>${c.name}</option>`).join('')}</select>
                 <button onclick="saveProj('${item?.id||''}')" class="p-btn">Зберегти</button>
-                ${item?`<button onclick="del('projects','${item.id}')" style="color:var(--error);background:none;width:100%;margin-top:10px;cursor:pointer;font-weight:700;">Видалити</button>`:''}`;
+                ${item?`<button onclick="del('projects','${item.id}')" style="color:var(--error);background:none;width:100%;margin-top:10px;cursor:pointer;font-size:11px;font-weight:700;">ВИДАЛИТИ</button>`:''}`;
         } else {
             body.innerHTML = `<h3>${item?'Редагувати':'Нова'} категорія</h3>
                 <input id="f-n" class="inp" value="${item?.name||''}" placeholder="Назва...">
-                <input id="f-co" type="color" class="inp" style="height:50px" value="${item?.color||'#10b981'}">
+                <input id="f-co" type="color" class="inp" style="height:40px" value="${item?.color||'#10b981'}">
                 <button onclick="saveCat('${item?.id||''}')" class="p-btn">Зберегти</button>
-                ${item?`<button onclick="del('categories','${item.id}')" style="color:var(--error);background:none;width:100%;margin-top:10px;cursor:pointer;font-weight:700;">Видалити</button>`:''}`;
+                ${item?`<button onclick="del('categories','${item.id}')" style="color:var(--error);background:none;width:100%;margin-top:10px;cursor:pointer;font-size:11px;font-weight:700;">ВИДАЛИТИ</button>`:''}`;
         }
     }
 
     async function saveProj(id) {
         const user = (await sb.auth.getUser()).data.user;
-        const d = { 
-            title: document.getElementById('f-t').value, 
-            cat: document.getElementById('f-c').value, 
-            date: activeDate || null, 
-            user_id: user.id 
-        };
+        const d = { title: document.getElementById('f-t').value, cat: document.getElementById('f-c').value, date: activeDate || null, user_id: user.id };
         if(id) await sb.from('projects').update(d).eq('id', id); else await sb.from('projects').insert([d]);
         closeModal(); sync();
     }
@@ -280,7 +275,6 @@
 
     async function del(t, id) { if(confirm('Видалити?')) { await sb.from(t).delete().eq('id', id); closeModal(); sync(); } }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
-    
     renderThemeBtn();
 </script>
 </body>
