@@ -3,223 +3,264 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Planner - 6Y Edition</title>
+    <title>Scanner Planner - Elite 6Y</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root[data-theme="dark"] {
-            --bg: #0c0c0e; --surface: #161619; --border: #262629; --text: #f4f4f5;
-            --muted: #828288; --accent: #10b981; --error: #ef4444;
+            --bg: #0a0a0b; --surface: #141416; --border: #242427; --text: #ffffff;
+            --muted: #71717a; --accent: #10b981; --error: #f43f5e;
         }
         :root[data-theme="light"] {
-            --bg: #ffffff; --surface: #f4f4f5; --border: #e4e4e7; --text: #18181b;
-            --muted: #71717a; --accent: #10b981; --error: #ef4444;
+            --bg: #ffffff; --surface: #f4f4f5; --border: #e4e4e7; --text: #09090b;
+            --muted: #71717a; --accent: #10b981; --error: #f43f5e;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; border: none; outline: none; font-family: 'Outfit', sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; border: none; outline: none; }
         body { background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; }
 
-        /* Auth */
+        /* AUTH LAYER */
         #auth-gate { position: fixed; inset: 0; background: var(--bg); z-index: 10000; display: flex; align-items: center; justify-content: center; }
-        .box { background: var(--surface); padding: 30px; border-radius: 24px; box-shadow: 0 0 0 1px var(--border); width: 90%; max-width: 360px; }
+        .auth-card { background: var(--surface); padding: 40px; border-radius: 32px; box-shadow: 0 0 0 1px var(--border); width: 90%; max-width: 380px; text-align: center; }
 
-        /* Layout */
+        /* LAYOUT */
         #sidebar { 
-            width: 280px; background: var(--bg); flex-shrink: 0; box-shadow: 1px 0 0 0 var(--border);
-            display: flex; flex-direction: column; transition: transform 0.3s; z-index: 2000;
+            width: 300px; background: var(--bg); flex-shrink: 0; box-shadow: 1px 0 0 0 var(--border);
+            display: flex; flex-direction: column; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); z-index: 2000;
         }
-        .sidebar-hide #sidebar { transform: translateX(-280px); margin-right: -280px; }
-        main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+        .sidebar-closed #sidebar { transform: translateX(-300px); margin-right: -300px; }
+        main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
 
-        /* Components */
-        .bar { height: 64px; display: flex; align-items: center; padding: 0 20px; box-shadow: 0 1px 0 0 var(--border); flex-shrink: 0; gap: 12px; }
-        .btn { 
-            width: 40px; height: 40px; border-radius: 12px; background: var(--surface); 
+        /* NAV BARS */
+        .bar { height: 64px; display: flex; align-items: center; padding: 0 20px; box-shadow: 0 1px 0 0 var(--border); gap: 12px; flex-shrink: 0; }
+        .icon-btn { 
+            width: 44px; height: 44px; border-radius: 12px; background: var(--surface); 
             box-shadow: 0 0 0 1px var(--border); color: var(--text); cursor: pointer;
-            display: flex; align-items: center; justify-content: center; 
+            display: flex; align-items: center; justify-content: center; transition: 0.2s;
         }
-        .btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; }
+        .icon-btn:hover { box-shadow: 0 0 0 1px var(--accent); color: var(--accent); }
+        .icon-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.5; }
 
-        /* Categories Bar */
-        .cat-scroll { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 0 20px; height: 50px; align-items: center; box-shadow: 0 1px 0 0 var(--border); }
-        .chip { 
-            padding: 6px 12px; border-radius: 8px; background: var(--surface); font-size: 13px; 
-            font-weight: 600; box-shadow: 0 0 0 1px var(--border); white-space: nowrap; cursor: pointer;
-        }
-
-        /* Calendar Grid 4x3 */
-        #viewport { flex: 1; overflow-y: auto; padding: 20px; }
-        .year-block { margin-bottom: 20px; }
-        .year-header { 
-            display: flex; align-items: center; justify-content: space-between; 
-            padding: 15px; background: var(--surface); border-radius: 14px; 
-            cursor: pointer; box-shadow: 0 0 0 1px var(--border); margin-bottom: 10px;
-        }
-        .year-header h2 { font-size: 1.5rem; font-weight: 900; color: var(--accent); }
-        
-        .grid-4x3 { 
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; 
-            transition: max-height 0.3s ease-out; overflow: hidden;
-        }
-        .collapsed .grid-4x3 { display: none; }
-
-        .month { 
-            background: var(--surface); border-radius: 12px; padding: 30px 8px 8px;
-            box-shadow: 0 0 0 1px var(--border); position: relative; min-height: 100px;
-        }
-        .month::before { 
-            content: attr(data-m); position: absolute; top: 8px; left: 10px; 
-            font-size: 10px; font-weight: 900; color: var(--muted);
+        /* CATEGORIES */
+        #cat-strip { padding: 0 20px; height: 56px; display: flex; align-items: center; gap: 10px; overflow-x: auto; scrollbar-width: none; box-shadow: 0 1px 0 0 var(--border); }
+        .cat-chip { 
+            padding: 8px 16px; border-radius: 10px; background: var(--surface); font-size: 13px; font-weight: 700;
+            box-shadow: 0 0 0 1px var(--border); cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 8px;
         }
 
-        .task { 
-            padding: 6px; border-radius: 6px; font-size: 10px; font-weight: 700; 
-            color: #fff; margin-bottom: 4px; border-left: 3px solid rgba(0,0,0,0.2);
+        /* GRID 4x3 SYSTEM */
+        #calendar-view { flex: 1; overflow-y: auto; padding: 24px; scroll-behavior: smooth; }
+        .year-group { margin-bottom: 24px; }
+        .year-toggle { 
+            background: var(--surface); padding: 16px 20px; border-radius: 16px; 
+            box-shadow: 0 0 0 1px var(--border); cursor: pointer; display: flex; 
+            justify-content: space-between; align-items: center; margin-bottom: 12px;
+        }
+        .year-toggle h2 { font-size: 24px; font-weight: 900; color: var(--accent); letter-spacing: -1px; }
+
+        .grid-4x3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .year-group.collapsed .grid-4x3 { display: none; }
+
+        .month-cell {
+            background: var(--surface); border-radius: 16px; padding: 35px 10px 10px;
+            box-shadow: 0 0 0 1px var(--border); position: relative; min-height: 110px; cursor: pointer;
+        }
+        .month-cell::before {
+            content: attr(data-label); position: absolute; top: 12px; left: 12px;
+            font-size: 10px; font-weight: 900; color: var(--muted); text-transform: uppercase;
         }
 
-        /* Forms */
-        .inp { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 10px; background: var(--bg); color: var(--text); box-shadow: 0 0 0 1px var(--border); }
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 5000; }
-        
+        .proj-pill {
+            padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 700;
+            color: #fff; margin-bottom: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            border-left: 3px solid rgba(255,255,255,0.4);
+        }
+
+        /* MODALS & FORMS */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 5000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .input-ui { width: 100%; padding: 14px; margin-bottom: 12px; border-radius: 12px; background: var(--bg); color: var(--text); box-shadow: 0 0 0 1px var(--border); font-size: 16px; }
+        .primary-btn { width: 100%; padding: 14px; border-radius: 12px; background: var(--accent); color: #000; font-weight: 900; cursor: pointer; text-transform: uppercase; }
+
         @media (max-width: 600px) {
-            .grid-4x3 { grid-template-columns: repeat(3, 1fr); } /* Планшетний/мобільний вигляд 4х3 */
+            .grid-4x3 { grid-template-columns: repeat(3, 1fr); } /* Залишаємо 3 колонки для квартального вигляду */
+            .month-cell { min-height: 90px; }
         }
     </style>
 </head>
-<body class="sidebar-hide">
+<body class="sidebar-closed">
 
 <div id="auth-gate">
-    <div class="box">
-        <h2 style="margin-bottom:20px; text-align:center;">ScannerPlanner</h2>
-        <input type="email" id="email" class="inp" placeholder="Email">
-        <input type="password" id="pass" class="inp" placeholder="Пароль">
-        <button onclick="login()" style="width:100%; height:44px; background:var(--accent); border-radius:10px; color:#fff; font-weight:800; cursor:pointer;">УВІЙТИ</button>
-        <p id="err" style="color:var(--error); font-size:12px; margin-top:10px; text-align:center;"></p>
+    <div class="auth-card">
+        <h1 style="margin-bottom: 8px; font-weight: 900;">Scanner<span style="color:var(--accent)">Planner</span></h1>
+        <p style="color:var(--muted); margin-bottom: 30px; font-size: 14px;">Авторизація</p>
+        <input type="email" id="auth-email" class="input-ui" placeholder="Email">
+        <input type="password" id="auth-pass" class="input-ui" placeholder="Пароль">
+        <button onclick="handleLogin()" class="primary-btn">Увійти</button>
+        <div id="auth-err" style="color:var(--error); margin-top: 15px; font-size: 12px; font-weight: 700;"></div>
     </div>
 </div>
 
 <aside id="sidebar">
-    <div class="bar" style="justify-content:space-between;">
-        <span style="font-weight:900; color:var(--muted); font-size:12px;">BACKLOG</span>
-        <button class="btn" onclick="toggleSidebar()" style="box-shadow:none;">✕</button>
+    <div class="bar" style="justify-content: space-between;">
+        <span style="font-weight: 900; color: var(--muted); font-size: 12px; letter-spacing: 1px;">BACKLOG</span>
+        <div class="icon-btn" onclick="toggleSidebar()" style="box-shadow: none;"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
     </div>
-    <div style="padding:15px;"><button onclick="openModal('proj')" style="width:100%; height:40px; background:var(--accent); border-radius:10px; color:#fff; font-weight:800; cursor:pointer;">+ ПРОЄКТ</button></div>
-    <div id="backlog" style="flex:1; overflow-y:auto; padding:0 15px;"></div>
+    <div style="padding: 20px;">
+        <button onclick="openModal('proj')" class="primary-btn">+ ПРОЄКТ</button>
+        <button onclick="openModal('cat')" class="primary-btn" style="background:var(--surface); color:var(--text); margin-top:10px; box-shadow: 0 0 0 1px var(--border);">+ КАТЕГОРІЯ</button>
+    </div>
+    <div id="backlog-items" style="flex:1; overflow-y:auto; padding: 0 20px;"></div>
 </aside>
 
 <main>
     <header class="bar">
-        <button class="btn" onclick="toggleSidebar()"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
-        <h1 style="flex:1; font-weight:900; font-size:1.2rem;">Scanner<span style="color:var(--accent)">Planner</span></h1>
-        <button class="btn" onclick="toggleTheme()" id="theme-icon">
-            <svg viewBox="0 0 24 24"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.02 0l-.707-.707M6.343 6.343l-.707-.707"/></svg>
-        </button>
-        <button class="btn" onclick="logout()"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>
+        <div class="icon-btn" onclick="toggleSidebar()"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></div>
+        <h2 style="flex:1; font-weight: 900; font-size: 20px; letter-spacing: -1px;">Scanner<span style="color:var(--accent)">Planner</span></h2>
+        
+        <div class="icon-btn" onclick="toggleTheme()">
+            <svg id="theme-icon" viewBox="0 0 24 24"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.02 0l-.707-.707M6.343 6.343l-.707-.707"/></svg>
+        </div>
+        
+        <div class="icon-btn" onclick="handleLogout()" style="color: var(--error);">
+            <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        </div>
     </header>
-    <div class="cat-scroll" id="cat-nav"></div>
-    <div id="viewport"></div>
+
+    <div id="cat-strip"></div>
+    <div id="calendar-view"></div>
 </main>
 
-<div id="modal" class="modal" onclick="if(event.target==this)closeModal()">
-    <div class="box" id="modal-content"></div>
+<div id="main-modal" class="modal" onclick="if(event.target==this)closeModal()">
+    <div class="auth-card" id="modal-body" style="text-align: left;"></div>
 </div>
 
 <script>
-    const URL = "https://mlkdphygsdfcanztbtez.supabase.co";
-    const KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2RwaHlnc2RmY2FuenRidGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyODAwNTAsImV4cCI6MjA5MTg1NjA1MH0.PfjkZXua-9tp2lxVsBD3YBUNpx_USmMha5BQBZcGLFc";
-    const sb = supabase.createClient(URL, KEY);
+    const SB_URL = "https://mlkdphygsdfcanztbtez.supabase.co";
+    const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2RwaHlnc2RmY2FuenRidGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyODAwNTAsImV4cCI6MjA5MTg1NjA1MH0.PfjkZXua-9tp2lxVsBD3YBUNpx_USmMha5BQBZcGLFc";
+    const sb = supabase.createClient(SB_URL, SB_KEY);
 
-    let projs = [], cats = [], yearStart = 2026;
+    let projects = [], categories = [], activeDate = null;
 
-    function toggleSidebar() { document.body.classList.toggle('sidebar-hide'); }
+    function toggleSidebar() { document.body.classList.toggle('sidebar-closed'); }
+    
     function toggleTheme() {
-        const t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', t);
+        const d = document.documentElement;
+        const isDark = d.getAttribute('data-theme') === 'dark';
+        d.setAttribute('data-theme', isDark ? 'light' : 'dark');
     }
 
-    async function login() {
-        const { error } = await sb.auth.signInWithPassword({ email: email.value, password: pass.value });
-        if (error) document.getElementById('err').innerText = error.message;
+    async function handleLogin() {
+        const email = document.getElementById('auth-email').value;
+        const password = document.getElementById('auth-pass').value;
+        const { error } = await sb.auth.signInWithPassword({ email, password });
+        if (error) document.getElementById('auth-err').innerText = error.message;
     }
-    function logout() { sb.auth.signOut(); window.location.reload(); }
+
+    async function handleLogout() { await sb.auth.signOut(); window.location.reload(); }
 
     sb.auth.onAuthStateChange((ev, sess) => {
-        if (sess) { document.getElementById('auth-gate').style.display='none'; load(); }
+        if (sess) { document.getElementById('auth-gate').style.display='none'; sync(); }
+        else { document.getElementById('auth-gate').style.display='flex'; }
     });
 
-    async function load() {
+    async function sync() {
         const [p, c] = await Promise.all([sb.from('projects').select('*'), sb.from('categories').select('*')]);
-        projs = p.data || []; cats = c.data || [];
+        projects = p.data || []; categories = c.data || [];
         render();
     }
 
     function render() {
-        const nav = document.getElementById('cat-nav'); nav.innerHTML = '';
-        cats.forEach(c => {
-            const el = document.createElement('div'); el.className = 'chip';
-            el.innerHTML = `<span style="color:${c.color}">●</span> ${c.name}`;
-            el.onclick = () => editCat(c);
-            nav.appendChild(el);
+        // Render Categories
+        const strip = document.getElementById('cat-strip');
+        strip.innerHTML = '';
+        categories.forEach(c => {
+            const el = document.createElement('div'); el.className = 'cat-chip';
+            el.innerHTML = `<div style="width:8px; height:8px; border-radius:50%; background:${c.color}"></div> ${c.name}`;
+            el.onclick = () => openModal('cat', null, c);
+            strip.appendChild(el);
         });
-        nav.innerHTML += `<div class="chip" onclick="editCat()">+ Нова</div>`;
 
-        const view = document.getElementById('viewport'); view.innerHTML = '';
+        // Render Calendar
+        const view = document.getElementById('calendar-view');
+        view.innerHTML = '';
         const mNames = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
+        const startY = 2026;
 
-        for(let i=0; i<6; i++) {
-            const y = yearStart + i;
-            const block = document.createElement('div'); block.className = 'year-block';
-            block.innerHTML = `<div class="year-header" onclick="this.parentElement.classList.toggle('collapsed')"><h2>${y}</h2><span>▼</span></div>`;
-            const grid = document.createElement('div'); grid.className = 'grid-4x3';
+        for (let i = 0; i < 6; i++) {
+            const y = startY + i;
+            const group = document.createElement('div'); group.className = 'year-group';
+            group.innerHTML = `<div class="year-toggle" onclick="this.parentElement.classList.toggle('collapsed')"><h2>${y}</h2><span>▼</span></div>`;
             
-            for(let m=1; m<=12; m++) {
+            const grid = document.createElement('div'); grid.className = 'grid-4x3';
+            for (let m = 1; m <= 12; m++) {
                 const code = `${y}-${String(m).padStart(2,'0')}`;
-                const mDiv = document.createElement('div'); mDiv.className = 'month';
-                mDiv.setAttribute('data-m', mNames[m-1]);
-                mDiv.onclick = (e) => { if(e.target == mDiv) openModal('proj', code); };
-                
-                projs.filter(p => p.date === code).forEach(p => {
-                    const c = cats.find(ct => ct.name === p.cat);
-                    mDiv.innerHTML += `<div class="task" style="background:${c?.color || '#555'}">${p.title}</div>`;
+                const cell = document.createElement('div'); cell.className = 'month-cell';
+                cell.setAttribute('data-label', mNames[m-1]);
+                cell.onclick = (e) => { if(e.target === cell) openModal('proj', code); };
+
+                projects.filter(p => p.date === code).forEach(p => {
+                    const c = categories.find(cat => cat.name === p.cat);
+                    const pill = document.createElement('div'); pill.className = 'proj-pill';
+                    pill.style.background = c?.color || '#444'; pill.innerText = p.title;
+                    pill.onclick = (e) => { e.stopPropagation(); openModal('proj', code, p); };
+                    cell.appendChild(pill);
                 });
-                grid.appendChild(mDiv);
+                grid.appendChild(cell);
             }
-            block.appendChild(grid); view.appendChild(block);
+            group.appendChild(grid); view.appendChild(group);
+        }
+
+        // Render Backlog
+        const bl = document.getElementById('backlog-items'); bl.innerHTML = '';
+        projects.filter(p => !p.date).forEach(p => {
+            const c = categories.find(cat => cat.name === p.cat);
+            const pill = document.createElement('div'); pill.className = 'proj-pill';
+            pill.style.background = c?.color || '#444'; pill.innerText = p.title;
+            pill.onclick = () => openModal('proj', null, p);
+            bl.appendChild(pill);
+        });
+    }
+
+    function openModal(type, date, item = null) {
+        activeDate = date;
+        const body = document.getElementById('modal-body');
+        document.getElementById('main-modal').style.display = 'flex';
+
+        if (type === 'proj') {
+            body.innerHTML = `<h3>${item ? 'Редагувати' : 'Новий'} проєкт</h3>
+                <input id="f-title" class="input-ui" value="${item?.title || ''}" placeholder="Назва...">
+                <select id="f-cat" class="input-ui">${categories.map(c => `<option ${item?.cat === c.name ? 'selected' : ''}>${c.name}</option>`).join('')}</select>
+                <button onclick="saveProj('${item?.id || ''}')" class="primary-btn">Зберегти</button>
+                ${item ? `<button onclick="delItem('projects', '${item.id}')" style="background:none; color:var(--error); margin-top:10px; width:100%; font-weight:700;">Видалити</button>` : ''}`;
+        } else {
+            body.innerHTML = `<h3>${item ? 'Редагувати' : 'Нова'} категорія</h3>
+                <input id="f-name" class="input-ui" value="${item?.name || ''}" placeholder="Назва...">
+                <input id="f-color" type="color" class="input-ui" style="height:50px;" value="${item?.color || '#10b981'}">
+                <button onclick="saveCat('${item?.id || ''}')" class="primary-btn">Зберегти</button>
+                ${item ? `<button onclick="delItem('categories', '${item.id}')" style="background:none; color:var(--error); margin-top:10px; width:100%; font-weight:700;">Видалити</button>` : ''}`;
         }
     }
 
-    function openModal(type, date) {
-        const content = document.getElementById('modal-content');
-        document.getElementById('modal').style.display = 'flex';
-        if(type === 'proj') {
-            content.innerHTML = `<h3>Новий проєкт</h3><input id="pT" class="inp" placeholder="Назва"><select id="pC" class="inp">${cats.map(c=>`<option>${c.name}</option>`).join('')}</select><button onclick="saveProj('${date}')" class="inp" style="background:var(--accent);font-weight:800;color:#fff">Зберегти</button>`;
-        }
-    }
-
-    async function saveProj(date) {
+    async function saveProj(id) {
+        const title = document.getElementById('f-title').value, cat = document.getElementById('f-cat').value;
         const user = (await sb.auth.getUser()).data.user;
-        await sb.from('projects').insert([{ title: pT.value, cat: pC.value, date, user_id: user.id }]);
-        closeModal(); load();
-    }
-
-    function editCat(cat) {
-        const content = document.getElementById('modal-content');
-        document.getElementById('modal').style.display = 'flex';
-        content.innerHTML = `<h3>${cat?'Редагувати':'Нова'} категорія</h3>
-            <input id="cN" class="inp" value="${cat?.name||''}" placeholder="Назва">
-            <input id="cC" class="inp" type="color" value="${cat?.color||'#10b981'}">
-            <button onclick="saveCat(${cat?.id||null})" class="inp" style="background:var(--accent);font-weight:800;color:#fff">Зберегти</button>`;
+        const data = { title, cat, date: activeDate, user_id: user.id };
+        if (id) await sb.from('projects').update(data).eq('id', id);
+        else await sb.from('projects').insert([data]);
+        closeModal(); sync();
     }
 
     async function saveCat(id) {
+        const name = document.getElementById('f-name').value, color = document.getElementById('f-color').value;
         const user = (await sb.auth.getUser()).data.user;
-        const payload = { name: cN.value, color: cC.value, user_id: user.id };
-        if(id) await sb.from('categories').update(payload).eq('id', id);
-        else await sb.from('categories').insert([payload]);
-        closeModal(); load();
+        const data = { name, color, user_id: user.id };
+        if (id) await sb.from('categories').update(data).eq('id', id);
+        else await sb.from('categories').insert([data]);
+        closeModal(); sync();
     }
 
-    function closeModal() { document.getElementById('modal').style.display = 'none'; }
+    async function delItem(tbl, id) { if(confirm('Видалити?')) { await sb.from(tbl).delete().eq('id', id); closeModal(); sync(); } }
+    function closeModal() { document.getElementById('main-modal').style.display = 'none'; }
 </script>
 </body>
 </html>
