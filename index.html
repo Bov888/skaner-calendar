@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Planner - Click & Create</title>
+    <title>Scanner Planner - Fixed</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;800&family=Outfit:wght@600&display=swap" rel="stylesheet">
@@ -20,71 +20,75 @@
 
         body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; width: 100vw; overflow: hidden; }
 
-        /* AUTH */
-        #auth-screen { position: fixed; inset: 0; background: var(--bg); z-index: 5000; display: flex; align-items: center; justify-content: center; }
-        .auth-box { background: var(--surface); padding: 2rem; border-radius: 12px; border: 1px solid var(--border); width: 100%; max-width: 350px; text-align: center; }
-        
-        /* SIDEBAR */
+        /* SIDEBAR LOGIC */
         #sidebar { 
             width: 280px; min-width: 280px; background: var(--sidebar); border-right: 1px solid var(--border); 
-            display: flex; flex-direction: column; transition: transform 0.3s ease; z-index: 2000;
+            display: flex; flex-direction: column; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 2000;
         }
-        body.sidebar-hidden #sidebar { transform: translateX(-280px); margin-right: -280px; }
+        
+        /* Стан прихованого меню на ПК */
+        body.sidebar-hidden #sidebar { margin-left: -280px; }
 
         @media (max-width: 768px) {
-            #sidebar { position: fixed; height: 100%; transform: translateX(-280px); }
-            body.sidebar-open #sidebar { transform: translateX(0); box-shadow: 20px 0 60px rgba(0,0,0,0.8); }
+            #sidebar { position: fixed; height: 100%; margin-left: -280px; }
+            body.sidebar-open #sidebar { margin-left: 0; box-shadow: 20px 0 60px rgba(0,0,0,0.8); }
             .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 1500; }
             body.sidebar-open .overlay { display: block; }
         }
 
-        main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
-        .top-header { padding: 10px 1.2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+        main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; transition: margin-left 0.3s; }
+        .top-header { padding: 10px 1.2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); background: var(--bg); }
         
         #cat-list { display: flex; gap: 10px; padding: 10px 1.2rem; overflow-x: auto; background: var(--surface); border-bottom: 1px solid var(--border); scrollbar-width: none; }
-        .cat-item { cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 0.7rem; font-weight: 800; padding: 5px 10px; border-radius: 15px; background: rgba(255,255,255,0.05); }
+        .cat-item { cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 0.7rem; font-weight: 800; padding: 6px 12px; border-radius: 20px; background: rgba(255,255,255,0.05); border: 1px solid transparent; }
+        .cat-item:hover { border-color: var(--border); }
 
-        /* CALENDAR */
-        #calendar-scroll { flex: 1; overflow-y: auto; padding: 10px 15px 150px; scroll-behavior: smooth; }
+        #calendar-scroll { flex: 1; overflow-y: auto; padding: 10px 15px 150px; }
         .year-section { margin-top: 30px; }
-        .year-header { color: var(--accent); font-size: 1.5rem; margin-bottom: 15px; font-weight: 800; font-family: 'Outfit'; }
+        .year-header { color: var(--accent); font-size: 1.5rem; margin-bottom: 15px; font-weight: 800; font-family: 'Outfit'; border-left: 4px solid var(--accent); padding-left: 10px; }
 
         .year-row { display: grid; grid-template-columns: repeat(12, 1fr); gap: 8px; }
-        @media (max-width: 1024px) { .year-row { grid-template-columns: repeat(6, 1fr); } }
-        @media (max-width: 600px) { .year-row { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 1200px) { .year-row { grid-template-columns: repeat(6, 1fr); } }
+        @media (max-width: 768px) { .year-row { grid-template-columns: repeat(3, 1fr); } }
 
         .month-cell { 
             background: var(--surface); border: 1px solid var(--border); 
-            border-radius: 8px; position: relative; padding: 25px 5px 5px; 
-            min-height: 80px; transition: 0.2s; cursor: cell;
+            border-radius: 10px; position: relative; padding: 30px 6px 6px; 
+            min-height: 90px; transition: 0.2s; cursor: cell;
         }
-        .month-cell:hover { border-color: var(--accent); background: rgba(74, 158, 66, 0.05); }
-        .month-label { font-size: 0.65rem; color: var(--muted); position: absolute; top: 6px; right: 8px; font-weight: 800; text-transform: uppercase; pointer-events: none; }
+        .month-cell:hover { border-color: var(--accent); background: rgba(74, 158, 66, 0.03); }
+        .month-label { font-size: 0.65rem; color: var(--muted); position: absolute; top: 8px; right: 10px; font-weight: 800; pointer-events: none; }
 
         .card { 
-            color: #fff; padding: 6px 8px; border-radius: 5px; font-size: 0.65rem; margin-bottom: 4px; 
-            cursor: pointer; font-weight: 700; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            border-left: 3px solid rgba(255,255,255,0.3); word-break: break-word;
+            color: #fff; padding: 8px; border-radius: 6px; font-size: 0.7rem; margin-bottom: 5px; 
+            cursor: pointer; font-weight: 700; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-left: 3px solid rgba(255,255,255,0.4); word-break: break-word; transition: transform 0.1s;
         }
+        .card:active { transform: scale(0.96); }
 
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 3000; padding: 20px; backdrop-filter: blur(5px); }
-        .modal-box { background: var(--surface); padding: 1.5rem; border-radius: 15px; width: 100%; max-width: 320px; border: 1px solid var(--border); }
+        /* AUTH & MODALS */
+        #auth-screen { position: fixed; inset: 0; background: var(--bg); z-index: 5000; display: flex; align-items: center; justify-content: center; }
+        .auth-box { background: var(--surface); padding: 2.5rem; border-radius: 20px; border: 1px solid var(--border); width: 100%; max-width: 350px; text-align: center; }
         
-        input, select { width: 100%; padding: 12px; margin-bottom: 12px; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-family: inherit; font-weight: 600; box-sizing: border-box; }
-        .btn-ui { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 800; width: 100%; margin-bottom: 8px; }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 3000; padding: 20px; backdrop-filter: blur(8px); }
+        .modal-box { background: var(--surface); padding: 2rem; border-radius: 20px; width: 100%; max-width: 340px; border: 1px solid var(--border); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+        
+        input, select { width: 100%; padding: 14px; margin-bottom: 12px; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 12px; font-family: inherit; font-weight: 600; font-size: 0.9rem; }
+        .btn-ui { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 12px; border-radius: 12px; cursor: pointer; font-weight: 800; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-accent { background: var(--accent); color: white; border: none; }
+        .btn-exit { border-color: #ff5252; color: #ff5252; width: auto; padding: 8px 15px; font-size: 0.8rem; }
     </style>
 </head>
-<body class="sidebar-hidden">
+<body class="sidebar-show">
 
 <div id="auth-screen">
     <div class="auth-box">
-        <h2 style="font-family:'Outfit';">Scanner<span style="color:var(--accent)">Planner</span></h2>
-        <input type="email" id="auth-email" placeholder="Email">
-        <input type="password" id="auth-pass" placeholder="Password">
+        <h2 style="font-family:'Outfit'; margin-bottom: 1.5rem;">Scanner<span style="color:var(--accent)">Planner</span></h2>
+        <input type="email" id="auth-email" placeholder="Електронна пошта">
+        <input type="password" id="auth-pass" placeholder="Пароль">
         <button class="btn-ui btn-accent" onclick="handleAuth('login')">Увійти</button>
-        <button class="btn-ui" style="border:none; opacity:0.6;" onclick="handleAuth('signup')">Реєстрація</button>
-        <p id="auth-msg" style="color:#ff5252; font-size:0.8rem;"></p>
+        <button class="btn-ui" style="border:none; opacity:0.6; font-size:0.8rem;" onclick="handleAuth('signup')">Створити акаунт</button>
+        <p id="auth-msg" style="color:#ff5252; font-size:0.8rem; margin-top:10px;"></p>
     </div>
 </div>
 
@@ -92,24 +96,26 @@
 
 <aside id="sidebar">
     <div style="padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-weight: 800;">BACKLOG</span>
-        <button onclick="toggleMenu()" style="background:none; border:none; color:var(--text); font-size:1.2rem;">✕</button>
+        <span style="font-weight: 800; letter-spacing: 1px; font-size: 0.9rem;">BACKLOG (ІДЕЇ)</span>
+        <button onclick="toggleMenu()" style="background:none; border:none; color:var(--text); font-size:1.2rem; cursor:pointer;">✕</button>
     </div>
     <div style="padding: 1rem;">
         <button onclick="openModal(null, null)" class="btn-ui btn-accent">+ НОВА ІДЕЯ</button>
     </div>
-    <div id="backlog" style="flex:1; overflow-y:auto; padding: 1rem;"></div>
+    <div id="backlog" style="flex:1; overflow-y:auto; padding: 0 1rem 100px;"></div>
 </aside>
 
 <main>
     <header class="top-header">
-        <div style="display:flex; gap:10px; align-items:center;">
-            <button class="btn-ui" style="width:auto;" onclick="toggleMenu()">☰</button>
-            <h1 style="font-family:'Outfit'; font-size:1.1rem; margin:0;">Scanner<span style="color:var(--accent)">Planner</span></h1>
+        <div style="display:flex; gap:12px; align-items:center;">
+            <button class="btn-ui" style="width:45px; height:45px;" onclick="toggleMenu()">☰</button>
+            <h1 style="font-family:'Outfit'; font-size:1.2rem; margin:0; letter-spacing:-0.5px;">Scanner<span style="color:var(--accent)">Planner</span></h1>
         </div>
-        <div style="display:flex; gap:8px;">
-            <button class="btn-ui" style="width:auto;" onclick="toggleTheme()">🌗</button>
-            <button class="btn-ui" style="width:auto; color:#ff5252;" onclick="logout()">⏻</button>
+        <div style="display:flex; gap:10px;">
+            <button class="btn-ui" style="width:45px;" onclick="toggleTheme()">🌗</button>
+            <button class="btn-ui btn-exit" onclick="logout()">
+                <span>Вихід</span> 󰍃
+            </button>
         </div>
     </header>
     <div id="cat-list"></div>
@@ -118,25 +124,28 @@
 
 <div id="modal" class="modal" onclick="if(event.target==this)closeModal()">
     <div class="modal-box">
-        <h3 id="modal-title" style="margin-top:0;">Проєкт</h3>
-        <input type="text" id="mTitle" placeholder="Назва">
+        <h3 id="modal-title" style="margin-top:0; font-family:'Outfit';">Редагувати проєкт</h3>
+        <input type="text" id="mTitle" placeholder="Що саме плануємо?">
         <div style="display:flex; gap:8px; margin-bottom:12px;">
             <select id="mCat" style="margin:0;"></select>
-            <button class="btn-ui" style="width:45px; margin:0;" onclick="openCatModal()">+</button>
+            <button class="btn-ui" style="width:50px; margin:0;" onclick="openCatModal()">+</button>
         </div>
-        <p id="mDateDisplay" style="font-size:0.7rem; color:var(--muted); margin-bottom:10px;"></p>
+        <p id="mDateDisplay" style="font-size:0.75rem; color:var(--muted); margin-bottom:15px; background:var(--bg); padding:8px; border-radius:8px;"></p>
         <button onclick="saveProject()" class="btn-ui btn-accent">ЗБЕРЕГТИ</button>
-        <button id="deleteBtn" onclick="deleteProject()" style="border-color:#ff4d4d; color:#ff4d4d;" class="btn-ui">ВИДАЛИТИ</button>
+        <button id="deleteBtn" onclick="deleteProject()" style="border-color:#ff4d4d; color:#ff4d4d; margin-top:10px;" class="btn-ui">ВИДАЛИТИ</button>
     </div>
 </div>
 
 <div id="cat-modal" class="modal">
     <div class="modal-box">
-        <h3>Категорія</h3>
-        <input type="text" id="catName" placeholder="Назва">
-        <input type="color" id="catColor" value="#4a9e42" style="height:50px;">
-        <button onclick="saveCategory()" class="btn-ui btn-accent">ДОДАТИ</button>
-        <button onclick="closeCatModal()" class="btn-ui">Скасувати</button>
+        <h3 style="margin-top:0;">Налаштування категорій</h3>
+        <input type="text" id="catName" placeholder="Назва категорії">
+        <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px; background:var(--bg); padding:10px; border-radius:12px;">
+            <span style="font-size:0.8rem;">Колір:</span>
+            <input type="color" id="catColor" value="#4a9e42" style="width:60px; height:40px; padding:0; border:none; background:none;">
+        </div>
+        <button onclick="saveCategory()" class="btn-ui btn-accent">ЗБЕРЕГТИ</button>
+        <button onclick="closeCatModal()" class="btn-ui" style="border:none; margin-top:5px; opacity:0.6;">Скасувати</button>
     </div>
 </div>
 
@@ -158,13 +167,14 @@
         let res = (type === 'signup') ? await sb.auth.signUp({email, password}) : await sb.auth.signInWithPassword({email, password});
         if (res.error) msg.innerText = res.error.message;
     }
-    function logout() { sb.auth.signOut(); }
+    function logout() { sb.auth.signOut(); window.location.reload(); }
 
-    function toggleMenu() { document.body.classList.toggle('sidebar-open'); }
-    function toggleTheme() {
-        const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', next);
-        localStorage.setItem('sc-theme', next);
+    function toggleMenu() {
+        if (window.innerWidth <= 768) {
+            document.body.classList.toggle('sidebar-open');
+        } else {
+            document.body.classList.toggle('sidebar-hidden');
+        }
     }
 
     async function loadData() {
@@ -174,17 +184,15 @@
     }
 
     function render() {
-        // Categories
         const clist = document.getElementById('cat-list');
         const sel = document.getElementById('mCat');
         clist.innerHTML = ''; sel.innerHTML = '';
         categories.forEach(c => {
             const col = catColors[c];
-            clist.innerHTML += `<div class="cat-item" onclick="openCatModal('${c}')"><span style="width:8px;height:8px;border-radius:50%;background:${col}"></span>${c}</div>`;
+            clist.innerHTML += `<div class="cat-item" onclick="openCatModal('${c}')"><span style="width:10px;height:10px;border-radius:50%;background:${col}"></span>${c}</div>`;
             sel.innerHTML += `<option value="${c}">${c}</option>`;
         });
 
-        // Calendar
         const cont = document.getElementById('calendar-scroll');
         cont.innerHTML = '';
         const months = ['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
@@ -202,11 +210,7 @@
                 const cell = document.createElement('div');
                 cell.className = 'month-cell';
                 cell.innerHTML = `<div class="month-label">${months[m-1]}</div>`;
-                
-                // ТУТ МАГІЯ: Клік по місяцю створює проєкт
-                cell.onclick = (e) => {
-                    if(e.target === cell) openModal(null, dKey);
-                };
+                cell.onclick = (e) => { if(e.target === cell) openModal(null, dKey); };
 
                 projects.filter(p => p.date === dKey).forEach(p => {
                     const card = document.createElement('div');
@@ -222,7 +226,6 @@
             cont.appendChild(sec);
         }
 
-        // Backlog
         const blog = document.getElementById('backlog');
         blog.innerHTML = '';
         projects.filter(p => !p.date).forEach(p => {
@@ -240,7 +243,7 @@
         selectedDate = p ? p.date : date;
         document.getElementById('mTitle').value = p ? p.title : '';
         document.getElementById('mCat').value = p ? p.cat : categories[0];
-        document.getElementById('mDateDisplay').innerText = selectedDate ? `Планується на: ${selectedDate}` : 'Без дати (Backlog)';
+        document.getElementById('mDateDisplay').innerText = selectedDate ? `📅 Дата: ${selectedDate}` : '💡 Зберігається в ідеях (без дати)';
         document.getElementById('deleteBtn').style.display = p ? 'block' : 'none';
         document.getElementById('modal').style.display = 'flex';
     }
@@ -253,21 +256,18 @@
         if(!title) return;
         const { data: { user } } = await sb.auth.getUser();
         const payload = { title, cat, date: selectedDate, user_id: user.id };
-        
         if(editingId) await sb.from('projects').update(payload).eq('id', editingId);
         else await sb.from('projects').insert([payload]);
-        
         closeModal(); loadData();
     }
 
     async function deleteProject() {
-        if(confirm("Видалити?")) {
+        if(confirm("Видалити цей проєкт?")) {
             await sb.from('projects').delete().eq('id', editingId);
             closeModal(); loadData();
         }
     }
 
-    // CAT LOGIC
     let editingCat = null;
     function openCatModal(name) {
         editingCat = name;
@@ -290,6 +290,12 @@
         localStorage.setItem('sc-cats', JSON.stringify(categories));
         localStorage.setItem('sc-colors', JSON.stringify(catColors));
         render(); closeCatModal();
+    }
+
+    function toggleTheme() {
+        const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('sc-theme', next);
     }
 
     sb.auth.onAuthStateChange((ev, session) => {
