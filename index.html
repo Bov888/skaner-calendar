@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Planner - Stable Edition</title>
+    <title>Scanner Planner - Final Fix</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
@@ -190,8 +190,16 @@
         categories.forEach(c => {
             const chip = document.createElement('div'); 
             chip.className = `cat-chip ${filter === c.name ? 'active' : ''}`;
-            chip.innerHTML = `<div style="width:8px;height:8px;border-radius:50%;background:${c.color}"></div> ${c.name}`;
-            chip.onclick = () => { filter = filter === c.name ? null : c.name; render(); };
+            
+            const dot = document.createElement('div');
+            dot.style.cssText = `width:8px;height:8px;border-radius:50%;background:${c.color};cursor:pointer;`;
+            dot.onclick = (e) => { e.stopPropagation(); openModal('cat', null, c); };
+            
+            const txt = document.createElement('span');
+            txt.innerText = c.name;
+            txt.onclick = () => { filter = filter === c.name ? null : c.name; render(); };
+
+            chip.appendChild(dot); chip.appendChild(txt);
             strip.appendChild(chip);
         });
 
