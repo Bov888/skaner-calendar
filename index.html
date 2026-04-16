@@ -21,24 +21,21 @@
 
         body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; width: 100vw; overflow: hidden; }
 
+        /* AUTH SCREEN */
+        #auth-screen { position: fixed; inset: 0; background: var(--bg); z-index: 5000; display: flex; align-items: center; justify-content: center; }
+        .auth-box { background: var(--surface); padding: 2rem; border-radius: 12px; border: 1px solid var(--border); width: 100%; max-width: 350px; text-align: center; }
+        
         /* SIDEBAR ENGINE */
         #sidebar { 
             width: 280px; min-width: 280px; background: var(--sidebar); border-right: 1px solid var(--border); 
             display: flex; flex-direction: column; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 2000;
         }
-        
-        /* Desktop Hide */
         body.sidebar-hidden #sidebar { transform: translateX(-280px); margin-right: -280px; }
 
-        /* Mobile Adjustments */
         @media (max-width: 768px) {
             #sidebar { position: fixed; height: 100%; transform: translateX(-280px); margin-right: 0; }
             body.sidebar-open #sidebar { transform: translateX(0); box-shadow: 20px 0 60px rgba(0,0,0,0.8); }
-            
-            .overlay { 
-                display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); 
-                backdrop-filter: blur(4px); z-index: 1500; 
-            }
+            .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 1500; }
             body.sidebar-open .overlay { display: block; }
         }
 
@@ -75,15 +72,27 @@
         input, select { width: 100%; padding: 12px; margin-bottom: 12px; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-family: inherit; font-weight: 600; box-sizing: border-box; }
         
         .btn-ui { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+        .btn-accent { background: var(--accent); color: white; border: none; }
     </style>
 </head>
 <body class="sidebar-hidden">
+
+<div id="auth-screen">
+    <div class="auth-box">
+        <h2 style="font-family:'Outfit'; margin-bottom:1.5rem;">Scanner<span style="color:var(--accent)">Planner</span></h2>
+        <input type="email" id="auth-email" placeholder="Email">
+        <input type="password" id="auth-pass" placeholder="Password">
+        <button class="btn-ui btn-accent" style="width:100%; padding:14px;" onclick="handleAuth('login')">Увійти</button>
+        <button class="btn-ui" style="width:100%; margin-top:10px; border:none; opacity:0.6; font-size:0.8rem;" onclick="handleAuth('signup')">Зареєструватися</button>
+        <p id="auth-msg" style="font-size:0.7rem; color:#ff5252; margin-top:10px;"></p>
+    </div>
+</div>
 
 <div class="overlay" onclick="toggleMenu()"></div>
 
 <aside id="sidebar">
     <div style="padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-weight: 800; letter-spacing: 1px;">BACKLOG</span>
+        <span style="font-weight: 800;">BACKLOG</span>
         <button onclick="toggleMenu()" style="background:none; border:none; color:var(--text); font-size:1.2rem; cursor:pointer;">✕</button>
     </div>
     <div style="padding: 1rem;">
@@ -95,7 +104,7 @@
 <main>
     <header class="top-header">
         <div style="display:flex; gap:10px; align-items:center;">
-            <button class="btn-ui" onclick="toggleMenu()" aria-label="Menu">☰</button>
+            <button class="btn-ui" onclick="toggleMenu()">☰</button>
             <h1 style="font-family:'Outfit'; font-size:1.1rem; margin:0;">Scanner<span style="color:var(--accent)">Planner</span></h1>
         </div>
         <div style="display:flex; gap:8px;">
@@ -133,9 +142,23 @@
         'Навчання': '#4a9e42', 'Подорожі': '#e07b39', 'Творчість': '#c45c8a', 'Кар\'єра': '#c9a227'
     };
 
+    // AUTH LOGIC
+    async function handleAuth(type) {
+        const email = document.getElementById('auth-email').value;
+        const password = document.getElementById('auth-pass').value;
+        const msg = document.getElementById('auth-msg');
+        
+        let result;
+        if (type === 'signup') result = await sb.auth.signUp({ email, password });
+        else result = await sb.auth.signInWithPassword({ email, password });
+
+        if (result.error) msg.innerText = result.error.message;
+        else if (type === 'signup') msg.style.color = 'var(--accent)', msg.innerText = "Перевірте пошту!";
+    }
+
     function toggleMenu() {
         if (window.innerWidth <= 768) {
-            document.body.classList.remove('sidebar-hidden'); // Запобігаємо конфлікту
+            document.body.classList.remove('sidebar-hidden');
             document.body.classList.toggle('sidebar-open');
         } else {
             document.body.classList.remove('sidebar-open');
@@ -148,15 +171,6 @@
         const next = current === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', next);
         localStorage.setItem('sc-theme', next);
-    }
-
-    async function drop(e, dateKey) {
-        e.preventDefault();
-        const id = e.dataTransfer.getData("text");
-        if(!id) return;
-        const newDate = dateKey === 'backlog' ? null : dateKey;
-        await sb.from('projects').update({ date: newDate }).eq('id', id);
-        loadData();
     }
 
     async function loadData() {
@@ -218,10 +232,7 @@
         el.style.backgroundColor = catColors[p.cat] || '#888';
         el.innerText = p.title;
         el.ondragstart = (e) => e.dataTransfer.setData("text", p.id);
-        el.onclick = (e) => { 
-            e.stopPropagation(); 
-            openEditModal(p); 
-        };
+        el.onclick = (e) => { e.stopPropagation(); openEditModal(p); };
         return el;
     }
 
@@ -257,13 +268,13 @@
     }
 
     async function deleteProject() {
-        if (confirm("Видалити проєкт?")) {
+        if (confirm("Видалити?")) {
             await sb.from('projects').delete().eq('id', editingId);
             closeModal(); loadData();
         }
     }
 
-    function logout() { sb.auth.signOut().then(() => location.reload()); }
+    function logout() { sb.auth.signOut(); }
 
     function addNewCategory() {
         const n = prompt("Назва категорії:");
@@ -276,11 +287,18 @@
         }
     }
 
+    // SESSION WATCHER
     sb.auth.onAuthStateChange((event, session) => {
-        if (session) loadData();
+        if (session) {
+            document.getElementById('auth-screen').style.display = 'none';
+            loadData();
+        } else {
+            document.getElementById('auth-screen').style.display = 'flex';
+            projects = [];
+            render();
+        }
     });
 
-    // Встановлення теми при завантаженні
     const savedTheme = localStorage.getItem('sc-theme') || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
 </script>
