@@ -2,403 +2,560 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Planner - Premium Fixed</title>
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Scanner Planner | Autonomous Control</title>
+
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400;1,600&display=swap" rel="stylesheet">
-    
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/drag-drop-touch-polyfill@1.5.0/DragDropTouch.min.js"></script>
 
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
-
         :root {
-            /* ПОВЕРТАЄМО DEEP DARK ПАЛІТРУ */
-            --bg: #080909;
-            --surface: #0f1110;
-            --surface-sub: #141614;
-            --border: #1c1f1d;
-            --border-active: #242724;
-            --text: #dde3dc;
-            --text-dim: #7a8879;
-            --text-faint: #3a413a;
-            --accent: #3d7a36;
-            --accent-hi: #52a849;
+            /* DEEP LUXURY DARK GREEN (New Palette) */
+            --bg: #091109;             /* Глибокий, майже чорний зелений */
+            --surface: #101910;        /* Поверхня */
+            --surface-bright: #182618; /* Підсвічена поверхня */
+            --border: #213321;         /* Межі */
+            --border-active: #2f492f;  /* Активні межі */
+            --text: #dde8dd;          /* Світлий текст */
+            --text-dim: #7a917a;      /* Тьмяний текст */
+            --text-faint: #435c43;    /* Ледве помітний текст */
+            --accent: #52a849;        /* Яскравий зелений акцент */
+            --accent-hi: #66c75c;     /* Підсвічений акцент */
             --accent-glow: rgba(82, 168, 73, 0.15);
-            --danger: #9b3535;
-            --danger-hi: #c44444;
-            --sidebar-w: 280px;
-            --radius: 6px;
+            --danger: #ef4444;
+            --sidebar-w: 320px;
             --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* LIGHT THEME (Adaptive version of the luxurious palette) */
-        [data-theme="light"] {
-            --bg: #f4f5f4;
-            --surface: #ffffff;
-            --surface-sub: #ecefec;
-            --border: #d1d5d1;
-            --border-active: #bfc4bf;
-            --text: #1a1c1a;
-            --text-dim: #5c635c;
-            --text-faint: #bfc4bf;
-            --accent: #2d5a28;
-            --accent-hi: #3d7a36;
-            --accent-glow: rgba(61, 122, 54, 0.1);
-        }
-
+        /* ── RESET & BASE ── */
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
         body {
             background: var(--bg);
             color: var(--text);
             font-family: 'DM Mono', monospace;
-            font-size: 15px;
+            font-size: 16px;
             display: flex;
             height: 100vh;
             overflow: hidden;
             transition: background var(--transition);
         }
 
-        /* SCROLLBAR */
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-thumb { background: var(--border-active); border-radius: 2px; }
-
         /* ── SIDEBAR ── */
         #sidebar {
             width: var(--sidebar-w);
-            min-width: var(--sidebar-w);
             background: var(--surface);
             border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            transition: margin-left var(--transition);
-            z-index: 200;
-            overflow: hidden;
+            z-index: 500;
         }
-        #sidebar.collapsed { margin-left: calc(-1 * var(--sidebar-w)); }
 
         .sb-header {
-            padding: 1.5rem;
+            padding: 2rem 1.5rem;
             border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; justify-content: space-between;
         }
 
         .logo {
-            font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.3rem; 
-            color: var(--text); letter-spacing: 0.01em; font-weight: 600;
+            font-family: 'Cormorant Garamond', serif;
+            font-style: italic;
+            font-size: 1.8rem;
+            letter-spacing: -0.01em;
+            margin-bottom: 0.5rem;
         }
         .logo em { color: var(--accent-hi); font-style: normal; }
 
-        .btn-add {
-            margin: 1.25rem; background: var(--accent); color: #fff; border: none;
-            padding: 12px; border-radius: var(--radius); font-family: 'DM Mono', monospace;
-            font-size: 0.8rem; letter-spacing: 0.05em; cursor: pointer; transition: all 0.2s;
-            font-weight: 500;
+        /* Stats in Sidebar */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 1rem;
         }
-        .btn-add:hover { background: var(--accent-hi); transform: translateY(-1px); }
+        .stat-box {
+            background: var(--bg);
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+        }
+        .stat-val { font-size: 1.2rem; color: var(--accent-hi); }
+        .stat-label { font-size: 0.6rem; text-transform: uppercase; color: var(--text-dim); }
 
-        #backlog-container {
-            flex: 1; overflow-y: auto; padding: 0 1rem 1.5rem;
-        }
-        .section-label {
-            font-family: 'JetBrains Mono', monospace; /* Keep mono for labels */
-            font-size: 10px; text-transform: uppercase; color: var(--text-faint); margin: 1rem 0;
-            display: flex; justify-content: space-between; letter-spacing: 0.1em;
+        /* Sections */
+        .nav-section { flex: 1; overflow-y: auto; padding: 1.5rem 0; }
+        .section-header {
+            padding: 0 1.5rem 1rem;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: var(--text-dim);
+            display: flex; justify-content: space-between;
         }
 
-        /* ── MAIN ── */
-        main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
-
-        .top-nav {
-            height: 60px; padding: 0 1.5rem; display: flex; align-items: center;
-            border-bottom: 1px solid var(--border); background: var(--bg); flex-shrink: 0;
+        #backlog-zone {
+            padding: 0 1rem;
+            min-height: 200px;
+            transition: background 0.3s;
         }
-        .top-nav .wordmark {
-            font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.2rem;
-            color: var(--text-dim); margin-left: 1rem;
-        }
-        .top-nav .wordmark strong { color: var(--accent-hi); font-style: normal; font-weight: 600; }
+        #backlog-zone.drag-over { background: var(--accent-glow); border-radius: 8px; }
 
-        .btn-group-right { margin-left: auto; display: flex; gap: 8px; }
+        /* Buttons in SB */
+        .btn-m {
+            padding: 15px; border-radius: 6px; border: none; cursor: pointer;
+            font-family: 'DM Mono'; font-weight: 500; font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { background: var(--accent-hi); }
+        .btn-ghost { background: transparent; color: var(--text-dim); }
+        .btn-danger { background: var(--danger); color: white; margin-top: 10px; }
+
+        /* ── MAIN CONTENT ── */
+        main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
+
+        .top-toolbar {
+            height: 70px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center;
+            padding: 0 2rem; gap: 20px;
+        }
 
         .icon-btn {
-            background: none; border: 1px solid var(--border); color: var(--text-dim);
+            background: none; border: 1px solid var(--border);
             width: 36px; height: 36px; border-radius: 6px; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
             font-size: 1rem; transition: all 0.2s;
+            color: var(--text-dim);
         }
         .icon-btn:hover { color: var(--text); border-color: var(--border-active); background: var(--surface); }
 
-        /* ── CATEGORIES BAR ── */
-        #cats-bar {
-            display: flex; gap: 8px; padding: 10px 1.5rem; overflow-x: auto;
-            border-bottom: 1px solid var(--border); background: var(--surface); scrollbar-width: none;
+        .filter-bar {
+            padding: 1rem 2rem;
+            display: flex; gap: 10px;
+            overflow-x: auto;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
         }
-        #cats-bar::-webkit-scrollbar { display: none; }
+
         .pill {
-            padding: 6px 12px; border-radius: 4px; background: var(--surface-sub); border: 1px solid var(--border);
-            color: var(--text-dim); font-size: 0.75rem; font-weight: 500; cursor: pointer; white-space: nowrap;
-            display: flex; align-items: center; gap: 6px; transition: all 0.2s;
-        }
-        .pill:hover { color: var(--text); border-color: var(--text-dim); }
-        .pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-        .cdot { width: 8px; height: 8px; border-radius: 50%; }
-
-        /* ── CALENDAR ── */
-        #viewport { flex: 1; overflow-y: auto; padding: 2rem; -webkit-overflow-scrolling: touch; }
-
-        .year-wrapper { margin-bottom: 3rem; }
-        .yr-num {
-            font-family: 'Cormorant Garamond', serif; font-size: 2rem; font-weight: 600; 
-            color: var(--text); margin-bottom: 1.5rem;
-        }
-        .yr-num.now { color: var(--accent-hi); }
-
-        .year-grid {
-            display: grid;
-            grid-template-columns: repeat(12, 1fr); /* Back to multi-column months */
-            gap: 10px;
-        }
-        @media (max-width: 1200px) { .year-grid { grid-template-columns: repeat(6, 1fr); } }
-        @media (max-width: 800px) { .year-grid { grid-template-columns: repeat(4, 1fr); } }
-
-        .month-box {
-            background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
-            min-height: 120px; padding: 35px 10px 10px; position: relative;
+            padding: 8px 16px;
+            border-radius: 4px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            cursor: pointer;
+            white-space: nowrap;
+            display: flex; align-items: center; gap: 8px;
             transition: all 0.2s;
         }
-        .month-box.today { border: 2px solid var(--accent); }
-        .month-box.drag-over { border-style: dashed; background: var(--accent-glow); }
+        .pill:hover { border-color: var(--text-dim); }
+        .pill.active { background: var(--accent-glow); color: var(--text); border-color: var(--accent-hi); }
+        .cdot { width: 8px; height: 8px; border-radius: 50%; }
+
+        /* ── CALENDAR ENGINE ── */
+        #viewport {
+            flex: 1;
+            overflow-y: auto;
+            padding: 3rem 2rem;
+            scroll-behavior: smooth;
+        }
+
+        .year-wrapper { margin-bottom: 5rem; }
+        .year-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 3rem;
+            font-style: italic;
+            margin-bottom: 2rem;
+            display: flex; align-items: baseline; gap: 20px;
+        }
+        .year-title span { font-size: 0.9rem; font-family: 'DM Mono'; color: var(--text-dim); letter-spacing: 0.3em; }
+
+        .month-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .month-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            min-height: 180px;
+            padding: 45px 15px 15px;
+            position: relative;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .month-box.current { border: 2px solid var(--accent); }
+        .month-box.drag-over { border-color: var(--accent-hi); background: var(--accent-glow); }
         
-        .month-label {
-            position: absolute; top: 10px; right: 12px;
-            font-family: 'DM Mono', monospace; font-size: 10px;
-            font-weight: 500; color: var(--text-faint); text-transform: uppercase;
+        .month-box::before {
+            content: attr(data-month-name);
+            position: absolute; top: 15px; left: 15px;
+            font-size: 0.75rem; color: var(--text-dim);
+            text-transform: uppercase; letter-spacing: 0.2em;
         }
 
         /* ── CARDS ── */
         .card {
             border-radius: 6px;
-            padding: 10px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            line-height: 1.35;
+            padding: 14px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 12px;
             cursor: grab;
             color: #fff !important; /* Full color cards like original image */
             border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.35);
-            margin-bottom: 8px;
-            transition: transform 0.1s, box-shadow 0.1s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
         }
-        .card:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
-        .card.dragging { opacity: 0.4; }
-        .card-cat {
-            font-size: 9px; font-family: 'DM Mono', monospace;
-            opacity: 0.8; margin-top: 5px; display: block; text-transform: uppercase;
+        .card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+        .card:active { cursor: grabbing; }
+        .card.dragging { opacity: 0.4; transform: scale(0.95); }
+
+        .card-tag {
+            font-size: 0.7rem; font-family: 'DM Mono', monospace;
+            opacity: 0.8; margin-top: 6px; text-transform: uppercase; letter-spacing: 0.05em; display: block;
         }
 
-        /* ── OVERLAYS ── */
+        /* ── OVERLAY & MODALS ── */
         .overlay {
             display: none; position: fixed; inset: 0;
-            background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
             z-index: 1000; align-items: center; justify-content: center;
         }
         .overlay.active { display: flex; }
+
         .modal {
-            background: var(--surface2); width: 100%; max-width: 400px;
-            padding: 2rem; border-radius: 12px; border: 1px solid var(--border2);
-            box-shadow: 0 25px 60px rgba(0,0,0,0.5);
-        }
-        .modal input, .modal select {
-            width: 100%; padding: 12px; margin: 10px 0;
-            border: 1px solid var(--border2); border-radius: 6px;
-            background: var(--bg); color: var(--text);
-            font-family: 'DM Mono'; font-size: 14px;
+            background: var(--surface-bright); border: 1px solid var(--border-active);
+            padding: 3rem; border-radius: 12px;
+            box-shadow: 0 30px 70px rgba(0,0,0,0.5); width: 90%; max-width: 500px;
         }
 
-        .btn-m { background: var(--accent); color: #fff; border: none; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; }
-        .btn-m:hover { background: var(--accent-hi); }
+        .modal-h { font-family: 'Cormorant Garamond'; font-size: 2.2rem; font-style: italic; margin-bottom: 2rem; color: var(--text); }
+        
+        .field { margin-bottom: 1.5rem; }
+        .field label { display: block; font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px; }
+        
+        .input {
+            width: 100%; background: var(--bg); border: 1px solid var(--border);
+            color: var(--text); padding: 15px; border-radius: 6px;
+            font-family: 'DM Mono'; font-size: 1rem;
+        }
+        .input:focus { border-color: var(--accent-hi); }
+
+        /* ── TOASTS (Notifications) ── */
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; }
+        .toast {
+            background: var(--surface-bright); border-left: 4px solid var(--accent);
+            padding: 15px 25px; margin-top: 10px; border-radius: 4px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        /* Hide Scrollbars */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-thumb { background: var(--border-active); }
     </style>
 </head>
 <body data-theme="dark">
 
-    <aside id="sidebar">
-        <div class="sb-header">
-            <div class="logo">Scanner<em>Planner</em></div>
-        </div>
-        <button class="btn-add" onclick="ui.openModal()">+ НОВА ІДЕЯ</button>
-        <div id="backlog-container">
-            <div class="section-label">Backlog <span id="count-back">0</span></div>
-            <div id="backlog-list" style="min-height: 100px;" ondragover="logic.allowDrop(event)" ondrop="logic.handleDrop(event, 'backlog')"></div>
-        </div>
-    </aside>
+<div class="overlay" id="overlay" onclick="if(event.target===this) ui.closeModal()"></div>
 
-    <main>
-        <nav class="top-nav">
-            <button class="icon-btn" onclick="ui.toggleSidebar()">☰</button>
-            <div class="wordmark">Scanner<strong>Planner</strong> | Time Horizon</div>
-            <div class="btn-group-right">
-                <button class="icon-btn" onclick="ui.scrollToToday()">◎</button>
-                <button class="icon-btn" onclick="ui.toggleTheme()">◐</button>
-                <button class="icon-btn" onclick="logic.logout()" style="color: var(--danger)">⏻</button>
+<aside id="sidebar">
+    <div class="sb-header">
+        <div class="logo">Scanner<em>Planner</em></div>
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-val" id="count-active">0</div>
+                <div class="stat-label">Проєкти</div>
             </div>
-        </nav>
-
-        <div class="filter-bar" id="filter-bar"></div>
-
-        <div id="viewport"></div>
-    </main>
-
-    <div id="modal-overlay" class="overlay" onclick="if(event.target===this) ui.closeModal()">
-        <div class="modal">
-            <h3 id="modal-title" style="font-family: 'Cormorant Garamond'; font-style: italic; font-size: 1.5rem; margin-bottom: 1rem;">Нова ідея</h3>
-            <input type="text" id="m-title" placeholder="Назва проєкту...">
-            <select id="m-cat"></select>
-            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 1.5rem;">
-                <button class="btn-m" onclick="logic.save()">Зберегти зміни</button>
-                <button id="m-del" class="btn-m" style="background: var(--danger); display:none" onclick="logic.remove()">Видалити проєкт</button>
-                <button onclick="ui.closeModal()" style="background:none; border:none; cursor:pointer; font-size:12px; color:var(--text-dim); margin-top: 8px; font-family: 'DM Mono'">Скасувати</button>
+            <div class="stat-box">
+                <div class="stat-val" id="count-backlog">0</div>
+                <div class="stat-label">Ідеї</div>
             </div>
         </div>
     </div>
 
+    <button class="btn btn-primary" style="margin: 1.5rem;" onclick="ui.openModal()">+ НОВА ІДЕЯ</button>
+
+    <div class="nav-section">
+        <div class="section-header">BACKLOG <span id="backlog-count">0</span></div>
+        <div id="backlog-zone" ondragover="logic.allowDrop(event)" ondrop="logic.handleDrop(event, 'backlog')"></div>
+    </div>
+
+    <div style="padding: 1.5rem; border-top: 1px solid var(--border); display: flex; gap: 8px;">
+        <button class="pill" style="flex:1" onclick="ui.toggleTheme()">◐ Тема</button>
+        <button class="pill" style="flex:1" onclick="logic.logout()">Вихід</button>
+    </div>
+</aside>
+
+<main>
+    <div class="top-toolbar">
+        <div style="font-family: 'Cormorant Garamond'; font-style: italic; font-size: 1.4rem;">Horizon Planner</div>
+        <div style="margin-left: auto; display: flex; gap: 10px;">
+            <button class="icon-btn" onclick="ui.scrollToNow()">◎</button>
+        </div>
+    </div>
+
+    <div class="filter-bar" id="filter-bar"></div>
+
+    <div id="viewport"></div>
+</main>
+
+<div id="modal-overlay" class="overlay">
+    <div class="modal">
+        <div class="modal-h" id="m-header">Capture Thought</div>
+        <div class="field">
+            <label>Назва проєкту / ідеї</label>
+            <input type="text" id="m-title" class="input" placeholder="...">
+        </div>
+        <div class="field">
+            <label>Категорія (Scanner Stream)</label>
+            <div style="display: flex; gap: 10px;">
+                <select id="m-cat" class="input" style="flex:1"></select>
+                <button class="icon-btn" onclick="logic.addNewCategory()" style="height: 52px">+</button>
+            </div>
+        </div>
+        <div class="btn-row">
+            <button class="btn btn-primary" onclick="logic.saveProject()">Зберегти в систему</button>
+            <button id="m-delete" class="btn btn-danger" style="display:none" onclick="logic.deleteProject()">Видалити</button>
+            <button class="btn btn-ghost" onclick="ui.closeModal()">Скасувати</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast-container"></div>
+
 <script>
-    const SB_URL = "https://mlkdphygsdfcanztbtez.supabase.co";
-    const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2RwaHlnc2RmY2FuenRidGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyODAwNTAsImV4cCI6MjA5MTg1NjA1MH0.PfjkZXua-9tp2lxVsBD3YBUNpx_USmMha5BQBZcGLFc"; 
-    const sb = supabase.createClient(SB_URL, SB_KEY);
+/**
+ * SCANNER PLANNER - CORE ENGINE v3.0 (Supabase Integrated)
+ * Відновлено повний функціонал та масштаб. Кольори змінено на темний зелений.
+ */
 
-    let state = {
-        projects: [],
-        cats: [{n:'Творчість', c:'#c45c8a'}, {n:'Технології', c:'#3b82f6'}, {n:'Бізнес', c:'#3d7a36'}, {n:'Особисте', c:'#ff9800'}],
-        filter: null,
-        editingId: null
-    };
+// SUPABASE
+const SB_URL = "https://mlkdphygsdfcanztbtez.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2RwaHlnc2RmY2FuenRidGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyODAwNTAsImV4cCI6MjA5MTg1NjA1MH0.PfjkZXua-9tp2lxVsBD3YBUNpx_USmMha5BQBZcGLFc"; 
+const sb = supabase.createClient(SB_URL, SB_KEY);
 
-    const ui = {
-        init() {
-            this.renderCalendar();
-        },
-        toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); },
-        toggleTheme() {
-            const body = document.body;
-            const current = body.getAttribute('data-theme');
-            body.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
-        },
-        renderCalendar() {
-            const vp = document.getElementById('viewport');
-            const now = new Date();
-            const months = ['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'];
+// CONSTANTS
+const MONTHS = ['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'];
+const LOCAL_CATS_KEY = 'sc_cats_v3';
+
+// STATE
+let state = {
+    projects: [],
+    cats: JSON.parse(localStorage.getItem(LOCAL_CATS_KEY)) || [
+        {name: 'Творчість', color: '#8e44ad'}, {name: 'Навчання', color: '#27ae60'}, {name: 'Бізнес', color: '#d35400'}, {name: 'Особисте', color: '#2980b9'}
+    ],
+    editingId: null,
+    filter: null
+};
+
+// UI CONTROLLER
+const ui = {
+    init() {
+        this.renderCalendar();
+        this.updateModalCats();
+    },
+
+    renderCalendar() {
+        const vp = document.getElementById('viewport');
+        vp.innerHTML = '';
+        const now = new Date();
+        
+        for (let y = 0; y < 2; y++) {
+            const year = now.getFullYear() + y;
+            const yDiv = document.createElement('div');
+            yDiv.className = 'year-wrapper';
+            yDiv.id = `year-${year}`;
+            yDiv.innerHTML = `<div class="year-title">${year} <span>TIME HORIZON</span></div>`;
             
-            for(let y=0; y<2; y++) {
-                const year = now.getFullYear() + y;
-                const section = document.createElement('div');
-                section.className = 'year-wrapper';
-                section.id = `y-${year}`;
-                section.innerHTML = `<div class="yr-num ${y === now.getFullYear() ? 'now' : ''}">${year}</div>`;
-                const grid = document.createElement('div');
-                grid.className = 'year-grid';
+            const grid = document.createElement('div');
+            grid.className = 'month-grid';
+            
+            MONTHS.forEach((m, idx) => {
+                const dateKey = `${year}-${String(idx + 1).padStart(2, '0')}`;
+                const mBox = document.createElement('div');
+                mBox.className = 'month-box';
+                if (year === now.getFullYear() && idx === now.getMonth()) mBox.classList.add('current');
+                mBox.dataset.date = dateKey;
+                mBox.setAttribute('data-month-name', m);
                 
-                months.forEach((m, i) => {
-                    const key = `${year}-${String(i+1).padStart(2,'0')}`;
-                    const box = document.createElement('div');
-                    box.className = `month-box ${key === now.toISOString().slice(0,7) ? 'today' : ''}`;
-                    box.dataset.date = key;
-                    box.innerHTML = `<div class="month-label">${months[i].substring(0,3)}</div>`;
-                    box.ondragover = logic.allowDrop;
-                    box.ondragleave = e => e.currentTarget.classList.remove('drag-over');
-                    box.ondrop = e => logic.handleDrop(e, key);
-                    grid.appendChild(box);
-                });
-                section.appendChild(grid);
-                vp.appendChild(section);
-            }
-        },
-        renderData() {
-            document.querySelectorAll('.card').forEach(c => c.remove());
-            const filtered = state.filter ? state.projects.filter(p => p.cat === state.filter) : state.projects;
-            
-            filtered.forEach(p => {
-                const card = this.createCard(p);
-                const target = p.date ? document.querySelector(`[data-date="${p.date}"]`) : document.getElementById('backlog-list');
-                if(target) target.appendChild(card);
+                mBox.ondragover = logic.allowDrop;
+                mBox.ondragleave = (e) => e.currentTarget.classList.remove('drag-over');
+                mBox.ondrop = (e) => logic.handleDrop(e, dateKey);
+                
+                grid.appendChild(mBox);
             });
+            yDiv.appendChild(grid);
+            vp.appendChild(yDiv);
+        }
+    },
 
-            document.getElementById('count-back').textContent = state.projects.filter(p => !p.date).length;
-            this.renderFilters();
-        },
-        createCard(p) {
-            const el = document.createElement('div');
-            el.className = 'card';
-            el.draggable = true;
-            el.style.backgroundColor = (state.cats.find(c => c.n === p.cat) || {c:'#555'}).c;
-            el.innerHTML = `${p.title} <span class="card-cat">${p.cat || ''}</span>`;
-            el.onclick = () => this.openModal(p);
-            el.ondragstart = e => { e.dataTransfer.setData('text', p.id); el.classList.add('dragging'); };
-            el.ondragend = () => el.classList.remove('dragging');
-            return el;
-        },
-        renderFilters() {
-            const bar = document.getElementById('filter-bar');
-            bar.innerHTML = `<div class="pill ${!state.filter?'active':''}" onclick="logic.setFilter(null)">Всі</div>`;
-            state.cats.forEach(c => {
-                bar.innerHTML += `<div class="pill ${state.filter===c.n?'active':''}" onclick="logic.setFilter('${c.n}')">
-                    <span class="cdot" style="background:${c.c}"></span>${c.n}
+    renderData() {
+        // Clear all cards
+        document.querySelectorAll('.card').forEach(c => c.remove());
+        const filtered = state.filter ? state.projects.filter(p => p.cat === state.filter) : state.projects;
+        
+        filtered.forEach(p => {
+            const card = this.createCard(p);
+            if (p.date) {
+                const cell = document.querySelector(`[data-date="${p.date}"]`);
+                if (cell) cell.appendChild(card);
+            } else {
+                document.getElementById('backlog-zone').appendChild(card);
+            }
+        });
+
+        // Update Filters & Stats
+        this.renderFilters();
+        this.updateStats();
+    },
+
+    createCard(p) {
+        const cat = state.cats.find(c => c.name === p.cat) || {color: '#555'};
+        const el = document.createElement('div');
+        el.className = 'card';
+        el.draggable = true;
+        el.style.backgroundColor = cat.color;
+        el.innerHTML = `<div>${p.title}</div><span class="card-tag">${p.cat || ''}</span>`;
+        
+        el.onclick = () => this.openModal(p);
+        el.ondragstart = (e) => { e.dataTransfer.setData('text/plain', p.id); el.classList.add('dragging'); };
+        el.ondragend = () => el.classList.remove('dragging');
+        return el;
+    },
+
+    renderFilters() {
+        const bar = document.getElementById('filter-bar');
+        bar.innerHTML = `<div class="pill ${!state.filter?'active':''}" onclick="logic.setFilter(null)">Усі потоки</div>`;
+        state.cats.forEach(c => {
+            bar.innerHTML += `
+                <div class="pill ${state.filter===c.name?'active':''}" onclick="logic.setFilter('${c.name}')">
+                    <span style="width:10px; height:10px; border-radius:50%; background:${c.color}; display:inline-block"></span>
+                    ${c.name}
                 </div>`;
-            });
-        },
-        openModal(p = null) {
-            state.editingId = p ? p.id : null;
-            document.getElementById('modal-title').textContent = p ? 'Редагувати ідею' : 'Нова ідея';
-            document.getElementById('m-title').value = p ? p.title : '';
-            const sel = document.getElementById('m-cat');
-            sel.innerHTML = state.cats.map(c => `<option value="${c.n}" ${p && p.cat===c.n?'selected':''}>${c.n}</option>`).join('');
-            document.getElementById('m-del').style.display = p ? 'block' : 'none';
-            document.getElementById('modal-overlay').classList.add('active');
-        },
-        closeModal() { document.getElementById('modal-overlay').classList.remove('active'); },
-        scrollToToday() { document.querySelector('.today').scrollIntoView({behavior:'smooth', block:'center'}); }
-    };
+        });
+    },
 
-    const logic = {
-        async sync() {
-            const { data } = await sb.from('projects').select('*');
-            state.projects = data || [];
-            ui.renderData();
-        },
-        allowDrop(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); },
-        async handleDrop(e, date) {
-            e.preventDefault();
-            e.currentTarget.classList.remove('drag-over');
-            const id = e.dataTransfer.getData('text');
-            const newDate = date === 'backlog' ? null : date;
+    updateStats() {
+        const inPlanner = state.projects.filter(p => p.date).length;
+        const inBacklog = state.projects.length - inPlanner;
+        document.getElementById('count-active').textContent = inPlanner;
+        document.getElementById('count-backlog').textContent = inBacklog;
+        document.getElementById('backlog-count').textContent = inBacklog;
+    },
+
+    openModal(p = null) {
+        state.editingId = p ? p.id : null;
+        document.getElementById('m-header').textContent = p ? 'Редагувати Vision' : 'Capture Thought';
+        document.getElementById('m-title').value = p ? p.title : '';
+        document.getElementById('m-cat').value = p ? p.cat : state.cats[0].name;
+        
+        document.getElementById('m-delete').style.display = p ? 'block' : 'none';
+        document.getElementById('modal-overlay').classList.add('active');
+    },
+
+    closeModal() { document.getElementById('modal-overlay').classList.remove('active'); },
+
+    toggleTheme() {
+        const d = document.documentElement;
+        const t = d.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+        d.setAttribute('data-theme', t);
+        localStorage.setItem('sc_theme', t);
+    },
+
+    toast(msg) {
+        const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+        document.getElementById('toast-container').appendChild(t);
+        setTimeout(() => t.remove(), 3000);
+    },
+
+    updateModalCats() {
+        const sel = document.getElementById('m-cat');
+        sel.innerHTML = state.cats.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+    },
+
+    scrollToNow() { document.getElementById(`year-${new Date().getFullYear()}`).scrollIntoView({behavior:'smooth'}); }
+};
+
+// LOGIC CONTROLLER
+const logic = {
+    async sync() {
+        const { data, error } = await sb.from('projects').select('*').order('created_at', { ascending: false });
+        if (error) { ui.toast("Помилка синхронізації"); console.error(error); }
+        else {
+            state.projects = data;
             
-            const p = state.projects.find(x => x.id == id);
-            if(p) p.date = newDate;
-            ui.renderData();
-            await sb.from('projects').update({ date: newDate }).eq('id', id);
-        },
-        async save() {
-            const title = document.getElementById('m-title').value;
-            const cat = document.getElementById('m-cat').value;
-            if(!title) return;
-            if(state.editingId) await sb.from('projects').update({title, cat}).eq('id', state.editingId);
-            else await sb.from('projects').insert([{title, cat, date: null}]);
-            ui.closeModal();
-            this.sync();
-        },
-        async remove() {
-            if(confirm('Видалити?')) {
-                await sb.from('projects').delete().eq('id', state.editingId);
-                ui.closeModal();
-                this.sync();
+            // Auto-check for categories in DB not in LocalStorage
+            let changedCats = false;
+            data.forEach(p => {
+                if(p.cat && !state.cats.find(c => c.name === p.cat)) {
+                    state.cats.push({name: p.cat, color: '#555555'});
+                    changedCats = true;
+                }
+            });
+            if(changedCats) {
+                localStorage.setItem(LOCAL_CATS_KEY, JSON.stringify(state.cats));
+                ui.updateModalCats();
             }
-        },
-        setFilter(c) { state.filter = c; ui.renderData(); },
-        logout() { sb.auth.signOut(); location.reload(); }
-    };
 
-    ui.init();
-    logic.sync();
+            ui.renderData();
+        }
+    },
+
+    allowDrop(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); },
+    async handleDrop(e, targetDate) {
+        e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+        const id = e.dataTransfer.getData('text/plain');
+        const dateVal = targetDate === 'backlog' ? null : targetDate;
+        
+        const p = state.projects.find(x => x.id == id);
+        if(!p) return;
+        p.date = dateVal; // Optimistic update
+        ui.renderData();
+
+        await sb.from('projects').update({ date: dateVal }).eq('id', id);
+        this.sync(); // Full refresh
+    },
+
+    async saveProject() {
+        const title = document.getElementById('m-title').value;
+        const cat = document.getElementById('m-cat').value;
+        if (!title) return ui.toast("Назва обов'язкова");
+        ui.closeModal(); ui.toast("Збереження...");
+        if (state.editingId) await sb.from('projects').update({ title, cat }).eq('id', state.editingId);
+        else await sb.from('projects').insert([{ title, cat, date: null }]);
+        this.sync();
+    },
+
+    async deleteProject() {
+        if (!confirm("Видалити проєкт?")) return;
+        await sb.from('projects').delete().eq('id', state.editingId);
+        ui.closeModal(); this.sync();
+    },
+
+    addNewCategory() {
+        const n = prompt("Назва:"); if(!n) return;
+        const c = prompt("Колір (HEX, #...):", "#555555");
+        state.cats.push({name: n, color: c || '#555555'});
+        localStorage.setItem(LOCAL_CATS_KEY, JSON.stringify(state.cats));
+        ui.updateModalCats(); ui.renderData();
+    },
+
+    setFilter(c) { state.filter = c; ui.renderData(); },
+    async logout() { await sb.auth.signOut(); location.reload(); }
+};
+
+// RUN
+document.body.setAttribute('data-theme', localStorage.getItem('sc_theme') || 'dark');
+ui.init();
+sb.auth.onAuthStateChange((event, session) => { if (session) logic.sync(); });
 </script>
 </body>
 </html>
