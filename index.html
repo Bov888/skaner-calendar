@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scanner Planner - Final Stable</title>
+    <title>Scanner Planner - Fixed UI</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
         :root[data-theme="dark"] {
             --bg: #09090b; --surface: #121214; --border: #222225; --text: #e4e4e7;
-            --muted: #71717a; --accent: #10b981; --error: #ef4444;
+            --muted: #71717a; --accent: #10b981; --error: #ef4444; --btn-text: #ffffff;
         }
         :root[data-theme="light"] {
             --bg: #ffffff; --surface: #f4f4f5; --border: #e4e4e7; --text: #18181b;
-            --muted: #a1a1aa; --accent: #059669; --error: #dc2626;
+            --muted: #a1a1aa; --accent: #059669; --error: #dc2626; --btn-text: #ffffff;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; border: none; outline: none; }
@@ -60,7 +60,7 @@
         .settings-box { padding: 16px; border-bottom: 1px solid var(--border); }
         .year-input { 
             width: 100%; background: var(--bg); border: 1px solid var(--border); 
-            color: var(--accent); font-weight: 800; border-radius: 8px; padding: 10px; text-align: center; margin-top: 8px;
+            color: var(--accent); font-weight: 800; border-radius: 12px; padding: 10px; text-align: center; margin-top: 8px;
         }
 
         #cat-strip { padding: 0 12px; height: 44px; display: flex; align-items: center; gap: 8px; overflow-x: auto; border-bottom: 1px solid var(--border); scrollbar-width: none; }
@@ -90,10 +90,21 @@
             color: #fff; margin-bottom: 4px; border-left: 3px solid rgba(0,0,0,0.2);
         }
 
-        /* MODALS & INPUTS */
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 10000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
-        .p-btn { width: 100%; padding: 12px; border-radius: 12px; background: var(--accent); color: #fff !important; font-weight: 800; cursor: pointer; font-size: 12px; text-transform: uppercase; border: none; }
+        /* BUTTONS */
+        .p-btn { 
+            width: 100%; padding: 12px; border-radius: 12px; background: var(--accent); 
+            color: var(--btn-text) !important; font-weight: 800; cursor: pointer; 
+            font-size: 12px; text-transform: uppercase; border: none;
+            display: block; text-align: center;
+        }
+        .sec-btn {
+            width: 100%; padding: 12px; border-radius: 12px; background: var(--bg); 
+            color: var(--text); font-weight: 800; cursor: pointer; 
+            font-size: 12px; text-transform: uppercase; border: 1px solid var(--border);
+        }
+
         .inp { width: 100%; padding: 12px; margin-bottom: 12px; border-radius: 12px; background: var(--bg); color: var(--text); border: 1px solid var(--border); font-size: 14px; }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 10000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
     </style>
 </head>
 <body class="sidebar-closed">
@@ -127,7 +138,7 @@
 
     <div style="padding: 16px; display: flex; flex-direction: column; gap: 8px;">
         <button onclick="openModal('proj', null)" class="p-btn">+ Новий проєкт</button>
-        <button onclick="openModal('cat', null)" class="p-btn" style="background:var(--bg); color:var(--text); border: 1px solid var(--border);">+ Категорія</button>
+        <button onclick="openModal('cat', null)" class="sec-btn">+ Категорія</button>
     </div>
 
     <div style="padding: 8px 16px;"><span style="font-weight: 800; color: var(--muted); font-size: 10px;">БЕКЛОГ</span></div>
@@ -157,7 +168,6 @@
 
     let projects = [], categories = [], filter = null, activeDate = null;
 
-    /* ТЕМА (АДАПТИВНА) */
     function getSystemTheme() { return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
     function initTheme() {
         const theme = localStorage.getItem('theme') || getSystemTheme();
@@ -176,16 +186,13 @@
             ? `<svg viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`
             : `<svg viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`;
     }
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-        if (!localStorage.getItem('theme')) { document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light'); renderThemeBtn(); }
-    });
 
-    /* АВТОРИЗАЦІЯ */
     async function login() {
         const { error } = await sb.auth.signInWithPassword({ email: email.value, password: pass.value });
         if (error) document.getElementById('auth-err').innerText = "Помилка: " + error.message;
     }
     async function logout() { await sb.auth.signOut(); localStorage.clear(); window.location.reload(); }
+    
     sb.auth.onAuthStateChange((ev, sess) => {
         document.getElementById('auth-gate').style.display = sess ? 'none' : 'flex';
         if (sess) sync();
@@ -194,7 +201,6 @@
 
     function toggleSidebar() { document.body.classList.toggle('sidebar-closed'); }
 
-    /* ДАНІ */
     async function sync() {
         const [p, c] = await Promise.all([sb.from('projects').select('*'), sb.from('categories').select('*')]);
         projects = p.data || []; categories = c.data || [];
