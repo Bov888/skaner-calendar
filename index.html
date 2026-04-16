@@ -2,233 +2,246 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scanner Planner | Tech Edition</title>
-
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Scanner Planner - Premium Fixed</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400;1,600&display=swap" rel="stylesheet">
+    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/drag-drop-touch-polyfill@1.5.0/DragDropTouch.min.js"></script>
 
     <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
+
         :root {
-            --bg: #fdfdfd;
-            --surface: #ffffff;
-            --surface-sub: #f8f9fa;
-            --border: #e9ecef;
-            --border-dark: #dee2e6;
-            --text: #1a1d23;
-            --text-dim: #6c757d;
-            --accent: #000000; /* Мінімалістичний чорний акцент */
-            --accent-soft: #f1f3f5;
+            /* ПОВЕРТАЄМО DEEP DARK ПАЛІТРУ */
+            --bg: #080909;
+            --surface: #0f1110;
+            --surface-sub: #141614;
+            --border: #1c1f1d;
+            --border-active: #242724;
+            --text: #dde3dc;
+            --text-dim: #7a8879;
+            --text-faint: #3a413a;
+            --accent: #3d7a36;
+            --accent-hi: #52a849;
+            --accent-glow: rgba(82, 168, 73, 0.15);
+            --danger: #9b3535;
+            --danger-hi: #c44444;
             --sidebar-w: 280px;
-            --radius: 8px;
-            --font-main: 'Plus Jakarta Sans', sans-serif;
-            --font-mono: 'JetBrains Mono', monospace;
+            --radius: 6px;
+            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        [data-theme="dark"] {
-            --bg: #0b0e11;
-            --surface: #15191d;
-            --surface-sub: #1c2126;
-            --border: #2d3339;
-            --border-dark: #3e444b;
-            --text: #e6edf3;
-            --text-dim: #7d8590;
-            --accent: #ffffff;
-            --accent-soft: #21262d;
+        /* LIGHT THEME (Adaptive version of the luxurious palette) */
+        [data-theme="light"] {
+            --bg: #f4f5f4;
+            --surface: #ffffff;
+            --surface-sub: #ecefec;
+            --border: #d1d5d1;
+            --border-active: #bfc4bf;
+            --text: #1a1c1a;
+            --text-dim: #5c635c;
+            --text-faint: #bfc4bf;
+            --accent: #2d5a28;
+            --accent-hi: #3d7a36;
+            --accent-glow: rgba(61, 122, 54, 0.1);
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             background: var(--bg);
             color: var(--text);
-            font-family: var(--font-main);
-            font-size: 14px;
+            font-family: 'DM Mono', monospace;
+            font-size: 15px;
             display: flex;
             height: 100vh;
             overflow: hidden;
-            transition: background 0.2s;
+            transition: background var(--transition);
         }
+
+        /* SCROLLBAR */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-thumb { background: var(--border-active); border-radius: 2px; }
 
         /* ── SIDEBAR ── */
         #sidebar {
             width: var(--sidebar-w);
+            min-width: var(--sidebar-w);
             background: var(--surface);
             border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            flex-shrink: 0;
+            transition: margin-left var(--transition);
+            z-index: 200;
+            overflow: hidden;
         }
-        #sidebar.collapsed { margin-left: calc(var(--sidebar-w) * -1); }
+        #sidebar.collapsed { margin-left: calc(-1 * var(--sidebar-w)); }
 
         .sb-header {
-            padding: 1.25rem;
-            display: flex; align-items: center; justify-content: space-between;
+            padding: 1.5rem;
             border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
         }
-        .logo { font-weight: 700; font-size: 1.1rem; letter-spacing: -0.5px; }
-        .logo span { color: var(--text-dim); font-weight: 400; }
+
+        .logo {
+            font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.3rem; 
+            color: var(--text); letter-spacing: 0.01em; font-weight: 600;
+        }
+        .logo em { color: var(--accent-hi); font-style: normal; }
 
         .btn-add {
-            margin: 1.25rem;
-            background: var(--accent);
-            color: var(--bg);
-            border: none;
-            padding: 10px;
-            border-radius: var(--radius);
-            font-weight: 600;
-            cursor: pointer;
-            font-family: var(--font-main);
+            margin: 1.25rem; background: var(--accent); color: #fff; border: none;
+            padding: 12px; border-radius: var(--radius); font-family: 'DM Mono', monospace;
+            font-size: 0.8rem; letter-spacing: 0.05em; cursor: pointer; transition: all 0.2s;
+            font-weight: 500;
         }
+        .btn-add:hover { background: var(--accent-hi); transform: translateY(-1px); }
 
         #backlog-container {
-            flex: 1; overflow-y: auto; padding: 0 1.25rem 1.25rem;
+            flex: 1; overflow-y: auto; padding: 0 1rem 1.5rem;
         }
         .section-label {
-            font-family: var(--font-mono);
-            font-size: 10px;
-            text-transform: uppercase;
-            color: var(--text-dim);
-            margin: 1rem 0;
-            display: flex; justify-content: space-between;
+            font-family: 'JetBrains Mono', monospace; /* Keep mono for labels */
+            font-size: 10px; text-transform: uppercase; color: var(--text-faint); margin: 1rem 0;
+            display: flex; justify-content: space-between; letter-spacing: 0.1em;
         }
 
-        /* ── MAIN CONTENT ── */
-        main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+        /* ── MAIN ── */
+        main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
 
         .top-nav {
-            height: 56px;
-            padding: 0 1.25rem;
-            display: flex; align-items: center;
-            border-bottom: 1px solid var(--border);
-            background: var(--surface);
-            gap: 1rem;
+            height: 60px; padding: 0 1.5rem; display: flex; align-items: center;
+            border-bottom: 1px solid var(--border); background: var(--bg); flex-shrink: 0;
         }
+        .top-nav .wordmark {
+            font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.2rem;
+            color: var(--text-dim); margin-left: 1rem;
+        }
+        .top-nav .wordmark strong { color: var(--accent-hi); font-style: normal; font-weight: 600; }
+
+        .btn-group-right { margin-left: auto; display: flex; gap: 8px; }
 
         .icon-btn {
-            background: none; border: 1px solid var(--border);
-            color: var(--text); width: 32px; height: 32px;
-            border-radius: 6px; cursor: pointer;
+            background: none; border: 1px solid var(--border); color: var(--text-dim);
+            width: 36px; height: 36px; border-radius: 6px; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
-            font-size: 1.1rem;
+            font-size: 1rem; transition: all 0.2s;
         }
-        .icon-btn:hover { background: var(--surface-sub); }
+        .icon-btn:hover { color: var(--text); border-color: var(--border-active); background: var(--surface); }
 
-        .filter-bar {
-            padding: 0.75rem 1.25rem;
-            display: flex; gap: 8px;
-            overflow-x: auto;
-            border-bottom: 1px solid var(--border);
+        /* ── CATEGORIES BAR ── */
+        #cats-bar {
+            display: flex; gap: 8px; padding: 10px 1.5rem; overflow-x: auto;
+            border-bottom: 1px solid var(--border); background: var(--surface); scrollbar-width: none;
         }
+        #cats-bar::-webkit-scrollbar { display: none; }
         .pill {
-            padding: 6px 12px; border-radius: 20px;
-            background: var(--surface-sub); border: 1px solid var(--border);
-            font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap;
+            padding: 6px 12px; border-radius: 4px; background: var(--surface-sub); border: 1px solid var(--border);
+            color: var(--text-dim); font-size: 0.75rem; font-weight: 500; cursor: pointer; white-space: nowrap;
+            display: flex; align-items: center; gap: 6px; transition: all 0.2s;
         }
-        .pill.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+        .pill:hover { color: var(--text); border-color: var(--text-dim); }
+        .pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+        .cdot { width: 8px; height: 8px; border-radius: 50%; }
 
-        /* ── CALENDAR GRID ── */
-        #viewport {
-            flex: 1; overflow-y: auto; padding: 1.5rem;
+        /* ── CALENDAR ── */
+        #viewport { flex: 1; overflow-y: auto; padding: 2rem; -webkit-overflow-scrolling: touch; }
+
+        .year-wrapper { margin-bottom: 3rem; }
+        .yr-num {
+            font-family: 'Cormorant Garamond', serif; font-size: 2rem; font-weight: 600; 
+            color: var(--text); margin-bottom: 1.5rem;
         }
+        .yr-num.now { color: var(--accent-hi); }
 
-        .year-section { margin-bottom: 3rem; }
-        .year-label {
-            font-size: 1.5rem; font-weight: 700; margin-bottom: 1.25rem;
-            display: flex; align-items: center; gap: 10px;
-        }
-        .year-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-
-        .grid {
+        .year-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 1rem;
+            grid-template-columns: repeat(12, 1fr); /* Back to multi-column months */
+            gap: 10px;
         }
+        @media (max-width: 1200px) { .year-grid { grid-template-columns: repeat(6, 1fr); } }
+        @media (max-width: 800px) { .year-grid { grid-template-columns: repeat(4, 1fr); } }
 
-        .month-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            min-height: 140px;
-            padding: 32px 12px 12px;
-            position: relative;
+        .month-box {
+            background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+            min-height: 120px; padding: 35px 10px 10px; position: relative;
             transition: all 0.2s;
         }
-        .month-card.today { border: 2px solid var(--accent); }
-        .month-card.drag-over { border-style: dashed; background: var(--accent-soft); }
+        .month-box.today { border: 2px solid var(--accent); }
+        .month-box.drag-over { border-style: dashed; background: var(--accent-glow); }
         
-        .month-name {
-            position: absolute; top: 10px; left: 12px;
-            font-family: var(--font-mono); font-size: 10px;
-            font-weight: 500; color: var(--text-dim); text-transform: uppercase;
+        .month-label {
+            position: absolute; top: 10px; right: 12px;
+            font-family: 'DM Mono', monospace; font-size: 10px;
+            font-weight: 500; color: var(--text-faint); text-transform: uppercase;
         }
 
         /* ── CARDS ── */
         .card {
-            background: var(--surface-sub);
-            border: 1px solid var(--border-dark);
             border-radius: 6px;
-            padding: 8px 10px;
-            font-size: 13px;
+            padding: 10px;
+            font-size: 0.8rem;
             font-weight: 500;
-            margin-bottom: 8px;
+            line-height: 1.35;
             cursor: grab;
-            transition: transform 0.1s;
+            color: #fff !important; /* Full color cards like original image */
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+            margin-bottom: 8px;
+            transition: transform 0.1s, box-shadow 0.1s;
         }
-        .card:hover { transform: scale(1.02); background: var(--surface); }
+        .card:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
         .card.dragging { opacity: 0.4; }
         .card-cat {
-            font-size: 9px; font-family: var(--font-mono);
-            color: var(--text-dim); margin-top: 4px; display: block;
+            font-size: 9px; font-family: 'DM Mono', monospace;
+            opacity: 0.8; margin-top: 5px; display: block; text-transform: uppercase;
         }
 
-        /* ── OVERLAY / MODAL ── */
+        /* ── OVERLAYS ── */
         .overlay {
             display: none; position: fixed; inset: 0;
-            background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
             z-index: 1000; align-items: center; justify-content: center;
         }
         .overlay.active { display: flex; }
         .modal {
-            background: var(--surface); width: 100%; max-width: 400px;
-            padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border);
+            background: var(--surface2); width: 100%; max-width: 400px;
+            padding: 2rem; border-radius: 12px; border: 1px solid var(--border2);
+            box-shadow: 0 25px 60px rgba(0,0,0,0.5);
         }
         .modal input, .modal select {
-            width: 100%; padding: 10px; margin: 10px 0;
-            border: 1px solid var(--border); border-radius: 6px;
-            background: var(--surface-sub); color: var(--text);
+            width: 100%; padding: 12px; margin: 10px 0;
+            border: 1px solid var(--border2); border-radius: 6px;
+            background: var(--bg); color: var(--text);
+            font-family: 'DM Mono'; font-size: 14px;
         }
 
-        /* Hide Scrollbars */
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-thumb { background: var(--border-dark); border-radius: 10px; }
+        .btn-m { background: var(--accent); color: #fff; border: none; padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        .btn-m:hover { background: var(--accent-hi); }
     </style>
 </head>
-<body data-theme="light">
+<body data-theme="dark">
 
     <aside id="sidebar">
         <div class="sb-header">
-            <div class="logo">Scanner<span>Planner</span></div>
-            <button class="icon-btn" onclick="ui.toggleSidebar()">✕</button>
+            <div class="logo">Scanner<em>Planner</em></div>
         </div>
-        <button class="btn-add" onclick="ui.openModal()">+ НОВИЙ ПРОЄКТ</button>
+        <button class="btn-add" onclick="ui.openModal()">+ НОВА ІДЕЯ</button>
         <div id="backlog-container">
             <div class="section-label">Backlog <span id="count-back">0</span></div>
             <div id="backlog-list" style="min-height: 100px;" ondragover="logic.allowDrop(event)" ondrop="logic.handleDrop(event, 'backlog')"></div>
-        </div>
-        <div style="padding: 1.25rem; border-top: 1px solid var(--border); display: flex; gap: 8px;">
-            <button class="icon-btn" onclick="ui.toggleTheme()" style="flex:1">◐ Тема</button>
-            <button class="icon-btn" onclick="logic.logout()" style="flex:1">⏻</button>
         </div>
     </aside>
 
     <main>
         <nav class="top-nav">
             <button class="icon-btn" onclick="ui.toggleSidebar()">☰</button>
-            <div style="font-weight: 600;">Time Horizon</div>
-            <button class="icon-btn" style="margin-left: auto;" onclick="ui.scrollToToday()">◎</button>
+            <div class="wordmark">Scanner<strong>Planner</strong> | Time Horizon</div>
+            <div class="btn-group-right">
+                <button class="icon-btn" onclick="ui.scrollToToday()">◎</button>
+                <button class="icon-btn" onclick="ui.toggleTheme()">◐</button>
+                <button class="icon-btn" onclick="logic.logout()" style="color: var(--danger)">⏻</button>
+            </div>
         </nav>
 
         <div class="filter-bar" id="filter-bar"></div>
@@ -238,13 +251,13 @@
 
     <div id="modal-overlay" class="overlay" onclick="if(event.target===this) ui.closeModal()">
         <div class="modal">
-            <h3 id="modal-title">Нова ідея</h3>
+            <h3 id="modal-title" style="font-family: 'Cormorant Garamond'; font-style: italic; font-size: 1.5rem; margin-bottom: 1rem;">Нова ідея</h3>
             <input type="text" id="m-title" placeholder="Назва проєкту...">
             <select id="m-cat"></select>
-            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 1rem;">
-                <button class="btn-add" style="margin:0" onclick="logic.save()">Зберегти</button>
-                <button id="m-del" class="btn-add" style="margin:0; background: #e03131; display:none" onclick="logic.remove()">Видалити</button>
-                <button onclick="ui.closeModal()" style="background:none; border:none; cursor:pointer; font-size:12px; color:var(--text-dim)">Скасувати</button>
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 1.5rem;">
+                <button class="btn-m" onclick="logic.save()">Зберегти зміни</button>
+                <button id="m-del" class="btn-m" style="background: var(--danger); display:none" onclick="logic.remove()">Видалити проєкт</button>
+                <button onclick="ui.closeModal()" style="background:none; border:none; cursor:pointer; font-size:12px; color:var(--text-dim); margin-top: 8px; font-family: 'DM Mono'">Скасувати</button>
             </div>
         </div>
     </div>
@@ -256,7 +269,7 @@
 
     let state = {
         projects: [],
-        cats: [{n:'Творчість', c:'#7048e8'}, {n:'Технології', c:'#1098ad'}, {n:'Бізнес', c:'#37b24d'}, {n:'Особисте', c:'#f08c00'}],
+        cats: [{n:'Творчість', c:'#c45c8a'}, {n:'Технології', c:'#3b82f6'}, {n:'Бізнес', c:'#3d7a36'}, {n:'Особисте', c:'#ff9800'}],
         filter: null,
         editingId: null
     };
@@ -264,12 +277,12 @@
     const ui = {
         init() {
             this.renderCalendar();
-            this.updateTheme();
         },
         toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); },
         toggleTheme() {
-            const t = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-            document.body.setAttribute('data-theme', t);
+            const body = document.body;
+            const current = body.getAttribute('data-theme');
+            body.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
         },
         renderCalendar() {
             const vp = document.getElementById('viewport');
@@ -279,18 +292,18 @@
             for(let y=0; y<2; y++) {
                 const year = now.getFullYear() + y;
                 const section = document.createElement('div');
-                section.className = 'year-section';
+                section.className = 'year-wrapper';
                 section.id = `y-${year}`;
-                section.innerHTML = `<div class="year-label">${year}</div>`;
+                section.innerHTML = `<div class="yr-num ${y === now.getFullYear() ? 'now' : ''}">${year}</div>`;
                 const grid = document.createElement('div');
-                grid.className = 'grid';
+                grid.className = 'year-grid';
                 
                 months.forEach((m, i) => {
                     const key = `${year}-${String(i+1).padStart(2,'0')}`;
                     const box = document.createElement('div');
-                    box.className = `month-card ${key === now.toISOString().slice(0,7) ? 'today' : ''}`;
+                    box.className = `month-box ${key === now.toISOString().slice(0,7) ? 'today' : ''}`;
                     box.dataset.date = key;
-                    box.innerHTML = `<div class="month-name">${m}</div>`;
+                    box.innerHTML = `<div class="month-label">${months[i].substring(0,3)}</div>`;
                     box.ondragover = logic.allowDrop;
                     box.ondragleave = e => e.currentTarget.classList.remove('drag-over');
                     box.ondrop = e => logic.handleDrop(e, key);
@@ -317,6 +330,7 @@
             const el = document.createElement('div');
             el.className = 'card';
             el.draggable = true;
+            el.style.backgroundColor = (state.cats.find(c => c.n === p.cat) || {c:'#555'}).c;
             el.innerHTML = `${p.title} <span class="card-cat">${p.cat || ''}</span>`;
             el.onclick = () => this.openModal(p);
             el.ondragstart = e => { e.dataTransfer.setData('text', p.id); el.classList.add('dragging'); };
@@ -327,11 +341,14 @@
             const bar = document.getElementById('filter-bar');
             bar.innerHTML = `<div class="pill ${!state.filter?'active':''}" onclick="logic.setFilter(null)">Всі</div>`;
             state.cats.forEach(c => {
-                bar.innerHTML += `<div class="pill ${state.filter===c.n?'active':''}" onclick="logic.setFilter('${c.n}')">${c.n}</div>`;
+                bar.innerHTML += `<div class="pill ${state.filter===c.n?'active':''}" onclick="logic.setFilter('${c.n}')">
+                    <span class="cdot" style="background:${c.c}"></span>${c.n}
+                </div>`;
             });
         },
         openModal(p = null) {
             state.editingId = p ? p.id : null;
+            document.getElementById('modal-title').textContent = p ? 'Редагувати ідею' : 'Нова ідея';
             document.getElementById('m-title').value = p ? p.title : '';
             const sel = document.getElementById('m-cat');
             sel.innerHTML = state.cats.map(c => `<option value="${c.n}" ${p && p.cat===c.n?'selected':''}>${c.n}</option>`).join('');
@@ -339,8 +356,7 @@
             document.getElementById('modal-overlay').classList.add('active');
         },
         closeModal() { document.getElementById('modal-overlay').classList.remove('active'); },
-        scrollToToday() { document.querySelector('.today').scrollIntoView({behavior:'smooth', block:'center'}); },
-        updateTheme() {}
+        scrollToToday() { document.querySelector('.today').scrollIntoView({behavior:'smooth', block:'center'}); }
     };
 
     const logic = {
