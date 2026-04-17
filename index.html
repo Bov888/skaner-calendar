@@ -255,12 +255,9 @@
             overflow-y: auto;
             padding: 0.6rem 1rem 1.5rem;
             transition: background 0.15s;
-            /* мінімальна висота щоб зону можна було влучити */
             min-height: 80px;
         }
-        #backlog.drag-over {
-            background: var(--accent-light);
-        }
+        #backlog.drag-over { background: var(--accent-light); }
 
         .backlog-hint {
             font-family: 'JetBrains Mono', monospace;
@@ -274,23 +271,23 @@
             border-radius: 2px;
             transition: border-color 0.15s, color 0.15s;
         }
-        #backlog.drag-over .backlog-hint {
-            border-color: var(--accent);
-            color: var(--accent);
-        }
+        #backlog.drag-over .backlog-hint { border-color: var(--accent); color: var(--accent); }
 
+        /* ── BACKLOG PROJECT PILL ── */
         .backlog-proj {
             padding: 6px 8px;
             border-radius: 2px;
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.6rem;
-            color: #fff;
             margin-bottom: 4px;
             cursor: pointer;
             transition: opacity 0.2s;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
         .backlog-proj:hover { opacity: 0.85; }
 
@@ -379,6 +376,7 @@
         @media (max-width: 1100px) { .calendar-grid { grid-template-columns: repeat(6, 1fr); } }
         @media (max-width: 700px)  { .calendar-grid { grid-template-columns: repeat(3, 1fr); } }
 
+        /* FIX 1: клітинка тепер розтягується під контент, не обрізає */
         .month-cell {
             background: var(--surface);
             border-radius: 3px;
@@ -386,6 +384,7 @@
             border: 1px solid var(--border);
             position: relative;
             min-height: 80px;
+            /* прибрали фіксовану висоту — клітинка росте */
             cursor: pointer;
             transition: border-color 0.2s;
         }
@@ -403,21 +402,42 @@
             letter-spacing: 0.08em;
         }
 
+        /* FIX 1 + 2: пілюля тепер переноситься і має контрастний колір */
         .proj {
             padding: 4px 6px;
             border-radius: 2px;
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.58rem;
-            color: #fff;
             margin-bottom: 3px;
             cursor: pointer;
             transition: opacity 0.2s;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            /* white-space: nowrap → тепер переноситься */
+            white-space: normal;
+            word-break: break-word;
+            line-height: 1.3;
             letter-spacing: 0.02em;
+            display: flex;
+            align-items: flex-start;
+            gap: 4px;
+            /* колір тексту визначається JS через getContrastColor() */
         }
-        .proj:hover { opacity: 0.85; }
+        .proj:hover { opacity: 0.8; }
+
+        /* FIX 5: завершений проєкт */
+        .proj.done {
+            opacity: 0.45;
+            text-decoration: line-through;
+            text-decoration-thickness: 1px;
+            filter: grayscale(60%);
+        }
+        .proj.done .proj-check { opacity: 1; }
+        .proj-check {
+            flex-shrink: 0;
+            font-size: 0.55rem;
+            margin-top: 1px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
 
         /* ── MODAL ── */
         .modal {
@@ -487,6 +507,42 @@
         }
         .color-preview { flex: 1; height: 34px; border-radius: 2px; transition: background 0.2s; }
 
+        .done-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.6rem 0;
+            margin-bottom: 0.75rem;
+            cursor: pointer;
+        }
+        .done-toggle input { display: none; }
+        .done-toggle-track {
+            width: 32px; height: 18px;
+            background: var(--border);
+            border-radius: 9px;
+            position: relative;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+        .done-toggle-track::after {
+            content: '';
+            position: absolute;
+            top: 3px; left: 3px;
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            background: #fff;
+            transition: transform 0.2s;
+        }
+        .done-toggle input:checked + .done-toggle-track { background: var(--accent); }
+        .done-toggle input:checked + .done-toggle-track::after { transform: translateX(14px); }
+        .done-toggle-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
         .delete-link {
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.58rem;
@@ -519,6 +575,21 @@
             text-align: center;
             padding: 3rem;
             letter-spacing: 0.06em;
+        }
+
+        /* FIX 3: drag-ghost для touch */
+        .drag-ghost {
+            position: fixed;
+            pointer-events: none;
+            z-index: 99999;
+            opacity: 0.85;
+            border-radius: 3px;
+            padding: 6px 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            white-space: nowrap;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
         }
     </style>
 </head>
@@ -577,8 +648,6 @@
             <button onclick="openModal('proj', null)" class="primary-btn">+ Новий проєкт</button>
             <button onclick="openModal('cat', null)" class="secondary-btn">+ Категорія</button>
         </div>
-
-        <!-- BACKLOG — повноцінна drop-зона -->
         <div id="backlog-wrap">
             <div id="backlog-header" class="sidebar-section" style="padding-bottom:0.6rem;">
                 <span class="sidebar-label" style="margin-bottom:0;">Беклог</span>
@@ -606,6 +675,92 @@ const S_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJl
 const sb = supabase.createClient(S_URL, S_KEY);
 
 let projects = [], categories = [], filter = null, activeDate = null;
+
+/* ─────────────────────────────────────────
+   FIX 2: Контрастний колір тексту
+   Повертає '#fff' або '#1a1917' залежно від
+   відносної яскравості фону пілюлі
+───────────────────────────────────────── */
+function getContrastColor(hex) {
+    const c = hex.replace('#','');
+    const r = parseInt(c.slice(0,2),16);
+    const g = parseInt(c.slice(2,4),16);
+    const b = parseInt(c.slice(4,6),16);
+    // відносна яскравість (sRGB)
+    const L = 0.2126*(r/255) + 0.7152*(g/255) + 0.0722*(b/255);
+    return L > 0.45 ? '#1a1917' : '#ffffff';
+}
+
+/* ─────────────────────────────────────────
+   FIX 3: Touch drag-and-drop
+   Власна реалізація через touchstart/move/end
+───────────────────────────────────────── */
+let touchDragId   = null;   // id проєкту що тягнемо
+let touchGhost    = null;   // плаваючий елемент
+let lastDropTarget = null;
+
+function makeDraggable(el, projId) {
+    // Desktop (стандартний drag)
+    el.draggable = true;
+    el.ondragstart = e => e.dataTransfer.setData('pid', projId);
+
+    // Mobile (touch)
+    el.addEventListener('touchstart', e => {
+        touchDragId = projId;
+        const touch = e.touches[0];
+        // створюємо ghost
+        const ghost = document.createElement('div');
+        ghost.className = 'drag-ghost';
+        ghost.textContent = el.textContent.trim();
+        ghost.style.background = el.style.background || '#4a8a42';
+        ghost.style.color = el.style.color || '#fff';
+        ghost.style.left = touch.clientX + 'px';
+        ghost.style.top  = touch.clientY + 'px';
+        document.body.appendChild(ghost);
+        touchGhost = ghost;
+    }, { passive: true });
+
+    el.addEventListener('touchmove', e => {
+        if (!touchGhost) return;
+        e.preventDefault();
+        const touch = e.touches[0];
+        touchGhost.style.left = touch.clientX + 'px';
+        touchGhost.style.top  = touch.clientY + 'px';
+
+        // підсвітка цільового елементу
+        touchGhost.style.display = 'none';
+        const target = document.elementFromPoint(touch.clientX, touch.clientY);
+        touchGhost.style.display = '';
+
+        // прибираємо попереднє підсвічення
+        if (lastDropTarget) lastDropTarget.classList.remove('drag-over');
+        const cell = target?.closest('.month-cell');
+        const bl   = target?.closest('#backlog');
+        if (cell) { cell.classList.add('drag-over'); lastDropTarget = cell; }
+        else if (bl) { bl.classList.add('drag-over'); lastDropTarget = bl; }
+        else lastDropTarget = null;
+    }, { passive: false });
+
+    el.addEventListener('touchend', async e => {
+        if (!touchGhost) return;
+        touchGhost.remove(); touchGhost = null;
+        if (lastDropTarget) lastDropTarget.classList.remove('drag-over');
+
+        const touch = e.changedTouches[0];
+        const target = document.elementFromPoint(touch.clientX, touch.clientY);
+        const cell = target?.closest('.month-cell');
+        const bl   = target?.closest('#backlog');
+
+        if (cell && touchDragId) {
+            const code = cell.dataset.code;
+            if (code) { await sb.from('projects').update({ date: code }).eq('id', touchDragId); sync(); }
+        } else if (bl && touchDragId) {
+            await sb.from('projects').update({ date: null }).eq('id', touchDragId);
+            sync();
+        }
+        touchDragId = null; lastDropTarget = null;
+    });
+}
 
 /* ── THEME ── */
 function getSystemTheme() { return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
@@ -644,7 +799,7 @@ function toggleSidebar() {
 }
 function closeSidebar() { document.body.classList.remove('sidebar-open'); }
 
-/* ── BACKLOG DROP ZONE (ініціалізується один раз) ── */
+/* ── BACKLOG DROP ZONE ── */
 function initBacklogDrop() {
     const bl = document.getElementById('backlog');
     bl.addEventListener('dragover', e => { e.preventDefault(); bl.classList.add('drag-over'); });
@@ -712,11 +867,13 @@ function render() {
 
         const grid = document.createElement('div');
         grid.className = 'calendar-grid';
+
         for (let m = 1; m <= 12; m++) {
             const code = `${y}-${String(m).padStart(2,'0')}`;
             const cell = document.createElement('div');
             cell.className = 'month-cell';
             cell.setAttribute('data-label', mNames[m-1]);
+            cell.dataset.code = code; // для touch drop
             cell.onclick = e => { if (e.target === cell) openModal('proj', code); };
             cell.ondragover = e => { e.preventDefault(); cell.classList.add('drag-over'); };
             cell.ondragleave = e => { if (!cell.contains(e.relatedTarget)) cell.classList.remove('drag-over'); };
@@ -726,39 +883,71 @@ function render() {
                 await sb.from('projects').update({ date: code }).eq('id', pid);
                 sync();
             };
+
             list.filter(p => p.date === code).forEach(p => {
                 const cat = categories.find(c => c.name === p.cat);
+                const bgColor = cat?.color || '#4a8a42';
+                const textColor = getContrastColor(bgColor);
+
                 const el = document.createElement('div');
-                el.className = 'proj';
-                el.style.background = cat?.color || '#4a8a42';
-                el.textContent = p.title;
+                el.className = 'proj' + (p.done ? ' done' : '');
+                el.style.background = bgColor;
+                el.style.color = textColor;
                 el.title = p.title;
-                el.draggable = true;
-                el.ondragstart = e => e.dataTransfer.setData('pid', p.id);
+
+                // галочка для завершених
+                const check = document.createElement('span');
+                check.className = 'proj-check';
+                check.textContent = '✓';
+
+                const lbl = document.createElement('span');
+                lbl.textContent = p.title;
+
+                el.appendChild(check);
+                el.appendChild(lbl);
+
+                makeDraggable(el, p.id);
                 el.onclick = e => { e.stopPropagation(); openModal('proj', code, p); };
                 cell.appendChild(el);
             });
+
             grid.appendChild(cell);
         }
         sec.appendChild(grid);
         view.appendChild(sec);
     }
 
-    /* Backlog items — перебудовуємо, зберігаємо hint */
+    /* Backlog items */
     const bl = document.getElementById('backlog');
     bl.querySelectorAll('.backlog-proj').forEach(el => el.remove());
     const hint = document.getElementById('backlog-hint');
     const noDate = list.filter(p => !p.date);
     hint.style.display = noDate.length === 0 ? 'block' : 'none';
+
     noDate.forEach(p => {
         const cat = categories.find(c => c.name === p.cat);
+        const bgColor = cat?.color || '#4a8a42';
+        const textColor = getContrastColor(bgColor);
+
         const el = document.createElement('div');
-        el.className = 'backlog-proj';
-        el.style.background = cat?.color || '#4a8a42';
-        el.textContent = p.title;
+        el.className = 'backlog-proj' + (p.done ? ' done' : '');
+        el.style.background = bgColor;
+        el.style.color = textColor;
+        if (p.done) { el.style.opacity = '0.45'; el.style.textDecoration = 'line-through'; }
         el.title = p.title;
-        el.draggable = true;
-        el.ondragstart = e => e.dataTransfer.setData('pid', p.id);
+
+        const check = document.createElement('span');
+        check.className = 'proj-check';
+        if (p.done) check.style.opacity = '1';
+        check.textContent = '✓';
+
+        const lbl = document.createElement('span');
+        lbl.textContent = p.title;
+
+        el.appendChild(check);
+        el.appendChild(lbl);
+
+        makeDraggable(el, p.id);
         el.onclick = () => openModal('proj', null, p);
         bl.insertBefore(el, hint);
     });
@@ -769,15 +958,23 @@ function openModal(type, date, item = null) {
     activeDate = date;
     const body = document.getElementById('m-body');
     document.getElementById('modal').style.display = 'flex';
+
     if (type === 'proj') {
+        const isDone = item?.done || false;
         body.innerHTML = `
             <div class="modal-title">${item ? 'Редагувати' : 'Новий'} проєкт</div>
             <label class="inp-label">Назва</label>
             <input id="f-t" class="inp" value="${item?.title || ''}" placeholder="Назва проєкту">
             <label class="inp-label">Категорія</label>
             <select id="f-c" class="inp">${categories.map(c=>`<option ${item?.cat===c.name?'selected':''}>${c.name}</option>`).join('')}</select>
+            <label class="done-toggle">
+                <input type="checkbox" id="f-done" ${isDone ? 'checked' : ''}>
+                <span class="done-toggle-track"></span>
+                <span class="done-toggle-label">Завершено</span>
+            </label>
             <button onclick="saveProj('${item?.id||''}')" class="primary-btn">Зберегти</button>
-            ${item?`<button onclick="del('projects','${item.id}')" class="delete-link">Видалити проєкт</button>`:''}`;
+            ${item?`<button onclick="del('projects','${item.id}')" class="delete-link">Видалити проєкт</button>`:''}
+        `;
     } else {
         const ic = item?.color || '#4a8a42';
         body.innerHTML = `
@@ -790,19 +987,29 @@ function openModal(type, date, item = null) {
                 <div id="color-prev" class="color-preview" style="background:${ic}"></div>
             </div>
             <button onclick="saveCat('${item?.id||''}')" class="primary-btn">Зберегти</button>
-            ${item?`<button onclick="del('categories','${item.id}')" class="delete-link">Видалити категорію</button>`:''}`;
+            ${item?`<button onclick="del('categories','${item.id}')" class="delete-link">Видалити категорію</button>`:''}
+        `;
     }
 }
+
 function closeModal() { document.getElementById('modal').style.display = 'none'; }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
 async function saveProj(id) {
     const user = (await sb.auth.getUser()).data.user;
-    const d = { title: document.getElementById('f-t').value, cat: document.getElementById('f-c').value, date: activeDate || null, user_id: user.id };
+    const done = document.getElementById('f-done')?.checked || false;
+    const d = {
+        title: document.getElementById('f-t').value,
+        cat:   document.getElementById('f-c').value,
+        date:  activeDate || null,
+        done,
+        user_id: user.id
+    };
     if (id) await sb.from('projects').update(d).eq('id', id);
     else await sb.from('projects').insert([d]);
     closeModal(); sync();
 }
+
 async function saveCat(id) {
     const user = (await sb.auth.getUser()).data.user;
     const d = { name: document.getElementById('f-n').value, color: document.getElementById('f-co').value, user_id: user.id };
@@ -810,6 +1017,7 @@ async function saveCat(id) {
     else await sb.from('categories').insert([d]);
     closeModal(); sync();
 }
+
 async function del(t, id) {
     if (confirm('Видалити безповоротно?')) {
         await sb.from(t).delete().eq('id', id);
