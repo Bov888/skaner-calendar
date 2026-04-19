@@ -685,8 +685,9 @@ function mkDrag(el,id,bg,fg,lbl){
 
     if(!D.drag){
       D.drag=true;
-      /* На мобайлі закриваємо sidebar щоб бачити календар */
-      if(isMob()&&document.body.hasAttribute('data-sb-open'))closeSB();
+      /* На мобайлі НЕ закриваємо sidebar одразу —
+         спочатку показуємо ghost. Sidebar закриється
+         тільки якщо палець пішов за межі sidebar */
       const g=document.createElement('div');
       g.className='ghost';g.textContent=D.lbl;
       g.style.background=D.bg;g.style.color=D.fg;
@@ -696,6 +697,15 @@ function mkDrag(el,id,bg,fg,lbl){
     }
     D.ghost.style.left=e.clientX+'px';
     D.ghost.style.top=e.clientY+'px';
+
+    /* На мобайлі: якщо палець вийшов за межі sidebar — закриваємо його
+       щоб побачити календар. Назад у беклог — палець лишається в sidebar. */
+    if(isMob()&&D.drag&&document.body.hasAttribute('data-sb-open')){
+      const sbRect=document.getElementById('sidebar').getBoundingClientRect();
+      if(e.clientX>sbRect.right+20){
+        closeSB();
+      }
+    }
 
     D.ghost.style.visibility='hidden';
     const un=document.elementFromPoint(e.clientX,e.clientY);
