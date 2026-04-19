@@ -108,17 +108,16 @@ body{
 /* ─ DESKTOP ─ */
 @media(min-width:769px){
   #sidebar{
-    width:0;
+    width:var(--sw);
     background:var(--surface);
     border-right:1px solid var(--border);
     display:flex;flex-direction:column;
     flex-shrink:0;overflow:hidden;
     position:relative;
     transition:width .25s,border-color .25s;
-    border-right-color:transparent;
   }
-  /* Відкритий */
-  body[data-sb-open] #sidebar{width:var(--sw);border-right-color:var(--border);}
+  /* Закритий — data-closed на body */
+  body[data-sc] #sidebar{width:0;border-right-color:transparent;}
   #sb-resizer{
     position:absolute;top:0;right:-4px;width:8px;height:100%;
     cursor:col-resize;z-index:10;
@@ -145,37 +144,9 @@ body{
     transform:translateX(-110%);
     transition:transform .25s cubic-bezier(.4,0,.2,1);
   }
-  body[data-sb-open] #sidebar{transform:translateX(0);}
+  #sidebar[data-open]{transform:translateX(0);}
   #sb-resizer{display:none;}
-  /* Overlay поверх sidebar на мобайлі НЕ потрібен —
-     він позаду. Але кнопка закриття всередині sidebar. */
   #overlay{z-index:450;}
-}
-
-/* Топбар всередині sidebar — кнопка закриття */
-.sb-topbar{
-  display:none; /* прихований на десктопі */
-  align-items:center;justify-content:space-between;
-  padding:.75rem 1rem;
-  border-bottom:1px solid var(--border);
-  flex-shrink:0;
-}
-.sb-brand{
-  font-family:'JetBrains Mono',monospace;font-size:.6rem;
-  letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
-}
-.sb-close-btn{
-  background:none;border:1px solid var(--border);
-  color:var(--muted);cursor:pointer;
-  width:28px;height:28px;border-radius:2px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:.9rem;line-height:1;
-  transition:border-color .15s,color .15s;
-  touch-action:manipulation;
-}
-.sb-close-btn:active{border-color:var(--accent);color:var(--accent);}
-@media(max-width:768px){
-  .sb-topbar{display:flex;}
 }
 
 /* ─ SIDEBAR CONTENT ─ */
@@ -424,23 +395,13 @@ input[type=color].cinp{
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
   </button>
   <button class="site-title" onclick="location.reload()">
-    <svg width="28" height="28" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+    <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
       <line x1="16" y1="15" x2="6"  y2="6"  stroke="var(--accent)" stroke-width="0.9" opacity="0.35"/>
       <line x1="16" y1="15" x2="26" y2="6"  stroke="var(--accent)" stroke-width="0.9" opacity="0.35"/>
       <line x1="16" y1="15" x2="27" y2="18" stroke="var(--accent)" stroke-width="0.9" opacity="0.35"/>
       <line x1="16" y1="15" x2="22" y2="27" stroke="var(--accent)" stroke-width="0.9" opacity="0.35"/>
       <line x1="16" y1="15" x2="9"  y2="26" stroke="var(--accent)" stroke-width="0.9" opacity="0.35"/>
       <line x1="16" y1="15" x2="5"  y2="18" stroke="var(--accent)" stroke-width="0.9" opacity="0.35"/>
-      <line x1="6"  y1="6"  x2="26" y2="6"  stroke="var(--accent)" stroke-width="0.6" opacity="0.15"/>
-      <line x1="27" y1="18" x2="22" y2="27" stroke="var(--accent)" stroke-width="0.6" opacity="0.15"/>
-      <line x1="9"  y1="26" x2="5"  y2="18" stroke="var(--accent)" stroke-width="0.6" opacity="0.15"/>
-      <circle cx="6"  cy="6"  r="1.8" fill="var(--accent)" opacity="0.4"/>
-      <circle cx="26" cy="6"  r="2.4" fill="var(--accent)" opacity="0.55"/>
-      <circle cx="27" cy="18" r="1.6" fill="var(--accent)" opacity="0.4"/>
-      <circle cx="22" cy="27" r="2"   fill="var(--accent)" opacity="0.45"/>
-      <circle cx="9"  cy="26" r="1.5" fill="var(--accent)" opacity="0.38"/>
-      <circle cx="5"  cy="18" r="1.8" fill="var(--accent)" opacity="0.42"/>
-      <circle cx="16" cy="15" r="5"   stroke="var(--accent)" stroke-width="0.8" fill="none" opacity="0.25"/>
       <circle cx="16" cy="15" r="4"   fill="var(--accent)"/>
       <circle cx="16" cy="15" r="2.2" fill="var(--bg)"/>
       <circle cx="16" cy="15" r="1.2" fill="var(--accent)"/>
@@ -458,11 +419,6 @@ input[type=color].cinp{
 <div class="app-body">
   <aside id="sidebar">
     <div id="sb-resizer"></div>
-    <!-- Кнопка закриття — видима тільки на мобайлі -->
-    <div class="sb-topbar">
-      <span class="sb-brand">Меню</span>
-      <button class="sb-close-btn" id="sb-close-btn" aria-label="Закрити меню">✕</button>
-    </div>
     <div class="sb-sec">
       <span class="sb-label">Рік початку</span>
       <input type="number" id="yr-inp" class="year-inp" value="2026" onchange="render()">
@@ -565,38 +521,38 @@ sb.auth.onAuthStateChange((ev,sess)=>{
 ═══════════════════════════════════════════════ */
 const SB  = document.getElementById('sidebar');
 const OVL = document.getElementById('overlay');
-const isMob=()=>innerWidth<=768;
+const mobile=()=>innerWidth<=768;
 
-/* ── SIDEBAR STATE ──
-   Єдиний стан: body[data-sb-open].
-   CSS читає цей атрибут для обох режимів:
-   - desktop: width 0 або var(--sw)
-   - mobile: translateX(-110%) або translateX(0)
-   Overlay показується разом із sidebar на мобайлі.
-*/
-function sbOpen(){
-  document.body.setAttribute('data-sb-open','');
-  if(isMob())OVL.setAttribute('data-open','');
+function sbIsOpen(){return SB.hasAttribute('data-open');}
+
+function openSB(){
+  SB.setAttribute('data-open','');
+  OVL.setAttribute('data-open','');
+  if(!mobile())document.body.removeAttribute('data-sc');
 }
 function closeSB(){
-  document.body.removeAttribute('data-sb-open');
+  SB.removeAttribute('data-open');
   OVL.removeAttribute('data-open');
+  if(!mobile())document.body.setAttribute('data-sc','');
 }
-function toggleSB(){
-  document.body.hasAttribute('data-sb-open')?closeSB():sbOpen();
-}
+function toggleSB(){sbIsOpen()?closeSB():openSB();}
 
+/* Кнопка меню */
 document.getElementById('menu-btn').addEventListener('click',e=>{
   e.stopPropagation();
   toggleSB();
 });
+/* Клік на overlay → закрити */
 OVL.addEventListener('click',closeSB);
-/* Кнопка закриття всередині sidebar */
-document.getElementById('sb-close-btn').addEventListener('click',closeSB);
 
+/* На мобайлі після натиску кнопок — закриваємо і чекаємо анімацію */
 function sbAction(fn){
-  if(isMob()){closeSB();setTimeout(fn,270);}
-  else fn();
+  if(mobile()){
+    closeSB();
+    setTimeout(fn,260);
+  } else {
+    fn();
+  }
 }
 document.getElementById('btn-np').addEventListener('click',()=>sbAction(()=>openMod('proj',null)));
 document.getElementById('btn-nc').addEventListener('click',()=>sbAction(()=>openMod('cat',null)));
@@ -606,7 +562,7 @@ function initResizer(){
   const r=document.getElementById('sb-resizer');
   if(!r)return;
   r.addEventListener('mousedown',e=>{
-    if(isMob())return;
+    if(mobile())return;
     e.preventDefault();
     let sx=e.clientX,sw=SB.offsetWidth;
     document.body.style.userSelect='none';document.body.style.cursor='col-resize';
@@ -623,13 +579,14 @@ function initResizer(){
     addEventListener('mousemove',mv);addEventListener('mouseup',up);
   });
   const saved=+localStorage.getItem('sp-sw');
-  if(saved>=180&&!isMob()){
+  if(saved>=180&&!mobile()){
     SB.style.width=saved+'px';
     document.documentElement.style.setProperty('--sw',saved+'px');
   }
 }
 
-/* Стартовий стан: desktop — sidebar закритий (width:0 по дефолту в CSS) */
+/* Стартовий стан: desktop — sidebar закритий */
+if(!mobile())document.body.setAttribute('data-sc','');
 
 /* ── BACKLOG DROP (desktop mouse/drag) ── */
 function initBLDrop(){
@@ -644,50 +601,40 @@ function initBLDrop(){
 }
 
 /* ═══════════════════════════════════════════════
-   DRAG & DROP
+   DRAG & DROP — Pointer Events API
    
-   Desktop (mouse): стандартний HTML5 drag API.
+   setPointerCapture() — ключова функція:
+   після pointerdown ВСІ наступні pointermove/up
+   надходять на ОДИН елемент (el), навіть якщо
+   палець пішов далеко. Саме так Trello, Notion.
    
-   Mobile (touch/pointer):
-   - pointerdown: запам'ятовуємо позицію БЕЗ preventDefault
-     щоб click нормально спрацьовував при тапі
-   - pointermove: якщо рухнули >8px — ТОДІ preventDefault
-     і починаємо drag (ghost + підсвітка цілі)
-   - pointerup: якщо drag — drop; якщо ні — нічого
-     (click спрацює сам по собі)
+   На десктопі (pointerType==='mouse') — лишаємо
+   нативний HTML5 drag, він зручніший.
 ═══════════════════════════════════════════════ */
 let D={on:false,drag:false,id:null,ghost:null,tgt:null,x0:0,y0:0,bg:'',fg:'',lbl:''};
 
 function mkDrag(el,id,bg,fg,lbl){
-  /* Desktop — нативний drag */
+  /* Нативний drag для миші */
   el.draggable=true;
   el.ondragstart=e=>e.dataTransfer.setData('pid',id);
 
   el.addEventListener('pointerdown',e=>{
-    /* Мишу — не чіпаємо, вона йде через ondragstart */
     if(e.pointerType==='mouse'||!e.isPrimary)return;
-    /* НЕ викликаємо preventDefault щоб click лишився */
+    e.preventDefault();
     try{el.setPointerCapture(e.pointerId);}catch(_){}
     if(D.ghost)D.ghost.remove();
     if(D.tgt)D.tgt.classList.remove('dov');
-    D={on:true,drag:false,id,ghost:null,tgt:null,
-       x0:e.clientX,y0:e.clientY,bg,fg,lbl};
-  });/* passive:true (default) — не блокуємо scroll і click */
+    D={on:true,drag:false,id,ghost:null,tgt:null,x0:e.clientX,y0:e.clientY,bg,fg,lbl};
+  },{passive:false});
 
   el.addEventListener('pointermove',e=>{
     if(!D.on||e.pointerType==='mouse'||!e.isPrimary)return;
     const dx=e.clientX-D.x0,dy=e.clientY-D.y0;
     const dist=Math.sqrt(dx*dx+dy*dy);
-    if(dist<8)return;
-
-    /* Підтверджуємо drag — тільки тут блокуємо scroll */
-    e.preventDefault();
 
     if(!D.drag){
+      if(dist<10)return;
       D.drag=true;
-      /* На мобайлі НЕ закриваємо sidebar одразу —
-         спочатку показуємо ghost. Sidebar закриється
-         тільки якщо палець пішов за межі sidebar */
       const g=document.createElement('div');
       g.className='ghost';g.textContent=D.lbl;
       g.style.background=D.bg;g.style.color=D.fg;
@@ -697,15 +644,6 @@ function mkDrag(el,id,bg,fg,lbl){
     }
     D.ghost.style.left=e.clientX+'px';
     D.ghost.style.top=e.clientY+'px';
-
-    /* На мобайлі: якщо палець вийшов за межі sidebar — закриваємо його
-       щоб побачити календар. Назад у беклог — палець лишається в sidebar. */
-    if(isMob()&&D.drag&&document.body.hasAttribute('data-sb-open')){
-      const sbRect=document.getElementById('sidebar').getBoundingClientRect();
-      if(e.clientX>sbRect.right+20){
-        closeSB();
-      }
-    }
 
     D.ghost.style.visibility='hidden';
     const un=document.elementFromPoint(e.clientX,e.clientY);
@@ -718,17 +656,14 @@ function mkDrag(el,id,bg,fg,lbl){
       nt?.classList.add('dov');
       D.tgt=nt;
     }
-  },{passive:false});
+  });
 
   el.addEventListener('pointerup',async e=>{
     if(!D.on||e.pointerType==='mouse'||!e.isPrimary)return;
     try{el.releasePointerCapture(e.pointerId);}catch(_){}
     D.ghost?.remove();
     D.tgt?.classList.remove('dov');
-
     if(D.drag&&D.id){
-      /* Був drag — виконуємо drop */
-      e.preventDefault(); /* тепер блокуємо click після drag */
       const t=D.tgt;
       if(t?.classList.contains('mcell')){
         const code=t.dataset.code;
@@ -736,8 +671,10 @@ function mkDrag(el,id,bg,fg,lbl){
       } else if(t?.id==='backlog'||t?.closest?.('#backlog')){
         await sb.from('projects').update({date:null}).eq('id',D.id);sync();
       }
+    } else if(!D.drag){
+      /* Це тап — спрацьовує збережений обробник */
+      el._tap?.();
     }
-    /* Якщо !D.drag — це тап, click спрацює сам */
     D={on:false,drag:false,id:null,ghost:null,tgt:null,x0:0,y0:0,bg:'',fg:'',lbl:''};
   });
 
@@ -837,7 +774,8 @@ function render(){
       };
       list.filter(p=>p.date===code).forEach(p=>{
         const el=mkCard(p);
-        el.addEventListener('click',e=>{e.stopPropagation();openMod('proj',code,p);});
+        el._tap=()=>openMod('proj',code,p);
+        el.onclick=e=>{e.stopPropagation();openMod('proj',code,p);};
         cell.appendChild(el);
       });
       grid.appendChild(cell);
@@ -853,7 +791,8 @@ function render(){
   hint.style.display=nd.length?'none':'block';
   nd.forEach(p=>{
     const el=mkCard(p,true);
-    el.addEventListener('click',()=>openMod('proj',null,p));
+    el._tap=()=>openMod('proj',null,p);
+    el.onclick=()=>openMod('proj',null,p);
     bl.insertBefore(el,hint);
   });
 }
@@ -861,7 +800,7 @@ function render(){
 /* ── MODAL ── */
 function openMod(type,date,item=null){
   aDate=date;editId=item?.id??null;
-  closeSB();
+  closeSB(); /* завжди закриваємо sidebar */
   const body=document.getElementById('mbody');
   document.getElementById('modal').style.display='flex';
 
