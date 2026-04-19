@@ -1,836 +1,896 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ScannerPlaner</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Literata:ital,wght@0,300;0,400;0,500;1,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg:#fafaf8; --surface:#f4f3ef; --border:#e2e1db; --text:#1a1917;
-            --muted:#6b6963; --accent:#2d5a27; --accent-light:#e8f0e6; --accent-mid:#4a8a42;
-            --error:#8b2010; --sidebar-w:240px;
-        }
-        [data-theme="dark"] {
-            --bg:#141412; --surface:#1e1d1b; --border:#2e2d2a; --text:#e8e6e0;
-            --muted:#8a8880; --accent:#6ab05f; --accent-light:#1e2e1c; --accent-mid:#4a8a42;
-            --error:#e05040;
-        }
-        *{ margin:0; padding:0; box-sizing:border-box; border:none; outline:none; }
-        html{ font-size:16px; }
-        body{
-            background:var(--bg); color:var(--text);
-            font-family:'Literata',Georgia,serif; font-weight:300;
-            height:100vh; height:100dvh; overflow:hidden;
-            display:flex; flex-direction:column; transition:background .3s,color .3s;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>ScannerPlaner</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Literata:ital,wght@0,300;0,400;0,500;1,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── VARIABLES ── */
+:root{
+  --bg:#fafaf8;--surface:#f4f3ef;--border:#e2e1db;
+  --text:#1a1917;--muted:#6b6963;
+  --accent:#2d5a27;--accent-light:#e8f0e6;--accent-mid:#4a8a42;
+  --error:#8b2010;
+  --sw:240px; /* sidebar width */
+}
+[data-theme=dark]{
+  --bg:#141412;--surface:#1e1d1b;--border:#2e2d2a;
+  --text:#e8e6e0;--muted:#8a8880;
+  --accent:#6ab05f;--accent-light:#1e2e1c;--accent-mid:#4a8a42;
+  --error:#e05040;
+}
 
-        /* AUTH */
-        #auth-gate{
-            position:fixed; inset:0; background:var(--bg); z-index:20000;
-            display:none; align-items:center; justify-content:center; padding:1.5rem;
-        }
-        .auth-card{
-            background:var(--surface); padding:2.5rem; border-radius:3px;
-            border:1px solid var(--border); width:100%; max-width:360px;
-        }
-        .auth-logo{ font-family:'Literata',serif; font-size:1.4rem; font-weight:300;
-            letter-spacing:-.02em; margin-bottom:2rem; text-align:center; }
-        .auth-logo span{ color:var(--accent); font-style:italic; }
+/* ── RESET ── */
+*{margin:0;padding:0;box-sizing:border-box;border:none;outline:none;}
+html{font-size:16px;}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Literata',Georgia,serif;font-weight:300;
+  height:100vh;height:100dvh;
+  overflow:hidden;display:flex;flex-direction:column;
+  transition:background .3s,color .3s;
+}
 
-        /* TOP BAR */
-        .top-bar{
-            height:52px; min-height:52px; display:flex; align-items:center;
-            padding:0 1.5rem; border-bottom:1px solid var(--border);
-            gap:1rem; flex-shrink:0; background:var(--bg); z-index:200;
-        }
-        .site-title{
-            font-family:'Literata',serif; font-size:1.1rem; font-weight:400;
-            letter-spacing:-.02em; color:var(--text);
-            display:flex; align-items:center; gap:.5rem; flex:1; cursor:pointer; background:none;
-        }
-        .site-title span{ color:var(--accent); font-style:italic; }
-        .icon-btn{
-            background:none; border:1px solid var(--border); color:var(--muted);
-            cursor:pointer; display:flex; align-items:center; justify-content:center;
-            width:32px; height:32px; border-radius:2px;
-            transition:border-color .2s,color .2s; flex-shrink:0;
-        }
-        .icon-btn:hover{ border-color:var(--accent); color:var(--accent); }
-        .icon-btn svg{ width:16px; height:16px; }
-        .icon-btn.danger:hover{ border-color:var(--error); color:var(--error); }
-        .theme-toggle{
-            background:var(--accent-light); border:1px solid var(--accent); color:var(--accent);
-            font-size:.6rem; font-family:'JetBrains Mono',monospace;
-            cursor:pointer; padding:.3rem .6rem; border-radius:2px;
-            transition:opacity .2s; letter-spacing:.06em; text-transform:uppercase;
-            white-space:nowrap; flex-shrink:0;
-        }
-        .theme-toggle:hover{ opacity:.7; }
+/* ── AUTH ── */
+#auth-gate{
+  position:fixed;inset:0;background:var(--bg);z-index:9000;
+  display:none;align-items:center;justify-content:center;padding:1.5rem;
+}
+.auth-card{
+  background:var(--surface);padding:2.5rem;border-radius:3px;
+  border:1px solid var(--border);width:100%;max-width:360px;
+}
+.auth-logo{font-family:'Literata',serif;font-size:1.4rem;font-weight:300;
+  letter-spacing:-.02em;margin-bottom:2rem;text-align:center;}
+.auth-logo span{color:var(--accent);font-style:italic;}
 
-        /* LAYOUT */
-        .app-body{ flex:1; display:flex; overflow:hidden; position:relative; }
+/* ── TOPBAR ── */
+.topbar{
+  height:52px;min-height:52px;display:flex;align-items:center;
+  padding:0 1rem;gap:.75rem;
+  border-bottom:1px solid var(--border);
+  background:var(--bg);flex-shrink:0;
+  position:relative;z-index:200;
+}
+.site-title{
+  font-family:'Literata',serif;font-size:1.1rem;font-weight:400;
+  letter-spacing:-.02em;color:var(--text);
+  display:flex;align-items:center;gap:.5rem;
+  flex:1;cursor:pointer;background:none;
+}
+.site-title span{color:var(--accent);font-style:italic;}
+.ibtn{
+  background:none;border:1px solid var(--border);color:var(--muted);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  width:32px;height:32px;border-radius:2px;flex-shrink:0;
+  transition:border-color .15s,color .15s;touch-action:manipulation;
+}
+.ibtn:active,.ibtn:hover{border-color:var(--accent);color:var(--accent);}
+.ibtn svg{width:16px;height:16px;}
+.ibtn.danger:active,.ibtn.danger:hover{border-color:var(--error);color:var(--error);}
+.theme-btn{
+  background:var(--accent-light);border:1px solid var(--accent);color:var(--accent);
+  font-size:.6rem;font-family:'JetBrains Mono',monospace;
+  cursor:pointer;padding:.3rem .6rem;border-radius:2px;
+  letter-spacing:.06em;text-transform:uppercase;
+  white-space:nowrap;flex-shrink:0;touch-action:manipulation;
+}
 
-        /* SIDEBAR */
-        #sidebar{
-            width:var(--sidebar-w); min-width:0;
-            background:var(--surface); border-right:1px solid var(--border);
-            display:flex; flex-direction:column; flex-shrink:0;
-            position:relative; overflow:hidden;
-        }
-        @media(min-width:1025px){
-            .sidebar-closed #sidebar{ width:0!important; border-right-width:0; }
-        }
-        @media(max-width:1024px){
-            #sidebar{
-                position:absolute; top:0; bottom:0; left:0; z-index:500;
-                width:280px!important;
-                transform:translateX(-100%);
-                transition:transform .3s cubic-bezier(.4,0,.2,1);
-            }
-            .sidebar-open #sidebar{ transform:translateX(0); }
-            #sidebar-overlay{
-                display:none; position:absolute; inset:0;
-                background:rgba(0,0,0,.4); z-index:499; backdrop-filter:blur(2px);
-            }
-            .sidebar-open #sidebar-overlay{ display:block; }
-            #sidebar-resizer{ display:none; }
-        }
-        #sidebar-resizer{
-            position:absolute; top:0; right:-5px; width:10px; height:100%;
-            cursor:col-resize; z-index:50;
-        }
-        #sidebar-resizer::after{
-            content:''; position:absolute; top:50%; left:4px; transform:translateY(-50%);
-            width:2px; height:48px; background:var(--border); border-radius:2px;
-            transition:background .2s;
-        }
-        #sidebar-resizer:hover::after,
-        #sidebar-resizer.active::after{ background:var(--accent); }
+/* ═══════════════════════════════════════
+   OVERLAY — fixed, поверх всього.
+   Керується атрибутом data-open на #overlay.
+═══════════════════════════════════════ */
+#overlay{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.45);
+  backdrop-filter:blur(2px);
+  z-index:400;
+  opacity:0;pointer-events:none;
+  transition:opacity .25s;
+}
+#overlay[data-open]{opacity:1;pointer-events:auto;}
 
-        .sidebar-section{ padding:1.2rem 1rem; border-bottom:1px solid var(--border); flex-shrink:0; }
-        .sidebar-label{
-            font-family:'JetBrains Mono',monospace; font-size:.58rem;
-            letter-spacing:.1em; text-transform:uppercase; color:var(--muted);
-            margin-bottom:.6rem; display:block;
-        }
-        .year-input{
-            width:100%; background:var(--bg); border:1px solid var(--border);
-            color:var(--accent); font-family:'JetBrains Mono',monospace;
-            font-size:1rem; font-weight:500; border-radius:2px;
-            padding:.5rem .8rem; text-align:center; transition:border-color .2s;
-        }
-        .year-input:focus{ border-color:var(--accent); }
-        .primary-btn{
-            width:100%; padding:.6rem 1rem; border-radius:2px; background:var(--accent);
-            color:#fff; font-family:'JetBrains Mono',monospace; font-size:.6rem;
-            font-weight:500; letter-spacing:.08em; text-transform:uppercase;
-            cursor:pointer; transition:opacity .2s; text-align:center; border:none;
-        }
-        .primary-btn:hover{ opacity:.85; }
-        .secondary-btn{
-            width:100%; padding:.6rem 1rem; border-radius:2px; background:none;
-            color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:.6rem;
-            font-weight:500; letter-spacing:.08em; text-transform:uppercase;
-            cursor:pointer; border:1px solid var(--border);
-            transition:border-color .2s,color .2s; text-align:center;
-        }
-        .secondary-btn:hover{ border-color:var(--accent); color:var(--accent); }
+/* ═══════════════════════════════════════
+   SIDEBAR
+   Desktop: займає місце у flex-потоці.
+   Mobile: fixed, slide-from-left.
+   
+   Керується атрибутом data-open на #sidebar.
+   На desktop data-open НЕ потрібен — ширина
+   просто 0 або var(--sw).
+   На mobile data-open = translateX(0).
+═══════════════════════════════════════ */
+.app-body{flex:1;display:flex;overflow:hidden;}
 
-        /* BACKLOG */
-        #backlog-wrap{ flex:1; display:flex; flex-direction:column; overflow:hidden; min-height:0; }
-        #backlog-header{ padding:1rem 1rem .6rem; border-bottom:1px solid var(--border); flex-shrink:0; }
-        #backlog{
-            flex:1; overflow-y:auto; padding:.6rem 1rem 1.5rem;
-            transition:background .15s; min-height:80px;
-        }
-        #backlog.drag-over{ background:var(--accent-light); }
-        .backlog-hint{
-            font-family:'JetBrains Mono',monospace; font-size:.55rem; color:var(--muted);
-            text-transform:uppercase; letter-spacing:.06em; text-align:center;
-            padding:.75rem; border:1px dashed var(--border); border-radius:2px;
-            transition:border-color .15s,color .15s;
-        }
-        #backlog.drag-over .backlog-hint{ border-color:var(--accent); color:var(--accent); }
-        .backlog-proj{
-            padding:6px 8px; border-radius:2px; font-family:'JetBrains Mono',monospace;
-            font-size:.6rem; margin-bottom:4px; cursor:pointer; transition:opacity .2s;
-            white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-            display:flex; align-items:center; gap:5px; user-select:none;
-        }
-        .backlog-proj:hover{ opacity:.85; }
-        .backlog-proj.done{ opacity:.4; text-decoration:line-through; filter:grayscale(60%); }
+/* ─ DESKTOP ─ */
+@media(min-width:769px){
+  #sidebar{
+    width:var(--sw);
+    background:var(--surface);
+    border-right:1px solid var(--border);
+    display:flex;flex-direction:column;
+    flex-shrink:0;overflow:hidden;
+    position:relative;
+    transition:width .25s,border-color .25s;
+  }
+  /* Закритий — data-closed на body */
+  body[data-sc] #sidebar{width:0;border-right-color:transparent;}
+  #sb-resizer{
+    position:absolute;top:0;right:-4px;width:8px;height:100%;
+    cursor:col-resize;z-index:10;
+  }
+  #sb-resizer::after{
+    content:'';position:absolute;top:50%;left:3px;
+    transform:translateY(-50%);
+    width:2px;height:40px;border-radius:1px;
+    background:var(--border);transition:background .15s;
+  }
+  #sb-resizer:hover::after{background:var(--accent);}
+}
 
-        /* MAIN */
-        #main-area{ flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
+/* ─ MOBILE ─ */
+@media(max-width:768px){
+  #sidebar{
+    position:fixed;top:0;left:0;bottom:0;
+    width:min(300px,85vw)!important;
+    background:var(--surface);
+    border-right:1px solid var(--border);
+    display:flex;flex-direction:column;
+    overflow-y:auto;overflow-x:hidden;
+    z-index:500;
+    transform:translateX(-110%);
+    transition:transform .25s cubic-bezier(.4,0,.2,1);
+  }
+  #sidebar[data-open]{transform:translateX(0);}
+  #sb-resizer{display:none;}
+  #overlay{z-index:450;}
+}
 
-        /* FILTER BAR — два рядки: категорії + сутності */
-        .filter-bar{
-            display:flex; align-items:center; gap:.5rem;
-            padding:.3rem 1.5rem; border-bottom:1px solid var(--border);
-            overflow-x:auto; scrollbar-width:none; flex-shrink:0; flex-wrap:nowrap;
-            min-height:40px;
-        }
-        .filter-bar::-webkit-scrollbar{ display:none; }
-        /* розділювач між групами */
-        .filter-sep{
-            width:1px; height:20px; background:var(--border); flex-shrink:0; margin:0 .2rem;
-        }
-        .cat-chip{
-            font-family:'JetBrains Mono',monospace; font-size:.58rem;
-            letter-spacing:.06em; text-transform:uppercase;
-            border:1px solid var(--border); color:var(--muted);
-            padding:.25rem .6rem; border-radius:2px; cursor:pointer; background:none;
-            transition:all .2s; white-space:nowrap;
-            display:flex; align-items:center; gap:5px; flex-shrink:0;
-        }
-        .cat-chip:hover{ border-color:var(--accent); color:var(--accent); }
-        .cat-chip.active{ background:var(--accent-light); border-color:var(--accent); color:var(--accent); }
-        .cat-dot{ width:6px; height:6px; border-radius:50%; flex-shrink:0; cursor:pointer; }
-        /* kind chips — менший padding, іконка */
-        .kind-chip{
-            font-family:'JetBrains Mono',monospace; font-size:.55rem;
-            letter-spacing:.05em; text-transform:uppercase;
-            border:1px solid var(--border); color:var(--muted);
-            padding:.2rem .55rem; border-radius:2px; cursor:pointer; background:none;
-            transition:all .2s; white-space:nowrap;
-            display:flex; align-items:center; gap:4px; flex-shrink:0;
-        }
-        .kind-chip:hover{ border-color:var(--accent); color:var(--accent); }
-        .kind-chip.active{ background:var(--accent-light); border-color:var(--accent); color:var(--accent); }
+/* ─ SIDEBAR CONTENT ─ */
+.sb-sec{padding:1rem;border-bottom:1px solid var(--border);flex-shrink:0;}
+.sb-label{
+  font-family:'JetBrains Mono',monospace;font-size:.55rem;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
+  margin-bottom:.5rem;display:block;
+}
+.year-inp{
+  width:100%;background:var(--bg);border:1px solid var(--border);
+  color:var(--accent);font-family:'JetBrains Mono',monospace;
+  font-size:1rem;font-weight:500;border-radius:2px;
+  padding:.45rem .8rem;text-align:center;transition:border-color .15s;
+}
+.year-inp:focus{border-color:var(--accent);}
+.pbtn{
+  width:100%;padding:.55rem 1rem;border-radius:2px;background:var(--accent);
+  color:#fff;font-family:'JetBrains Mono',monospace;font-size:.6rem;
+  font-weight:500;letter-spacing:.08em;text-transform:uppercase;
+  cursor:pointer;border:none;touch-action:manipulation;
+}
+.pbtn:active{opacity:.85;}
+.sbtn{
+  width:100%;padding:.55rem 1rem;border-radius:2px;background:none;
+  color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:.6rem;
+  font-weight:500;letter-spacing:.08em;text-transform:uppercase;
+  cursor:pointer;border:1px solid var(--border);
+  transition:border-color .15s,color .15s;touch-action:manipulation;
+}
+.sbtn:active,.sbtn:hover{border-color:var(--accent);color:var(--accent);}
 
-        /* VIEW */
-        #view{ flex:1; overflow-y:auto; padding:1.5rem; -webkit-overflow-scrolling:touch; }
-        .year-sec{ margin-bottom:2.5rem; }
-        .year-title{
-            font-family:'Literata',serif; font-size:1.6rem; font-weight:300;
-            letter-spacing:-.02em; color:var(--accent); margin-bottom:1rem;
-            cursor:pointer; display:flex; align-items:center; gap:.5rem; user-select:none;
-        }
-        .year-title::after{ content:'▾'; font-size:.7rem; color:var(--muted); transition:transform .2s; }
-        .year-sec.collapsed .year-title::after{ transform:rotate(-90deg); }
-        .year-sec.collapsed .calendar-grid{ display:none; }
+/* backlog */
+#bl-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;}
+#backlog{flex:1;overflow-y:auto;padding:.5rem 1rem 1rem;min-height:60px;}
+#backlog.dov{background:var(--accent-light);}
+.bl-hint{
+  font-family:'JetBrains Mono',monospace;font-size:.52rem;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.06em;text-align:center;
+  padding:.6rem;border:1px dashed var(--border);border-radius:2px;
+}
+#backlog.dov .bl-hint{border-color:var(--accent);color:var(--accent);}
+.bl-item{
+  padding:5px 7px;border-radius:2px;font-family:'JetBrains Mono',monospace;
+  font-size:.58rem;margin-bottom:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  display:flex;align-items:center;gap:4px;
+  user-select:none;cursor:grab;touch-action:none;
+}
+.bl-item.done{opacity:.4;text-decoration:line-through;filter:grayscale(60%);}
 
-        .calendar-grid{ display:grid; grid-template-columns:repeat(12,1fr); gap:6px; }
-        @media(max-width:1100px){ .calendar-grid{ grid-template-columns:repeat(6,1fr); } }
-        @media(max-width:700px) { .calendar-grid{ grid-template-columns:repeat(3,1fr); } }
+/* ─ MAIN ─ */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
 
-        .month-cell{
-            background:var(--surface); border-radius:3px; padding:24px 6px 6px;
-            border:1px solid var(--border); position:relative; min-height:80px;
-            cursor:pointer; transition:border-color .2s;
-        }
-        .month-cell:hover{ border-color:var(--accent-mid); }
-        .month-cell.drag-over{ border-color:var(--accent); background:var(--accent-light); }
-        .month-cell::before{
-            content:attr(data-label); position:absolute; top:7px; left:7px;
-            font-family:'JetBrains Mono',monospace; font-size:.55rem;
-            font-weight:500; color:var(--muted); text-transform:uppercase; letter-spacing:.08em;
-        }
+/* ─ FILTERS — два рядки, прямокутні chips ─ */
+#filters{border-bottom:1px solid var(--border);flex-shrink:0;}
+.frow{
+  display:flex;align-items:center;gap:.35rem;
+  padding:.28rem 1rem;overflow-x:auto;scrollbar-width:none;min-height:34px;
+}
+.frow+.frow{border-top:1px solid var(--border);}
+.frow::-webkit-scrollbar{display:none;}
+.frow-lbl{
+  font-family:'JetBrains Mono',monospace;font-size:.48rem;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
+  white-space:nowrap;flex-shrink:0;padding-right:.5rem;
+  border-right:1px solid var(--border);margin-right:.1rem;
+}
+/* Chip — прямокутний, у стилі решти UI */
+.chip{
+  font-family:'JetBrains Mono',monospace;font-size:.55rem;
+  letter-spacing:.05em;text-transform:uppercase;
+  border:1px solid var(--border);color:var(--muted);
+  padding:.18rem .55rem;border-radius:2px;  /* ← прямокутник */
+  cursor:pointer;background:none;
+  transition:border-color .15s,color .15s,background .15s;
+  white-space:nowrap;display:inline-flex;align-items:center;gap:4px;
+  flex-shrink:0;touch-action:manipulation;
+}
+.chip:hover{border-color:var(--accent);color:var(--accent);}
+.chip.on{background:var(--accent-light);border-color:var(--accent);color:var(--accent);}
+.chip .cdot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+.chip.on .cdot{background:#fff!important;}
+.chip-edit{
+  font-size:.45rem;opacity:.5;cursor:pointer;
+  padding:0 1px;margin-left:1px;
+}
+.chip-edit:hover{opacity:1;}
+.clr{
+  font-family:'JetBrains Mono',monospace;font-size:.48rem;
+  letter-spacing:.06em;color:var(--error);background:none;
+  cursor:pointer;padding:.15rem .4rem;border-radius:2px;
+  border:1px solid transparent;transition:border-color .15s;
+  white-space:nowrap;flex-shrink:0;margin-left:auto;
+  touch-action:manipulation;
+}
+.clr:hover{border-color:var(--error);}
 
-        /* PROJECT PILL */
-        .proj{
-            padding:4px 6px; border-radius:2px; font-family:'JetBrains Mono',monospace;
-            font-size:.58rem; margin-bottom:3px; cursor:pointer; transition:opacity .2s;
-            white-space:normal; word-break:break-word; line-height:1.3;
-            display:flex; align-items:flex-start; gap:4px; user-select:none;
-        }
-        .proj:hover{ opacity:.8; }
-        .proj.done{ opacity:.4; text-decoration:line-through; text-decoration-thickness:1px; filter:grayscale(60%); }
-        .proj-kind-icon{ font-size:.6rem; opacity:.8; flex-shrink:0; margin-top:1px; line-height:1; }
-        .proj-check{ flex-shrink:0; font-size:.55rem; margin-top:1px; opacity:0; line-height:1; }
-        .proj.done .proj-check{ opacity:1; }
+/* ─ VIEW ─ */
+#view{flex:1;overflow-y:auto;padding:1.5rem;-webkit-overflow-scrolling:touch;}
+.yr-sec{margin-bottom:2.5rem;}
+.yr-ttl{
+  font-family:'Literata',serif;font-size:1.6rem;font-weight:300;
+  letter-spacing:-.02em;color:var(--accent);margin-bottom:1rem;
+  cursor:pointer;display:flex;align-items:center;gap:.5rem;user-select:none;
+}
+.yr-ttl::after{content:'▾';font-size:.7rem;color:var(--muted);transition:transform .2s;}
+.yr-sec.col .yr-ttl::after{transform:rotate(-90deg);}
+.yr-sec.col .cal-grid{display:none;}
+.cal-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:6px;}
+@media(max-width:1100px){.cal-grid{grid-template-columns:repeat(6,1fr);}}
+@media(max-width:700px) {.cal-grid{grid-template-columns:repeat(3,1fr);}}
+.mcell{
+  background:var(--surface);border-radius:3px;padding:22px 5px 5px;
+  border:1px solid var(--border);position:relative;min-height:76px;
+  cursor:pointer;transition:border-color .15s;
+  touch-action:none; /* потрібно для pointer events drop */
+}
+.mcell:hover{border-color:var(--accent-mid);}
+.mcell.dov{border-color:var(--accent);background:var(--accent-light);}
+.mcell::before{
+  content:attr(data-lbl);position:absolute;top:6px;left:6px;
+  font-family:'JetBrains Mono',monospace;font-size:.5rem;
+  font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;
+}
+.pcard{
+  padding:3px 5px;border-radius:2px;font-family:'JetBrains Mono',monospace;
+  font-size:.56rem;margin-bottom:3px;
+  white-space:normal;word-break:break-word;line-height:1.3;
+  display:flex;align-items:flex-start;gap:3px;
+  user-select:none;cursor:grab;touch-action:none;
+}
+.pcard:hover{filter:brightness(.92);}
+.pcard.done{opacity:.4;text-decoration:line-through;filter:grayscale(60%);}
+.pkind{font-size:.55rem;opacity:.8;flex-shrink:0;margin-top:1px;line-height:1;}
+.pchk{font-size:.52rem;flex-shrink:0;margin-top:1px;opacity:0;line-height:1;}
+.pcard.done .pchk{opacity:1;}
 
-        /* MODAL */
-        .modal{
-            position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:10000;
-            display:none; align-items:center; justify-content:center;
-            backdrop-filter:blur(4px); padding:1.5rem;
-        }
-        .modal-card{
-            background:var(--bg); border:1px solid var(--border); border-radius:3px;
-            padding:2rem; width:100%; max-width:400px;
-            box-shadow:0 24px 48px rgba(0,0,0,.3); max-height:90dvh; overflow-y:auto;
-        }
-        .modal-title{ font-family:'Literata',serif; font-size:1.1rem; font-weight:400;
-            letter-spacing:-.02em; margin-bottom:1.5rem; }
-        .inp{
-            width:100%; padding:.6rem .8rem; margin-bottom:.75rem; border-radius:2px;
-            background:var(--surface); color:var(--text); border:1px solid var(--border);
-            font-family:'JetBrains Mono',monospace; font-size:.75rem; transition:border-color .2s;
-        }
-        .inp:focus{ border-color:var(--accent); }
-        .inp::placeholder{ color:var(--muted); }
-        .inp-label{
-            font-family:'JetBrains Mono',monospace; font-size:.58rem;
-            letter-spacing:.08em; text-transform:uppercase; color:var(--muted);
-            display:block; margin-bottom:.3rem;
-        }
-        select.inp{
-            appearance:none;
-            background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a8880' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-            background-repeat:no-repeat; background-position:right .7rem center; cursor:pointer;
-        }
-        .kind-selector{ display:flex; gap:.5rem; margin-bottom:.75rem; }
-        .kind-btn{
-            flex:1; padding:.5rem .3rem; border-radius:2px;
-            border:1px solid var(--border); background:none; color:var(--muted);
-            font-family:'JetBrains Mono',monospace; font-size:.55rem;
-            letter-spacing:.04em; text-transform:uppercase; cursor:pointer;
-            transition:all .2s; text-align:center;
-            display:flex; flex-direction:column; align-items:center; gap:4px;
-        }
-        .kind-btn .kind-icon{ font-size:1.1rem; line-height:1; }
-        .kind-btn:hover{ border-color:var(--accent); color:var(--accent); }
-        .kind-btn.active{ background:var(--accent-light); border-color:var(--accent); color:var(--accent); }
-        .color-row{ display:flex; align-items:center; gap:.8rem; margin-bottom:.75rem; }
-        input[type="color"].color-inp{
-            width:40px; height:34px; padding:2px; border-radius:2px;
-            border:1px solid var(--border); background:var(--surface); cursor:pointer; flex-shrink:0;
-        }
-        .color-preview{ flex:1; height:34px; border-radius:2px; transition:background .2s; }
-        .done-toggle{
-            display:flex; align-items:center; gap:.6rem;
-            padding:.6rem 0; margin-bottom:.75rem; cursor:pointer;
-        }
-        .done-toggle input{ display:none; }
-        .done-toggle-track{
-            width:32px; height:18px; background:var(--border); border-radius:9px;
-            position:relative; transition:background .2s; flex-shrink:0;
-        }
-        .done-toggle-track::after{
-            content:''; position:absolute; top:3px; left:3px;
-            width:12px; height:12px; border-radius:50%; background:#fff; transition:transform .2s;
-        }
-        .done-toggle input:checked + .done-toggle-track{ background:var(--accent); }
-        .done-toggle input:checked + .done-toggle-track::after{ transform:translateX(14px); }
-        .done-toggle-label{
-            font-family:'JetBrains Mono',monospace; font-size:.65rem;
-            letter-spacing:.06em; text-transform:uppercase; color:var(--muted);
-        }
-        .delete-link{
-            font-family:'JetBrains Mono',monospace; font-size:.58rem;
-            letter-spacing:.06em; text-transform:uppercase; color:var(--error);
-            background:none; border:none; cursor:pointer; padding:0;
-            margin-top:.75rem; transition:opacity .2s; width:100%; text-align:center;
-        }
-        .delete-link:hover{ opacity:.7; }
-        .auth-err{
-            color:var(--error); font-family:'JetBrains Mono',monospace;
-            font-size:.65rem; margin-top:.75rem; text-align:center;
-        }
-        .loading-state{
-            font-family:'JetBrains Mono',monospace; font-size:.65rem;
-            color:var(--muted); text-align:center; padding:3rem; letter-spacing:.06em;
-        }
+/* ─ MODAL ─ */
+.modal{
+  position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:800;
+  display:none;align-items:center;justify-content:center;
+  backdrop-filter:blur(4px);padding:1.5rem;
+}
+.mcard{
+  background:var(--bg);border:1px solid var(--border);border-radius:3px;
+  padding:2rem;width:100%;max-width:400px;
+  box-shadow:0 24px 48px rgba(0,0,0,.3);
+  max-height:90dvh;overflow-y:auto;
+}
+.mttl{font-family:'Literata',serif;font-size:1.1rem;font-weight:400;
+  letter-spacing:-.02em;margin-bottom:1.5rem;}
+.inp{
+  width:100%;padding:.55rem .8rem;margin-bottom:.7rem;border-radius:2px;
+  background:var(--surface);color:var(--text);border:1px solid var(--border);
+  font-family:'JetBrains Mono',monospace;font-size:.72rem;transition:border-color .15s;
+}
+.inp:focus{border-color:var(--accent);}
+.inp::placeholder{color:var(--muted);}
+.ilbl{
+  font-family:'JetBrains Mono',monospace;font-size:.55rem;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
+  display:block;margin-bottom:.25rem;
+}
+select.inp{
+  appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a8880' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right .7rem center;cursor:pointer;
+}
+.kselector{display:flex;gap:.5rem;margin-bottom:.7rem;}
+.kbtn{
+  flex:1;padding:.45rem .3rem;border-radius:2px;
+  border:1px solid var(--border);background:none;color:var(--muted);
+  font-family:'JetBrains Mono',monospace;font-size:.52rem;
+  letter-spacing:.04em;text-transform:uppercase;cursor:pointer;
+  transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:3px;
+  touch-action:manipulation;
+}
+.kbtn .ki{font-size:1rem;line-height:1;}
+.kbtn:hover{border-color:var(--accent);color:var(--accent);}
+.kbtn.on{background:var(--accent-light);border-color:var(--accent);color:var(--accent);}
+.crow{display:flex;align-items:center;gap:.8rem;margin-bottom:.7rem;}
+input[type=color].cinp{
+  width:38px;height:32px;padding:2px;border-radius:2px;
+  border:1px solid var(--border);background:var(--surface);cursor:pointer;flex-shrink:0;
+}
+.cprev{flex:1;height:32px;border-radius:2px;transition:background .15s;}
+.dtog{
+  display:flex;align-items:center;gap:.6rem;
+  padding:.55rem 0;margin-bottom:.7rem;cursor:pointer;touch-action:manipulation;
+}
+.dtog input{display:none;}
+.dtrack{
+  width:30px;height:16px;background:var(--border);border-radius:8px;
+  position:relative;transition:background .2s;flex-shrink:0;
+}
+.dtrack::after{
+  content:'';position:absolute;top:2px;left:2px;
+  width:12px;height:12px;border-radius:50%;background:#fff;transition:transform .2s;
+}
+.dtog input:checked+.dtrack{background:var(--accent);}
+.dtog input:checked+.dtrack::after{transform:translateX(14px);}
+.dlbl{font-family:'JetBrains Mono',monospace;font-size:.62rem;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--muted);}
+.delbtn{
+  font-family:'JetBrains Mono',monospace;font-size:.55rem;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--error);
+  background:none;cursor:pointer;padding:0;
+  margin-top:.7rem;width:100%;text-align:center;touch-action:manipulation;
+}
+.aerr{color:var(--error);font-family:'JetBrains Mono',monospace;
+  font-size:.62rem;margin-top:.7rem;text-align:center;}
+.ldg{font-family:'JetBrains Mono',monospace;font-size:.62rem;
+  color:var(--muted);text-align:center;padding:3rem;letter-spacing:.06em;}
 
-        /* TOUCH GHOST */
-        .drag-ghost{
-            position:fixed; pointer-events:none; z-index:99999; opacity:.9;
-            border-radius:3px; padding:6px 10px; font-family:'JetBrains Mono',monospace;
-            font-size:.65rem; white-space:nowrap; transform:translate(-50%,-50%);
-            box-shadow:0 8px 24px rgba(0,0,0,.3); max-width:180px;
-            overflow:hidden; text-overflow:ellipsis;
-        }
-    </style>
+/* DRAG GHOST */
+.ghost{
+  position:fixed;pointer-events:none;z-index:9999;
+  border-radius:2px;padding:5px 9px;
+  font-family:'JetBrains Mono',monospace;font-size:.62rem;
+  opacity:.9;transform:translate(-50%,-60%) scale(1.04);
+  box-shadow:0 6px 20px rgba(0,0,0,.3);
+  max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+</style>
 </head>
-<body class="sidebar-closed">
+<body>
 
-<!-- AUTH -->
 <div id="auth-gate">
-    <div class="auth-card">
-        <div class="auth-logo">Scanner<span>Planer</span></div>
-        <label class="inp-label">Електронна пошта</label>
-        <input type="email" id="email" class="inp" placeholder="email@example.com" style="margin-bottom:1rem">
-        <label class="inp-label">Пароль</label>
-        <input type="password" id="pass" class="inp" placeholder="••••••••" style="margin-bottom:1.5rem">
-        <button onclick="login()" class="primary-btn">Увійти</button>
-        <p id="auth-err" class="auth-err"></p>
-    </div>
+  <div class="auth-card">
+    <div class="auth-logo">Scanner<span>Planer</span></div>
+    <label class="ilbl">Електронна пошта</label>
+    <input type="email" id="email" class="inp" placeholder="email@example.com" style="margin-bottom:.8rem">
+    <label class="ilbl">Пароль</label>
+    <input type="password" id="pass" class="inp" placeholder="••••••••" style="margin-bottom:1.2rem">
+    <button class="pbtn" onclick="doLogin()">Увійти</button>
+    <p id="auth-err" class="aerr"></p>
+  </div>
 </div>
 
-<!-- TOP BAR -->
-<header class="top-bar">
-    <button class="icon-btn" id="menu-btn" aria-label="Меню">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-    </button>
-    <button class="site-title" onclick="window.location.reload()">
-        <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
-            <line x1="16" y1="15" x2="6"  y2="6"  stroke="var(--accent)" stroke-width="0.9" opacity="0.35"/>
-            <line x1="16" y1="15" x2="26" y2="6"  stroke="var(--accent)" stroke-width="0.9" opacity="0.35"/>
-            <line x1="16" y1="15" x2="27" y2="18" stroke="var(--accent)" stroke-width="0.9" opacity="0.35"/>
-            <line x1="16" y1="15" x2="22" y2="27" stroke="var(--accent)" stroke-width="0.9" opacity="0.35"/>
-            <line x1="16" y1="15" x2="9"  y2="26" stroke="var(--accent)" stroke-width="0.9" opacity="0.35"/>
-            <line x1="16" y1="15" x2="5"  y2="18" stroke="var(--accent)" stroke-width="0.9" opacity="0.35"/>
-            <circle cx="16" cy="15" r="4"   fill="var(--accent)"/>
-            <circle cx="16" cy="15" r="2.2" fill="var(--bg)"/>
-            <circle cx="16" cy="15" r="1.2" fill="var(--accent)"/>
-        </svg>
-        Scanner<span>Planer</span>
-    </button>
-    <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()">☾ тема</button>
-    <button class="icon-btn danger" onclick="logout()" aria-label="Вийти">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
-        </svg>
-    </button>
+<!-- Overlay (fixed, поза app-body) -->
+<div id="overlay"></div>
+
+<header class="topbar">
+  <button class="ibtn" id="menu-btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+  </button>
+  <button class="site-title" onclick="location.reload()">
+    <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
+      <line x1="16" y1="15" x2="6"  y2="6"  stroke="var(--accent)" stroke-width="0.9" opacity="0.35"/>
+      <line x1="16" y1="15" x2="26" y2="6"  stroke="var(--accent)" stroke-width="0.9" opacity="0.35"/>
+      <line x1="16" y1="15" x2="27" y2="18" stroke="var(--accent)" stroke-width="0.9" opacity="0.35"/>
+      <line x1="16" y1="15" x2="22" y2="27" stroke="var(--accent)" stroke-width="0.9" opacity="0.35"/>
+      <line x1="16" y1="15" x2="9"  y2="26" stroke="var(--accent)" stroke-width="0.9" opacity="0.35"/>
+      <line x1="16" y1="15" x2="5"  y2="18" stroke="var(--accent)" stroke-width="0.9" opacity="0.35"/>
+      <circle cx="16" cy="15" r="4"   fill="var(--accent)"/>
+      <circle cx="16" cy="15" r="2.2" fill="var(--bg)"/>
+      <circle cx="16" cy="15" r="1.2" fill="var(--accent)"/>
+    </svg>
+    Scanner<span>Planer</span>
+  </button>
+  <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">☾ тема</button>
+  <button class="ibtn danger" onclick="doLogout()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
+    </svg>
+  </button>
 </header>
 
 <div class="app-body">
-    <div id="sidebar-overlay"></div>
-
-    <aside id="sidebar">
-        <div id="sidebar-resizer"></div>
-        <div class="sidebar-section">
-            <span class="sidebar-label">Рік початку</span>
-            <input type="number" id="start-year" class="year-input" value="2026" onchange="render()">
-        </div>
-        <div class="sidebar-section" style="display:flex;flex-direction:column;gap:.5rem;">
-            <button onclick="openModal('proj',null)" class="primary-btn">+ Новий елемент</button>
-            <button onclick="openModal('cat',null)"  class="secondary-btn">+ Категорія</button>
-        </div>
-        <div id="backlog-wrap">
-            <div id="backlog-header" class="sidebar-section" style="padding-bottom:.6rem;">
-                <span class="sidebar-label" style="margin-bottom:0;">Беклог</span>
-            </div>
-            <div id="backlog">
-                <div class="backlog-hint" id="backlog-hint">↓ перетягни сюди</div>
-            </div>
-        </div>
-    </aside>
-
-    <div id="main-area">
-        <!-- Єдиний рядок фільтрів: категорії | розділювач | сутності -->
-        <div class="filter-bar" id="filter-bar"></div>
-        <div id="view"><p class="loading-state">Завантаження...</p></div>
+  <aside id="sidebar">
+    <div id="sb-resizer"></div>
+    <div class="sb-sec">
+      <span class="sb-label">Рік початку</span>
+      <input type="number" id="yr-inp" class="year-inp" value="2026" onchange="render()">
     </div>
+    <div class="sb-sec" style="display:flex;flex-direction:column;gap:.45rem;">
+      <button class="pbtn" id="btn-np">+ Новий елемент</button>
+      <button class="sbtn" id="btn-nc">+ Категорія</button>
+    </div>
+    <div id="bl-wrap">
+      <div class="sb-sec" style="padding-bottom:.5rem;">
+        <span class="sb-label" style="margin-bottom:0">Беклог</span>
+      </div>
+      <div id="backlog">
+        <div class="bl-hint" id="bl-hint">↓ перетягни сюди</div>
+      </div>
+    </div>
+  </aside>
+
+  <div id="main">
+    <div id="filters">
+      <div class="frow" id="frow-cat"><span class="frow-lbl">Катег.</span></div>
+      <div class="frow" id="frow-knd"><span class="frow-lbl">Тип</span></div>
+    </div>
+    <div id="view"><p class="ldg">Завантаження...</p></div>
+  </div>
 </div>
 
-<div id="modal" class="modal" onclick="if(event.target==this)closeModal()">
-    <div class="modal-card" id="m-body"></div>
+<div id="modal" class="modal" onclick="if(event.target===this)closeMod()">
+  <div class="mcard" id="mbody"></div>
 </div>
 
 <script>
 /*
-  SQL для Supabase (виконати один раз у SQL Editor):
+  SQL (виконати один раз у Supabase → SQL Editor):
   ALTER TABLE projects
     ADD COLUMN IF NOT EXISTS done boolean DEFAULT false,
     ADD COLUMN IF NOT EXISTS kind text    DEFAULT 'project';
 */
+const SB_URL="https://mlkdphygsdfcanztbtez.supabase.co";
+const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2RwaHlnc2RmY2FuenRidGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyODAwNTAsImV4cCI6MjA5MTg1NjA1MH0.PfjkZXua-9tp2lxVsBD3YBUNpx_USmMha5BQBZcGLFc";
+const sb=supabase.createClient(SB_URL,SB_KEY);
 
-const S_URL="https://mlkdphygsdfcanztbtez.supabase.co";
-const S_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sa2RwaHlnc2RmY2FuenRidGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyODAwNTAsImV4cCI6MjA5MTg1NjA1MH0.PfjkZXua-9tp2lxVsBD3YBUNpx_USmMha5BQBZcGLFc";
-const sb=supabase.createClient(S_URL,S_KEY);
-
-let projects=[], categories=[];
-let activeFilters=new Set();   // фільтр по категоріях
-let activeKinds=new Set();     // фільтр по сутностях
-let activeDate=null, editingProjId=null;
+let projs=[],cats=[];
+let fCats=new Set(),fKinds=new Set();
+let aDate=null,editId=null;
 
 const KINDS=[
-    {id:'project', icon:'🎯', label:'Проєкт'},
-    {id:'interest',icon:'✦',  label:'Інтерес'},
-    {id:'zone',    icon:'◎',  label:'Зона'},
+  {id:'project', icon:'🎯',lbl:'Проєкт'},
+  {id:'interest',icon:'✦', lbl:'Інтерес'},
+  {id:'zone',    icon:'◎', lbl:'Зона'},
 ];
-const kindIcon=k=>KINDS.find(x=>x.id===k)?.icon||'🎯';
+const kIcon=k=>KINDS.find(x=>x.id===k)?.icon||'🎯';
+const MN=['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
 
-/* ── CONTRAST ── */
-function contrast(hex){
-    const c=(hex||'#4a8a42').replace('#','');
-    const r=parseInt(c.slice(0,2),16),g=parseInt(c.slice(2,4),16),b=parseInt(c.slice(4,6),16);
-    return(.2126*(r/255)+.7152*(g/255)+.0722*(b/255))>.45?'#1a1917':'#ffffff';
+function ctxt(hex){
+  const c=(hex||'#4a8a42').replace('#','');
+  const r=parseInt(c.slice(0,2),16),g=parseInt(c.slice(2,4),16),b=parseInt(c.slice(4,6),16);
+  return(.2126*(r/255)+.7152*(g/255)+.0722*(b/255))>.45?'#1a1917':'#fff';
 }
 
 /* ── THEME ── */
 function initTheme(){
-    const t=localStorage.getItem('theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
-    document.documentElement.setAttribute('data-theme',t);
-    document.getElementById('theme-btn').textContent=t==='dark'?'☀ тема':'☾ тема';
+  const t=localStorage.getItem('sp-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+  document.documentElement.dataset.theme=t;
+  document.getElementById('theme-btn').textContent=t==='dark'?'☀ тема':'☾ тема';
 }
 function toggleTheme(){
-    const n=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
-    document.documentElement.setAttribute('data-theme',n);
-    localStorage.setItem('theme',n);
-    document.getElementById('theme-btn').textContent=n==='dark'?'☀ тема':'☾ тема';
+  const n=document.documentElement.dataset.theme==='dark'?'light':'dark';
+  document.documentElement.dataset.theme=n;
+  localStorage.setItem('sp-theme',n);
+  document.getElementById('theme-btn').textContent=n==='dark'?'☀ тема':'☾ тема';
 }
 
 /* ── AUTH ── */
-async function login(){
-    const{error}=await sb.auth.signInWithPassword({email:email.value,password:pass.value});
-    if(error)document.getElementById('auth-err').textContent="Помилка: "+error.message;
+async function doLogin(){
+  const{error}=await sb.auth.signInWithPassword({email:email.value,password:pass.value});
+  if(error)document.getElementById('auth-err').textContent='Помилка: '+error.message;
 }
-async function logout(){await sb.auth.signOut();localStorage.removeItem('theme');window.location.reload();}
+async function doLogout(){await sb.auth.signOut();localStorage.removeItem('sp-theme');location.reload();}
 sb.auth.onAuthStateChange((ev,sess)=>{
-    document.getElementById('auth-gate').style.display=sess?'none':'flex';
-    if(sess)sync();
-    initTheme();
+  document.getElementById('auth-gate').style.display=sess?'none':'flex';
+  if(sess)sync();
+  initTheme();
 });
 
-/* ── SIDEBAR ──
-   FIX: меню закривається при відкритті модалки на мобайлі.
-   Оверлей + кнопка меню зареєстровані тут, не inline.
-*/
-document.getElementById('menu-btn').addEventListener('click',toggleSidebar);
-document.getElementById('sidebar-overlay').addEventListener('click',closeSidebar);
+/* ═══════════════════════════════════════════════
+   SIDEBAR — максимально простий підхід.
 
-function toggleSidebar(){
-    if(window.innerWidth<=1024)document.body.classList.toggle('sidebar-open');
-    else document.body.classList.toggle('sidebar-closed');
+   Стан зберігається у двох місцях:
+   • #sidebar[data-open]   — для CSS (mobile transform)
+   • body[data-sc]         — для CSS (desktop width=0)
+
+   closeSB() завжди прибирає ОБИДВА.
+   openSB()  додає потрібний.
+
+   Overlay — #overlay[data-open].
+
+   Ніяких класів .open/.sidebar-closed — тільки
+   data-атрибути, щоб уникнути конфліктів з JS.
+═══════════════════════════════════════════════ */
+const SB  = document.getElementById('sidebar');
+const OVL = document.getElementById('overlay');
+const mobile=()=>innerWidth<=768;
+
+function sbIsOpen(){return SB.hasAttribute('data-open');}
+
+function openSB(){
+  SB.setAttribute('data-open','');
+  OVL.setAttribute('data-open','');
+  if(!mobile())document.body.removeAttribute('data-sc');
 }
-function closeSidebar(){document.body.classList.remove('sidebar-open');}
+function closeSB(){
+  SB.removeAttribute('data-open');
+  OVL.removeAttribute('data-open');
+  if(!mobile())document.body.setAttribute('data-sc','');
+}
+function toggleSB(){sbIsOpen()?closeSB():openSB();}
 
-/* ── RESIZER ── */
+/* Кнопка меню */
+document.getElementById('menu-btn').addEventListener('click',e=>{
+  e.stopPropagation();
+  toggleSB();
+});
+/* Клік на overlay → закрити */
+OVL.addEventListener('click',closeSB);
+
+/* На мобайлі після натиску кнопок — закриваємо і чекаємо анімацію */
+function sbAction(fn){
+  if(mobile()){
+    closeSB();
+    setTimeout(fn,260);
+  } else {
+    fn();
+  }
+}
+document.getElementById('btn-np').addEventListener('click',()=>sbAction(()=>openMod('proj',null)));
+document.getElementById('btn-nc').addEventListener('click',()=>sbAction(()=>openMod('cat',null)));
+
+/* Ресайзер (desktop) */
 function initResizer(){
-    const resizer=document.getElementById('sidebar-resizer');
-    const sidebar=document.getElementById('sidebar');
-    resizer.addEventListener('mousedown',e=>{
-        if(window.innerWidth<=1024)return;
-        e.preventDefault();
-        let startX=e.clientX,startW=sidebar.offsetWidth;
-        resizer.classList.add('active');
-        document.body.style.userSelect='none';document.body.style.cursor='col-resize';
-        const onMove=e=>{
-            const w=Math.min(420,Math.max(180,startW+(e.clientX-startX)));
-            sidebar.style.width=w+'px';
-            document.documentElement.style.setProperty('--sidebar-w',w+'px');
-        };
-        const onUp=()=>{
-            resizer.classList.remove('active');
-            document.body.style.userSelect='';document.body.style.cursor='';
-            localStorage.setItem('sidebarW',sidebar.offsetWidth);
-            document.removeEventListener('mousemove',onMove);
-            document.removeEventListener('mouseup',onUp);
-        };
-        document.addEventListener('mousemove',onMove);
-        document.addEventListener('mouseup',onUp);
-    });
-    const saved=parseInt(localStorage.getItem('sidebarW')||'0');
-    if(saved>=180&&window.innerWidth>1024){
-        sidebar.style.width=saved+'px';
-        document.documentElement.style.setProperty('--sidebar-w',saved+'px');
+  const r=document.getElementById('sb-resizer');
+  if(!r)return;
+  r.addEventListener('mousedown',e=>{
+    if(mobile())return;
+    e.preventDefault();
+    let sx=e.clientX,sw=SB.offsetWidth;
+    document.body.style.userSelect='none';document.body.style.cursor='col-resize';
+    const mv=e=>{
+      const w=Math.min(400,Math.max(180,sw+e.clientX-sx));
+      SB.style.width=w+'px';
+      document.documentElement.style.setProperty('--sw',w+'px');
+    };
+    const up=()=>{
+      document.body.style.userSelect='';document.body.style.cursor='';
+      localStorage.setItem('sp-sw',SB.offsetWidth);
+      removeEventListener('mousemove',mv);removeEventListener('mouseup',up);
+    };
+    addEventListener('mousemove',mv);addEventListener('mouseup',up);
+  });
+  const saved=+localStorage.getItem('sp-sw');
+  if(saved>=180&&!mobile()){
+    SB.style.width=saved+'px';
+    document.documentElement.style.setProperty('--sw',saved+'px');
+  }
+}
+
+/* Стартовий стан: desktop — sidebar закритий */
+if(!mobile())document.body.setAttribute('data-sc','');
+
+/* ── BACKLOG DROP (desktop mouse/drag) ── */
+function initBLDrop(){
+  const bl=document.getElementById('backlog');
+  bl.addEventListener('dragover',e=>{e.preventDefault();bl.classList.add('dov');});
+  bl.addEventListener('dragleave',e=>{if(!bl.contains(e.relatedTarget))bl.classList.remove('dov');});
+  bl.addEventListener('drop',async e=>{
+    e.preventDefault();bl.classList.remove('dov');
+    const id=e.dataTransfer.getData('pid');
+    if(id){await sb.from('projects').update({date:null}).eq('id',id);sync();}
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   DRAG & DROP — Pointer Events API
+   
+   setPointerCapture() — ключова функція:
+   після pointerdown ВСІ наступні pointermove/up
+   надходять на ОДИН елемент (el), навіть якщо
+   палець пішов далеко. Саме так Trello, Notion.
+   
+   На десктопі (pointerType==='mouse') — лишаємо
+   нативний HTML5 drag, він зручніший.
+═══════════════════════════════════════════════ */
+let D={on:false,drag:false,id:null,ghost:null,tgt:null,x0:0,y0:0,bg:'',fg:'',lbl:''};
+
+function mkDrag(el,id,bg,fg,lbl){
+  /* Нативний drag для миші */
+  el.draggable=true;
+  el.ondragstart=e=>e.dataTransfer.setData('pid',id);
+
+  el.addEventListener('pointerdown',e=>{
+    if(e.pointerType==='mouse'||!e.isPrimary)return;
+    e.preventDefault();
+    try{el.setPointerCapture(e.pointerId);}catch(_){}
+    if(D.ghost)D.ghost.remove();
+    if(D.tgt)D.tgt.classList.remove('dov');
+    D={on:true,drag:false,id,ghost:null,tgt:null,x0:e.clientX,y0:e.clientY,bg,fg,lbl};
+  },{passive:false});
+
+  el.addEventListener('pointermove',e=>{
+    if(!D.on||e.pointerType==='mouse'||!e.isPrimary)return;
+    const dx=e.clientX-D.x0,dy=e.clientY-D.y0;
+    const dist=Math.sqrt(dx*dx+dy*dy);
+
+    if(!D.drag){
+      if(dist<10)return;
+      D.drag=true;
+      const g=document.createElement('div');
+      g.className='ghost';g.textContent=D.lbl;
+      g.style.background=D.bg;g.style.color=D.fg;
+      g.style.left=e.clientX+'px';g.style.top=e.clientY+'px';
+      document.body.appendChild(g);D.ghost=g;
+      if(navigator.vibrate)navigator.vibrate(18);
     }
-}
+    D.ghost.style.left=e.clientX+'px';
+    D.ghost.style.top=e.clientY+'px';
 
-/* ── BACKLOG DROP (desktop) ── */
-function initBacklogDrop(){
-    const bl=document.getElementById('backlog');
-    bl.addEventListener('dragover',e=>{e.preventDefault();bl.classList.add('drag-over');});
-    bl.addEventListener('dragleave',e=>{if(!bl.contains(e.relatedTarget))bl.classList.remove('drag-over');});
-    bl.addEventListener('drop',async e=>{
-        e.preventDefault();bl.classList.remove('drag-over');
-        const pid=e.dataTransfer.getData('pid');
-        if(pid){await sb.from('projects').update({date:null}).eq('id',pid);sync();}
-    });
-}
+    D.ghost.style.visibility='hidden';
+    const un=document.elementFromPoint(e.clientX,e.clientY);
+    D.ghost.style.visibility='visible';
 
-/* ════════════════════════════════════════════
-   TOUCH DRAG — переписано з нуля.
+    const nc=un?.closest('.mcell'),nb=un?.closest('#backlog');
+    const nt=nc||nb||null;
+    if(D.tgt!==nt){
+      D.tgt?.classList.remove('dov');
+      nt?.classList.add('dov');
+      D.tgt=nt;
+    }
+  });
 
-   Логіка:
-   1. touchstart → запам'ятовуємо startX/Y і projId.
-      НЕ створюємо ghost одразу.
-   2. touchmove → якщо рухнули >8px — починаємо drag:
-      створюємо ghost, блокуємо scroll, підсвічуємо ціль.
-   3. touchend → кидаємо на ціль або скасовуємо.
+  el.addEventListener('pointerup',async e=>{
+    if(!D.on||e.pointerType==='mouse'||!e.isPrimary)return;
+    try{el.releasePointerCapture(e.pointerId);}catch(_){}
+    D.ghost?.remove();
+    D.tgt?.classList.remove('dov');
+    if(D.drag&&D.id){
+      const t=D.tgt;
+      if(t?.classList.contains('mcell')){
+        const code=t.dataset.code;
+        if(code){await sb.from('projects').update({date:code}).eq('id',D.id);sync();}
+      } else if(t?.id==='backlog'||t?.closest?.('#backlog')){
+        await sb.from('projects').update({date:null}).eq('id',D.id);sync();
+      }
+    } else if(!D.drag){
+      /* Це тап — спрацьовує збережений обробник */
+      el._tap?.();
+    }
+    D={on:false,drag:false,id:null,ghost:null,tgt:null,x0:0,y0:0,bg:'',fg:'',lbl:''};
+  });
 
-   Чому попередня версія не працювала:
-   - passive:true на touchstart не дозволяв зупинити scroll
-     в touchmove → палець скролив сторінку замість drag.
-   - ghost з'являвся після таймера, але touchmove вже
-     скинув таймер при першому русі.
-════════════════════════════════════════════ */
-let td={id:null,ghost:null,target:null,startX:0,startY:0,dragging:false};
-
-function makeDraggable(el,projId,bg,fg,label){
-    // Desktop
-    el.draggable=true;
-    el.ondragstart=e=>e.dataTransfer.setData('pid',projId);
-
-    // Touch
-    el.addEventListener('touchstart',e=>{
-        const t=e.touches[0];
-        td={id:projId,ghost:null,target:null,startX:t.clientX,startY:t.clientY,dragging:false,bg,fg,label};
-    },{passive:true});   // passive:true тут ОК — ще не блокуємо нічого
-
-    el.addEventListener('touchmove',e=>{
-        if(!td.id)return;
-        const t=e.touches[0];
-        const dx=t.clientX-td.startX, dy=t.clientY-td.startY;
-
-        if(!td.dragging){
-            if(Math.sqrt(dx*dx+dy*dy)<8)return; // ще не рухнулись достатньо
-            // Починаємо drag
-            td.dragging=true;
-            const ghost=document.createElement('div');
-            ghost.className='drag-ghost';
-            ghost.textContent=td.label;
-            ghost.style.background=td.bg;ghost.style.color=td.fg;
-            ghost.style.left=t.clientX+'px';ghost.style.top=t.clientY+'px';
-            document.body.appendChild(ghost);
-            td.ghost=ghost;
-            if(navigator.vibrate)navigator.vibrate(25);
-        }
-
-        // Тепер блокуємо scroll — але тільки після того як підтвердили drag
-        e.preventDefault();
-
-        td.ghost.style.left=t.clientX+'px';
-        td.ghost.style.top=t.clientY+'px';
-
-        // Знаходимо ціль під пальцем
-        td.ghost.style.visibility='hidden';
-        const under=document.elementFromPoint(t.clientX,t.clientY);
-        td.ghost.style.visibility='';
-
-        if(td.target)td.target.classList.remove('drag-over');
-        const cell=under?.closest('.month-cell'),bl=under?.closest('#backlog');
-        if(cell){cell.classList.add('drag-over');td.target=cell;}
-        else if(bl){bl.classList.add('drag-over');td.target=bl;}
-        else td.target=null;
-    },{passive:false});  // passive:false — потрібно для e.preventDefault()
-
-    el.addEventListener('touchend',async e=>{
-        if(!td.id){return;}
-        if(td.ghost){td.ghost.remove();}
-        if(td.target)td.target.classList.remove('drag-over');
-
-        if(td.dragging&&td.id){
-            const t=e.changedTouches[0];
-            // Додатково перевіряємо ціль під точкою відпускання
-            const under=document.elementFromPoint(t.clientX,t.clientY);
-            const cell=td.target?.classList.contains('month-cell')?td.target:under?.closest('.month-cell');
-            const bl=td.target?.id==='backlog'?td.target:under?.closest('#backlog');
-
-            if(cell){
-                const code=cell.dataset.code;
-                if(code){await sb.from('projects').update({date:code}).eq('id',td.id);sync();}
-            }else if(bl){
-                await sb.from('projects').update({date:null}).eq('id',td.id);sync();
-            }
-            e.preventDefault(); // не спрацьовує click після drag
-        }
-        td={id:null,ghost:null,target:null,startX:0,startY:0,dragging:false};
-    });
-
-    el.addEventListener('touchcancel',()=>{
-        if(td.ghost)td.ghost.remove();
-        if(td.target)td.target.classList.remove('drag-over');
-        td={id:null,ghost:null,target:null,startX:0,startY:0,dragging:false};
-    });
+  el.addEventListener('pointercancel',()=>{
+    D.ghost?.remove();D.tgt?.classList.remove('dov');
+    D={on:false,drag:false,id:null,ghost:null,tgt:null,x0:0,y0:0,bg:'',fg:'',lbl:''};
+  });
 }
 
 /* ── DATA ── */
 async function sync(){
-    const[p,c]=await Promise.all([sb.from('projects').select('*'),sb.from('categories').select('*')]);
-    projects=p.data||[];categories=c.data||[];
-    render();
+  const[p,c]=await Promise.all([sb.from('projects').select('*'),sb.from('categories').select('*')]);
+  projs=p.data||[];cats=c.data||[];
+  render();
 }
 
-/* ── BUILD PROJ EL ── */
-function buildProjEl(p,isBacklog=false){
-    const cat=categories.find(c=>c.name===p.cat);
-    const bg=cat?.color||'#4a8a42',fg=contrast(bg);
-    const el=document.createElement('div');
-    el.className=(isBacklog?'backlog-proj':'proj')+(p.done?' done':'');
-    el.style.background=bg;el.style.color=fg;el.title=p.title;
-    const icon=document.createElement('span');icon.className='proj-kind-icon';icon.textContent=kindIcon(p.kind);
-    const check=document.createElement('span');check.className='proj-check';check.textContent='✓';
-    const lbl=document.createElement('span');lbl.textContent=p.title;
-    el.appendChild(icon);el.appendChild(check);el.appendChild(lbl);
-    makeDraggable(el,p.id,bg,fg,p.title);
-    return el;
+/* ── BUILD CARD ── */
+function mkCard(p,isBL=false){
+  const cat=cats.find(c=>c.name===p.cat);
+  const bg=cat?.color||'#4a8a42',fg=ctxt(bg);
+  const el=document.createElement('div');
+  el.className=(isBL?'bl-item':'pcard')+(p.done?' done':'');
+  el.style.background=bg;el.style.color=fg;el.title=p.title;
+  const ki=document.createElement('span');ki.className='pkind';ki.textContent=kIcon(p.kind);
+  const ck=document.createElement('span');ck.className='pchk';ck.textContent='✓';
+  const lb=document.createElement('span');lb.textContent=p.title;
+  el.appendChild(ki);el.appendChild(ck);el.appendChild(lb);
+  mkDrag(el,p.id,bg,fg,p.title);
+  return el;
 }
 
 /* ── RENDER ── */
 function render(){
-    const start=parseInt(document.getElementById('start-year').value)||2026;
-    const mNames=['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
+  const start=+document.getElementById('yr-inp').value||2026;
+  let list=projs;
+  if(fCats.size)list=list.filter(p=>fCats.has(p.cat));
+  if(fKinds.size)list=list.filter(p=>fKinds.has(p.kind||'project'));
 
-    // Застосовуємо обидва фільтри
-    let list=projects;
-    if(activeFilters.size)list=list.filter(p=>activeFilters.has(p.cat));
-    if(activeKinds.size)  list=list.filter(p=>activeKinds.has(p.kind||'project'));
+  /* Фільтри — категорії */
+  const fc=document.getElementById('frow-cat');
+  fc.innerHTML='<span class="frow-lbl">Катег.</span>';
+  cats.forEach(c=>{
+    const ch=document.createElement('button');
+    ch.className='chip'+(fCats.has(c.name)?' on':'');
+    const dot=document.createElement('span');dot.className='cdot';
+    dot.style.background=fCats.has(c.name)?'#fff':c.color;
+    const tx=document.createElement('span');tx.textContent=c.name;
+    const ed=document.createElement('span');ed.className='chip-edit';ed.textContent='✎';
+    ed.onclick=e=>{e.stopPropagation();openMod('cat',null,c);};
+    ch.appendChild(dot);ch.appendChild(tx);ch.appendChild(ed);
+    ch.onclick=()=>{fCats.has(c.name)?fCats.delete(c.name):fCats.add(c.name);render();};
+    fc.appendChild(ch);
+  });
+  if(fCats.size){
+    const b=document.createElement('button');b.className='clr';b.textContent='✕ скинути';
+    b.onclick=()=>{fCats.clear();render();};fc.appendChild(b);
+  }
 
-    /* Filter bar: [категорії…] | [сутності…] */
-    const bar=document.getElementById('filter-bar');bar.innerHTML='';
+  /* Фільтри — типи */
+  const fk=document.getElementById('frow-knd');
+  fk.innerHTML='<span class="frow-lbl">Тип</span>';
+  KINDS.forEach(k=>{
+    const ch=document.createElement('button');
+    ch.className='chip'+(fKinds.has(k.id)?' on':'');
+    ch.innerHTML=`<span style="font-size:.7rem">${k.icon}</span>${k.lbl}`;
+    ch.onclick=()=>{fKinds.has(k.id)?fKinds.delete(k.id):fKinds.add(k.id);render();};
+    fk.appendChild(ch);
+  });
+  if(fKinds.size){
+    const b=document.createElement('button');b.className='clr';b.textContent='✕ скинути';
+    b.onclick=()=>{fKinds.clear();render();};fk.appendChild(b);
+  }
 
-    categories.forEach(c=>{
-        const chip=document.createElement('button');
-        chip.className='cat-chip'+(activeFilters.has(c.name)?' active':'');
-        const dot=document.createElement('span');dot.className='cat-dot';dot.style.background=c.color;
-        dot.title='Редагувати';dot.onclick=e=>{e.stopPropagation();openModal('cat',null,c);};
-        const txt=document.createElement('span');txt.textContent=c.name;
-        chip.onclick=()=>{activeFilters.has(c.name)?activeFilters.delete(c.name):activeFilters.add(c.name);render();};
-        chip.appendChild(dot);chip.appendChild(txt);bar.appendChild(chip);
-    });
-
-    if(categories.length){
-        const sep=document.createElement('div');sep.className='filter-sep';bar.appendChild(sep);
+  /* Календар */
+  const view=document.getElementById('view');view.innerHTML='';
+  for(let i=0;i<6;i++){
+    const y=start+i;
+    const sec=document.createElement('div');sec.className='yr-sec';
+    const ttl=document.createElement('h2');ttl.className='yr-ttl';
+    ttl.textContent=y;ttl.onclick=()=>sec.classList.toggle('col');
+    sec.appendChild(ttl);
+    const grid=document.createElement('div');grid.className='cal-grid';
+    for(let m=1;m<=12;m++){
+      const code=`${y}-${String(m).padStart(2,'0')}`;
+      const cell=document.createElement('div');
+      cell.className='mcell';
+      cell.setAttribute('data-lbl',MN[m-1]);
+      cell.dataset.code=code;
+      cell.onclick=e=>{if(e.target===cell)openMod('proj',code);};
+      /* Desktop drag events */
+      cell.ondragover=e=>{e.preventDefault();cell.classList.add('dov');};
+      cell.ondragleave=e=>{if(!cell.contains(e.relatedTarget))cell.classList.remove('dov');};
+      cell.ondrop=async e=>{
+        cell.classList.remove('dov');
+        const pid=e.dataTransfer.getData('pid');
+        if(pid){await sb.from('projects').update({date:code}).eq('id',pid);sync();}
+      };
+      list.filter(p=>p.date===code).forEach(p=>{
+        const el=mkCard(p);
+        el._tap=()=>openMod('proj',code,p);
+        el.onclick=e=>{e.stopPropagation();openMod('proj',code,p);};
+        cell.appendChild(el);
+      });
+      grid.appendChild(cell);
     }
+    sec.appendChild(grid);view.appendChild(sec);
+  }
 
-    KINDS.forEach(k=>{
-        const chip=document.createElement('button');
-        chip.className='kind-chip'+(activeKinds.has(k.id)?' active':'');
-        chip.innerHTML=`<span style="font-size:.75rem">${k.icon}</span>${k.label}`;
-        chip.onclick=()=>{activeKinds.has(k.id)?activeKinds.delete(k.id):activeKinds.add(k.id);render();};
-        bar.appendChild(chip);
-    });
-
-    /* Calendar */
-    const view=document.getElementById('view');view.innerHTML='';
-    for(let i=0;i<6;i++){
-        const y=start+i;
-        const sec=document.createElement('div');sec.className='year-sec';
-        const ttl=document.createElement('h2');ttl.className='year-title';
-        ttl.textContent=y;ttl.onclick=()=>sec.classList.toggle('collapsed');
-        sec.appendChild(ttl);
-        const grid=document.createElement('div');grid.className='calendar-grid';
-        for(let m=1;m<=12;m++){
-            const code=`${y}-${String(m).padStart(2,'0')}`;
-            const cell=document.createElement('div');
-            cell.className='month-cell';
-            cell.setAttribute('data-label',mNames[m-1]);
-            cell.dataset.code=code;
-            cell.onclick=e=>{if(e.target===cell)openModal('proj',code);};
-            cell.ondragover=e=>{e.preventDefault();cell.classList.add('drag-over');};
-            cell.ondragleave=e=>{if(!cell.contains(e.relatedTarget))cell.classList.remove('drag-over');};
-            cell.ondrop=async e=>{
-                cell.classList.remove('drag-over');
-                const pid=e.dataTransfer.getData('pid');
-                if(pid){await sb.from('projects').update({date:code}).eq('id',pid);sync();}
-            };
-            list.filter(p=>p.date===code).forEach(p=>{
-                const el=buildProjEl(p);
-                el.onclick=e=>{e.stopPropagation();openModal('proj',code,p);};
-                cell.appendChild(el);
-            });
-            grid.appendChild(cell);
-        }
-        sec.appendChild(grid);view.appendChild(sec);
-    }
-
-    /* Backlog */
-    const bl=document.getElementById('backlog');
-    bl.querySelectorAll('.backlog-proj').forEach(el=>el.remove());
-    const hint=document.getElementById('backlog-hint');
-    const noDate=list.filter(p=>!p.date);
-    hint.style.display=noDate.length===0?'block':'none';
-    noDate.forEach(p=>{
-        const el=buildProjEl(p,true);
-        el.onclick=()=>openModal('proj',null,p);
-        bl.insertBefore(el,hint);
-    });
+  /* Беклог */
+  const bl=document.getElementById('backlog');
+  bl.querySelectorAll('.bl-item').forEach(e=>e.remove());
+  const hint=document.getElementById('bl-hint');
+  const nd=list.filter(p=>!p.date);
+  hint.style.display=nd.length?'none':'block';
+  nd.forEach(p=>{
+    const el=mkCard(p,true);
+    el._tap=()=>openMod('proj',null,p);
+    el.onclick=()=>openMod('proj',null,p);
+    bl.insertBefore(el,hint);
+  });
 }
 
 /* ── MODAL ── */
-function openModal(type,date,item=null){
-    activeDate=date;
-    editingProjId=item?.id??null;
-    // FIX: закриваємо сайдбар на мобайлі при відкритті модалки
-    closeSidebar();
+function openMod(type,date,item=null){
+  aDate=date;editId=item?.id??null;
+  closeSB(); /* завжди закриваємо sidebar */
+  const body=document.getElementById('mbody');
+  document.getElementById('modal').style.display='flex';
 
-    const body=document.getElementById('m-body');
-    document.getElementById('modal').style.display='flex';
-
-    if(type==='proj'){
-        const isDone=item?.done||false,curKind=item?.kind||'project';
-        body.innerHTML=`
-            <div class="modal-title">${item?'Редагувати':'Новий'} елемент</div>
-            <label class="inp-label">Тип</label>
-            <div class="kind-selector">
-                ${KINDS.map(k=>`<button type="button" class="kind-btn${curKind===k.id?' active':''}" onclick="selectKind('${k.id}',this)">
-                    <span class="kind-icon">${k.icon}</span>${k.label}</button>`).join('')}
-            </div>
-            <input type="hidden" id="f-kind" value="${curKind}">
-            <label class="inp-label">Назва</label>
-            <input id="f-t" class="inp" value="${(item?.title||'').replace(/"/g,'&quot;')}" placeholder="Назва...">
-            <label class="inp-label">Категорія</label>
-            <select id="f-c" class="inp">
-                ${categories.map(c=>`<option ${item?.cat===c.name?'selected':''}>${c.name}</option>`).join('')}
-            </select>
-            <label class="done-toggle">
-                <input type="checkbox" id="f-done" ${isDone?'checked':''}>
-                <span class="done-toggle-track"></span>
-                <span class="done-toggle-label">Завершено</span>
-            </label>
-            <button onclick="saveProj()" class="primary-btn">Зберегти</button>
-            ${item?`<button onclick="del('projects','${item.id}')" class="delete-link">Видалити</button>`:''}`;
-        setTimeout(()=>document.getElementById('f-t')?.focus(),50);
-    } else {
-        const ic=item?.color||'#4a8a42';
-        body.innerHTML=`
-            <div class="modal-title">${item?'Редагувати':'Нова'} категорія</div>
-            <label class="inp-label">Назва</label>
-            <input id="f-n" class="inp" value="${(item?.name||'').replace(/"/g,'&quot;')}" placeholder="Назва...">
-            <label class="inp-label">Колір</label>
-            <div class="color-row">
-                <input id="f-co" type="color" class="color-inp" value="${ic}"
-                    oninput="document.getElementById('color-prev').style.background=this.value">
-                <div id="color-prev" class="color-preview" style="background:${ic}"></div>
-            </div>
-            <button onclick="saveCat(${item?`'${item.id}'`:'null'})" class="primary-btn">Зберегти</button>
-            ${item?`<button onclick="del('categories','${item.id}')" class="delete-link">Видалити категорію</button>`:''}`;
-        setTimeout(()=>document.getElementById('f-n')?.focus(),50);
-    }
+  if(type==='proj'){
+    const done=item?.done||false,knd=item?.kind||'project';
+    body.innerHTML=`
+      <div class="mttl">${item?'Редагувати':'Новий'} елемент</div>
+      <label class="ilbl">Тип</label>
+      <div class="kselector">
+        ${KINDS.map(k=>`<button type="button" class="kbtn${knd===k.id?' on':''}"
+          onclick="selK('${k.id}',this)">
+          <span class="ki">${k.icon}</span>${k.lbl}</button>`).join('')}
+      </div>
+      <input type="hidden" id="f-kind" value="${knd}">
+      <label class="ilbl">Назва</label>
+      <input id="f-t" class="inp" value="${(item?.title||'').replace(/"/g,'&quot;')}" placeholder="Назва...">
+      <label class="ilbl">Категорія</label>
+      <select id="f-c" class="inp">
+        ${cats.map(c=>`<option ${item?.cat===c.name?'selected':''}>${c.name}</option>`).join('')}
+      </select>
+      <label class="dtog">
+        <input type="checkbox" id="f-done" ${done?'checked':''}>
+        <span class="dtrack"></span><span class="dlbl">Завершено</span>
+      </label>
+      <button class="pbtn" onclick="savePrj()">Зберегти</button>
+      ${item?`<button class="delbtn" onclick="del('projects','${item.id}')">Видалити</button>`:''}`;
+    setTimeout(()=>document.getElementById('f-t')?.focus(),40);
+  } else {
+    const ic=item?.color||'#4a8a42';
+    body.innerHTML=`
+      <div class="mttl">${item?'Редагувати':'Нова'} категорія</div>
+      <label class="ilbl">Назва</label>
+      <input id="f-n" class="inp" value="${(item?.name||'').replace(/"/g,'&quot;')}" placeholder="Назва...">
+      <label class="ilbl">Колір</label>
+      <div class="crow">
+        <input id="f-co" type="color" class="cinp" value="${ic}"
+          oninput="document.getElementById('cprev').style.background=this.value">
+        <div id="cprev" class="cprev" style="background:${ic}"></div>
+      </div>
+      <button class="pbtn" onclick="saveCat(${item?`'${item.id}'`:'null'})">Зберегти</button>
+      ${item?`<button class="delbtn" onclick="del('categories','${item.id}')">Видалити категорію</button>`:''}`;
+    setTimeout(()=>document.getElementById('f-n')?.focus(),40);
+  }
 }
-
-function selectKind(id,btn){
-    document.getElementById('f-kind').value=id;
-    document.querySelectorAll('.kind-btn').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
+function selK(id,btn){
+  document.getElementById('f-kind').value=id;
+  document.querySelectorAll('.kbtn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
 }
-function closeModal(){document.getElementById('modal').style.display='none';editingProjId=null;}
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+function closeMod(){document.getElementById('modal').style.display='none';editId=null;}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMod();});
 
-async function saveProj(){
-    const titleEl=document.getElementById('f-t');
-    if(!titleEl?.value?.trim()){titleEl?.focus();return;}
-    const user=(await sb.auth.getUser()).data.user;
-    const d={
-        title:titleEl.value.trim(),
-        cat:document.getElementById('f-c').value,
-        kind:document.getElementById('f-kind').value,
-        date:activeDate||null,
-        done:document.getElementById('f-done')?.checked||false,
-        user_id:user.id
-    };
-    if(editingProjId){
-        const{error}=await sb.from('projects').update(d).eq('id',editingProjId);
-        if(error){alert('Помилка: '+error.message);return;}
-    }else{
-        const{error}=await sb.from('projects').insert([d]);
-        if(error){alert('Помилка: '+error.message);return;}
-    }
-    closeModal();sync();
+async function savePrj(){
+  const te=document.getElementById('f-t');
+  if(!te?.value?.trim()){te?.focus();return;}
+  const user=(await sb.auth.getUser()).data.user;
+  const d={
+    title:te.value.trim(),
+    cat:document.getElementById('f-c').value,
+    kind:document.getElementById('f-kind').value,
+    date:aDate||null,
+    done:!!document.getElementById('f-done')?.checked,
+    user_id:user.id
+  };
+  const{error}=editId
+    ?await sb.from('projects').update(d).eq('id',editId)
+    :await sb.from('projects').insert([d]);
+  if(error){alert('Помилка: '+error.message);return;}
+  closeMod();sync();
 }
-
 async function saveCat(id){
-    const nameEl=document.getElementById('f-n');
-    if(!nameEl?.value?.trim()){nameEl?.focus();return;}
-    const user=(await sb.auth.getUser()).data.user;
-    const d={name:nameEl.value.trim(),color:document.getElementById('f-co').value,user_id:user.id};
-    if(id){
-        const{error}=await sb.from('categories').update(d).eq('id',id);
-        if(error){alert('Помилка: '+error.message);return;}
-    }else{
-        const{error}=await sb.from('categories').insert([d]);
-        if(error){alert('Помилка: '+error.message);return;}
-    }
-    closeModal();sync();
+  const ne=document.getElementById('f-n');
+  if(!ne?.value?.trim()){ne?.focus();return;}
+  const user=(await sb.auth.getUser()).data.user;
+  const d={name:ne.value.trim(),color:document.getElementById('f-co').value,user_id:user.id};
+  const{error}=id
+    ?await sb.from('categories').update(d).eq('id',id)
+    :await sb.from('categories').insert([d]);
+  if(error){alert('Помилка: '+error.message);return;}
+  closeMod();sync();
 }
-
 async function del(t,id){
-    if(confirm('Видалити безповоротно?')){
-        await sb.from(t).delete().eq('id',id);
-        closeModal();sync();
-    }
+  if(!confirm('Видалити безповоротно?'))return;
+  await sb.from(t).delete().eq('id',id);
+  closeMod();sync();
 }
 
 initTheme();
 initResizer();
-initBacklogDrop();
+initBLDrop();
 </script>
 </body>
 </html>
