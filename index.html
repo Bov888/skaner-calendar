@@ -108,16 +108,17 @@ body{
 /* ─ DESKTOP ─ */
 @media(min-width:769px){
   #sidebar{
-    width:var(--sw);
+    width:0;
     background:var(--surface);
     border-right:1px solid var(--border);
     display:flex;flex-direction:column;
     flex-shrink:0;overflow:hidden;
     position:relative;
     transition:width .25s,border-color .25s;
+    border-right-color:transparent;
   }
-  /* Закритий — data-closed на body */
-  body[data-sc] #sidebar{width:0;border-right-color:transparent;}
+  /* Відкритий */
+  body[data-sb-open] #sidebar{width:var(--sw);border-right-color:var(--border);}
   #sb-resizer{
     position:absolute;top:0;right:-4px;width:8px;height:100%;
     cursor:col-resize;z-index:10;
@@ -144,7 +145,7 @@ body{
     transform:translateX(-110%);
     transition:transform .25s cubic-bezier(.4,0,.2,1);
   }
-  #sidebar[data-open]{transform:translateX(0);}
+  body[data-sb-open] #sidebar{transform:translateX(0);}
   #sb-resizer{display:none;}
   #overlay{z-index:450;}
 }
@@ -521,38 +522,36 @@ sb.auth.onAuthStateChange((ev,sess)=>{
 ═══════════════════════════════════════════════ */
 const SB  = document.getElementById('sidebar');
 const OVL = document.getElementById('overlay');
-const mobile=()=>innerWidth<=768;
+const isMob=()=>innerWidth<=768;
 
-function sbIsOpen(){return SB.hasAttribute('data-open');}
-
-function openSB(){
-  SB.setAttribute('data-open','');
-  OVL.setAttribute('data-open','');
-  if(!mobile())document.body.removeAttribute('data-sc');
+/* ── SIDEBAR STATE ──
+   Єдиний стан: body[data-sb-open].
+   CSS читає цей атрибут для обох режимів:
+   - desktop: width 0 або var(--sw)
+   - mobile: translateX(-110%) або translateX(0)
+   Overlay показується разом із sidebar на мобайлі.
+*/
+function sbOpen(){
+  document.body.setAttribute('data-sb-open','');
+  if(isMob())OVL.setAttribute('data-open','');
 }
 function closeSB(){
-  SB.removeAttribute('data-open');
+  document.body.removeAttribute('data-sb-open');
   OVL.removeAttribute('data-open');
-  if(!mobile())document.body.setAttribute('data-sc','');
 }
-function toggleSB(){sbIsOpen()?closeSB():openSB();}
+function toggleSB(){
+  document.body.hasAttribute('data-sb-open')?closeSB():sbOpen();
+}
 
-/* Кнопка меню */
 document.getElementById('menu-btn').addEventListener('click',e=>{
   e.stopPropagation();
   toggleSB();
 });
-/* Клік на overlay → закрити */
 OVL.addEventListener('click',closeSB);
 
-/* На мобайлі після натиску кнопок — закриваємо і чекаємо анімацію */
 function sbAction(fn){
-  if(mobile()){
-    closeSB();
-    setTimeout(fn,260);
-  } else {
-    fn();
-  }
+  if(isMob()){closeSB();setTimeout(fn,270);}
+  else fn();
 }
 document.getElementById('btn-np').addEventListener('click',()=>sbAction(()=>openMod('proj',null)));
 document.getElementById('btn-nc').addEventListener('click',()=>sbAction(()=>openMod('cat',null)));
@@ -562,7 +561,7 @@ function initResizer(){
   const r=document.getElementById('sb-resizer');
   if(!r)return;
   r.addEventListener('mousedown',e=>{
-    if(mobile())return;
+    if(isMob())return;
     e.preventDefault();
     let sx=e.clientX,sw=SB.offsetWidth;
     document.body.style.userSelect='none';document.body.style.cursor='col-resize';
@@ -579,14 +578,13 @@ function initResizer(){
     addEventListener('mousemove',mv);addEventListener('mouseup',up);
   });
   const saved=+localStorage.getItem('sp-sw');
-  if(saved>=180&&!mobile()){
+  if(saved>=180&&!isMob()){
     SB.style.width=saved+'px';
     document.documentElement.style.setProperty('--sw',saved+'px');
   }
 }
 
-/* Стартовий стан: desktop — sidebar закритий */
-if(!mobile())document.body.setAttribute('data-sc','');
+/* Стартовий стан: desktop — sidebar закритий (width:0 по дефолту в CSS) */
 
 /* ── BACKLOG DROP (desktop mouse/drag) ── */
 function initBLDrop(){
@@ -601,39 +599,46 @@ function initBLDrop(){
 }
 
 /* ═══════════════════════════════════════════════
-   DRAG & DROP — Pointer Events API
+   DRAG & DROP
    
-   setPointerCapture() — ключова функція:
-   після pointerdown ВСІ наступні pointermove/up
-   надходять на ОДИН елемент (el), навіть якщо
-   палець пішов далеко. Саме так Trello, Notion.
+   Desktop (mouse): стандартний HTML5 drag API.
    
-   На десктопі (pointerType==='mouse') — лишаємо
-   нативний HTML5 drag, він зручніший.
+   Mobile (touch/pointer):
+   - pointerdown: запам'ятовуємо позицію БЕЗ preventDefault
+     щоб click нормально спрацьовував при тапі
+   - pointermove: якщо рухнули >8px — ТОДІ preventDefault
+     і починаємо drag (ghost + підсвітка цілі)
+   - pointerup: якщо drag — drop; якщо ні — нічого
+     (click спрацює сам по собі)
 ═══════════════════════════════════════════════ */
 let D={on:false,drag:false,id:null,ghost:null,tgt:null,x0:0,y0:0,bg:'',fg:'',lbl:''};
 
 function mkDrag(el,id,bg,fg,lbl){
-  /* Нативний drag для миші */
+  /* Desktop — нативний drag */
   el.draggable=true;
   el.ondragstart=e=>e.dataTransfer.setData('pid',id);
 
   el.addEventListener('pointerdown',e=>{
+    /* Мишу — не чіпаємо, вона йде через ondragstart */
     if(e.pointerType==='mouse'||!e.isPrimary)return;
-    e.preventDefault();
+    /* НЕ викликаємо preventDefault щоб click лишився */
     try{el.setPointerCapture(e.pointerId);}catch(_){}
     if(D.ghost)D.ghost.remove();
     if(D.tgt)D.tgt.classList.remove('dov');
-    D={on:true,drag:false,id,ghost:null,tgt:null,x0:e.clientX,y0:e.clientY,bg,fg,lbl};
-  },{passive:false});
+    D={on:true,drag:false,id,ghost:null,tgt:null,
+       x0:e.clientX,y0:e.clientY,bg,fg,lbl};
+  });/* passive:true (default) — не блокуємо scroll і click */
 
   el.addEventListener('pointermove',e=>{
     if(!D.on||e.pointerType==='mouse'||!e.isPrimary)return;
     const dx=e.clientX-D.x0,dy=e.clientY-D.y0;
     const dist=Math.sqrt(dx*dx+dy*dy);
+    if(dist<8)return;
+
+    /* Підтверджуємо drag — тільки тут блокуємо scroll */
+    e.preventDefault();
 
     if(!D.drag){
-      if(dist<10)return;
       D.drag=true;
       const g=document.createElement('div');
       g.className='ghost';g.textContent=D.lbl;
@@ -656,14 +661,17 @@ function mkDrag(el,id,bg,fg,lbl){
       nt?.classList.add('dov');
       D.tgt=nt;
     }
-  });
+  },{passive:false});
 
   el.addEventListener('pointerup',async e=>{
     if(!D.on||e.pointerType==='mouse'||!e.isPrimary)return;
     try{el.releasePointerCapture(e.pointerId);}catch(_){}
     D.ghost?.remove();
     D.tgt?.classList.remove('dov');
+
     if(D.drag&&D.id){
+      /* Був drag — виконуємо drop */
+      e.preventDefault(); /* тепер блокуємо click після drag */
       const t=D.tgt;
       if(t?.classList.contains('mcell')){
         const code=t.dataset.code;
@@ -671,10 +679,8 @@ function mkDrag(el,id,bg,fg,lbl){
       } else if(t?.id==='backlog'||t?.closest?.('#backlog')){
         await sb.from('projects').update({date:null}).eq('id',D.id);sync();
       }
-    } else if(!D.drag){
-      /* Це тап — спрацьовує збережений обробник */
-      el._tap?.();
     }
+    /* Якщо !D.drag — це тап, click спрацює сам */
     D={on:false,drag:false,id:null,ghost:null,tgt:null,x0:0,y0:0,bg:'',fg:'',lbl:''};
   });
 
@@ -774,8 +780,7 @@ function render(){
       };
       list.filter(p=>p.date===code).forEach(p=>{
         const el=mkCard(p);
-        el._tap=()=>openMod('proj',code,p);
-        el.onclick=e=>{e.stopPropagation();openMod('proj',code,p);};
+        el.addEventListener('click',e=>{e.stopPropagation();openMod('proj',code,p);});
         cell.appendChild(el);
       });
       grid.appendChild(cell);
@@ -791,8 +796,7 @@ function render(){
   hint.style.display=nd.length?'none':'block';
   nd.forEach(p=>{
     const el=mkCard(p,true);
-    el._tap=()=>openMod('proj',null,p);
-    el.onclick=()=>openMod('proj',null,p);
+    el.addEventListener('click',()=>openMod('proj',null,p));
     bl.insertBefore(el,hint);
   });
 }
@@ -800,7 +804,7 @@ function render(){
 /* ── MODAL ── */
 function openMod(type,date,item=null){
   aDate=date;editId=item?.id??null;
-  closeSB(); /* завжди закриваємо sidebar */
+  closeSB();
   const body=document.getElementById('mbody');
   document.getElementById('modal').style.display='flex';
 
