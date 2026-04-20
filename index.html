@@ -704,10 +704,15 @@ function mkDrag(el,id,bg,fg,lbl){
     D.ghost.style.left=e.clientX+'px';
     D.ghost.style.top=e.clientY+'px';
 
-    /* На мобайлі: закриваємо sidebar якщо палець пішов далеко вправо */
-    if(isMob()&&document.body.hasAttribute('data-sb-open')){
-      const sbRect=document.getElementById('sidebar').getBoundingClientRect();
-      if(e.clientX>sbRect.right+30)closeSB();
+    /* На мобайлі: керуємо sidebar залежно від напряму drag */
+    if(isMob()){
+      if(document.body.hasAttribute('data-sb-open')){
+        const sbRect=document.getElementById('sidebar').getBoundingClientRect();
+        if(e.clientX>sbRect.right+30)closeSB();
+      } else {
+        /* Якщо тягнемо до лівого краю — відкриваємо sidebar щоб показати беклог */
+        if(e.clientX<40)sbOpen();
+      }
     }
 
     D.ghost.style.visibility='hidden';
