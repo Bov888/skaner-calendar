@@ -638,8 +638,19 @@ function initBLDrop(){
   bl.addEventListener('dragleave',e=>{if(!bl.contains(e.relatedTarget))bl.classList.remove('dov');});
   bl.addEventListener('drop',async e=>{
     e.preventDefault();bl.classList.remove('dov');
+    /* приймаємо і pid (з pcard) і ті самі картки */
     const id=e.dataTransfer.getData('pid');
     if(id){await sb.from('projects').update({date:null}).eq('id',id);sync();}
+  });
+
+  /* На десктопі sidebar закритий за замовчуванням —
+     відкриваємо його коли курсор у лівій частині під час drag */
+  document.addEventListener('dragover',e=>{
+    if(isMob())return;
+    /* Якщо sidebar закритий і курсор зліва — відкриваємо */
+    if(!document.body.hasAttribute('data-sb-open')&&e.clientX<40){
+      sbOpen();
+    }
   });
 }
 
