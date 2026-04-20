@@ -656,61 +656,52 @@ function initBLDrop(){
    - pointerup: якщо drag — drop; якщо ні — нічого
      (click спрацює сам по собі)
 ═══════════════════════════════════════════════ */
-let D={on:false,drag:false,id:null,ghost:null,tgt:null,x0:0,y0:0,bg:'',fg:'',lbl:''};
+let D={on:false,drag:false,id:null,ghost:null,tgt:null,x0:0,y0:0,bg:'',fg:'',lbl:'',holdTimer:null};
 
 function mkDrag(el,id,bg,fg,lbl){
   /* Desktop — нативний drag */
   el.draggable=true;
   el.ondragstart=e=>e.dataTransfer.setData('pid',id);
 
+  /* Mobile — hold 400ms → drag */
   el.addEventListener('pointerdown',e=>{
-    /* Мишу — не чіпаємо, вона йде через ondragstart */
     if(e.pointerType==='mouse'||!e.isPrimary)return;
-    /* НЕ викликаємо preventDefault щоб click лишився */
-    try{el.setPointerCapture(e.pointerId);}catch(_){}
-    if(D.ghost)D.ghost.remove();
-    if(D.tgt)D.tgt.classList.remove('dov');
-    D={on:true,drag:false,id,ghost:null,tgt:null,
-       x0:e.clientX,y0:e.clientY,bg,fg,lbl};
-  });/* passive:true (default) — не блокуємо scroll і click */
+    D.x0=e.clientX;D.y0=e.clientY;
+    D.on=true;D.drag=false;D.id=id;D.bg=bg;D.fg=fg;D.lbl=lbl;
+    D.holdTimer=setTimeout(()=>{
+      if(!D.on)return;
+      D.drag=true;
+      try{el.setPointerCapture(e.pointerId);}catch(_){}
+      const g=document.createElement('div');
+      g.className='ghost';g.textContent=D.lbl;
+      g.style.background=D.bg;g.style.color=D.fg;
+      g.style.left=D.x0+'px';g.style.top=D.y0+'px';
+      document.body.appendChild(g);D.ghost=g;
+      if(navigator.vibrate)navigator.vibrate(25);
+    },400);
+  });
 
   el.addEventListener('pointermove',e=>{
     if(!D.on||e.pointerType==='mouse'||!e.isPrimary)return;
     const dx=e.clientX-D.x0,dy=e.clientY-D.y0;
-    const dist=Math.sqrt(dx*dx+dy*dy);
-    if(dist<8)return;
-
-    /* Підтверджуємо drag — тільки тут блокуємо scroll */
-    e.preventDefault();
-
-    if(!D.drag){
-      D.drag=true;
-      /* На мобайлі НЕ закриваємо sidebar одразу —
-         спочатку показуємо ghost. Sidebar закриється
-         тільки якщо палець пішов за межі sidebar */
-      const g=document.createElement('div');
-      g.className='ghost';g.textContent=D.lbl;
-      g.style.background=D.bg;g.style.color=D.fg;
-      g.style.left=e.clientX+'px';g.style.top=e.clientY+'px';
-      document.body.appendChild(g);D.ghost=g;
-      if(navigator.vibrate)navigator.vibrate(18);
+    /* Якщо рухнулись до таймера — скасовуємо (дозволяємо scroll) */
+    if(!D.drag&&Math.sqrt(dx*dx+dy*dy)>8){
+      clearTimeout(D.holdTimer);D.on=false;return;
     }
+    if(!D.drag)return;
+    e.preventDefault();
     D.ghost.style.left=e.clientX+'px';
     D.ghost.style.top=e.clientY+'px';
 
-    /* На мобайлі: якщо палець вийшов за межі sidebar — закриваємо його
-       щоб побачити календар. Назад у беклог — палець лишається в sidebar. */
-    if(isMob()&&D.drag&&document.body.hasAttribute('data-sb-open')){
+    /* На мобайлі: закриваємо sidebar якщо палець пішов далеко вправо */
+    if(isMob()&&document.body.hasAttribute('data-sb-open')){
       const sbRect=document.getElementById('sidebar').getBoundingClientRect();
-      if(e.clientX>sbRect.right+20){
-        closeSB();
-      }
+      if(e.clientX>sbRect.right+30)closeSB();
     }
 
     D.ghost.style.visibility='hidden';
     const un=document.elementFromPoint(e.clientX,e.clientY);
     D.ghost.style.visibility='visible';
-
     const nc=un?.closest('.mcell'),nb=un?.closest('#backlog');
     const nt=nc||nb||null;
     if(D.tgt!==nt){
@@ -721,14 +712,13 @@ function mkDrag(el,id,bg,fg,lbl){
   },{passive:false});
 
   el.addEventListener('pointerup',async e=>{
-    if(!D.on||e.pointerType==='mouse'||!e.isPrimary)return;
+    clearTimeout(D.holdTimer);
+    if(!D.on||e.pointerType==='mouse'||!e.isPrimary){D.on=false;return;}
     try{el.releasePointerCapture(e.pointerId);}catch(_){}
     D.ghost?.remove();
     D.tgt?.classList.remove('dov');
-
     if(D.drag&&D.id){
-      /* Був drag — виконуємо drop */
-      e.preventDefault(); /* тепер блокуємо click після drag */
+      e.preventDefault();
       const t=D.tgt;
       if(t?.classList.contains('mcell')){
         const code=t.dataset.code;
@@ -737,13 +727,13 @@ function mkDrag(el,id,bg,fg,lbl){
         await sb.from('projects').update({date:null}).eq('id',D.id);sync();
       }
     }
-    /* Якщо !D.drag — це тап, click спрацює сам */
-    D={on:false,drag:false,id:null,ghost:null,tgt:null,x0:0,y0:0,bg:'',fg:'',lbl:''};
+    D={on:false,drag:false,id:null,ghost:null,tgt:null,x0:0,y0:0,bg:'',fg:'',lbl:'',holdTimer:null};
   });
 
   el.addEventListener('pointercancel',()=>{
+    clearTimeout(D.holdTimer);
     D.ghost?.remove();D.tgt?.classList.remove('dov');
-    D={on:false,drag:false,id:null,ghost:null,tgt:null,x0:0,y0:0,bg:'',fg:'',lbl:''};
+    D={on:false,drag:false,id:null,ghost:null,tgt:null,x0:0,y0:0,bg:'',fg:'',lbl:'',holdTimer:null};
   });
 }
 
@@ -761,6 +751,7 @@ function mkCard(p,isBL=false){
   const el=document.createElement('div');
   el.className=(isBL?'bl-item':'pcard')+(p.done?' done':'');
   el.style.background=bg;el.style.color=fg;el.title=p.title;
+  el.style.touchAction='none'; /* потрібно для pointer events */
   const ki=document.createElement('span');ki.className='pkind';ki.textContent=kIcon(p.kind);
   const ck=document.createElement('span');ck.className='pchk';ck.textContent='✓';
   const lb=document.createElement('span');lb.textContent=p.title;
