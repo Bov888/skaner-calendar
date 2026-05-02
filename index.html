@@ -251,11 +251,11 @@ body{
 }
 #mobile-menu-modal.open .mm-card{transform:translateY(0);}
 .mm-title{font-family:'JetBrains Mono',monospace;font-size:.52rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.8rem;text-align:center;opacity:.7;}
-.mm-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;}
+.mm-grid{display:flex;gap:.5rem;flex-wrap:nowrap;}
 .mm-btn{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.3rem;
-  background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.7rem .2rem;
-  font-family:'JetBrains Mono',monospace;font-size:.48rem;letter-spacing:.02em;text-transform:uppercase;
+  flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.3rem;
+  background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.7rem .1rem;
+  font-family:'JetBrains Mono',monospace;font-size:.45rem;letter-spacing:.02em;text-transform:uppercase;
   color:var(--text);cursor:pointer;transition:all .15s;
 }
 .mm-btn:active{background:var(--accent-light);border-color:var(--accent);color:var(--accent);}
