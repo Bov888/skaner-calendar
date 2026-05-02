@@ -61,7 +61,7 @@ body{
 
 /* ── TOPBAR ── */
 .topbar{
-  height:54px;min-height:54px;display:flex;align-items:center;
+  height:48px;min-height:48px;display:flex;align-items:center;
   padding:0 1rem;gap:.75rem;
   border-bottom:1px solid var(--border);background:var(--bg);
   flex-shrink:0;position:relative;z-index:200;
@@ -75,7 +75,7 @@ body{
 .ibtn{
   background:none;border:1px solid var(--border);color:var(--muted);
   cursor:pointer;display:flex;align-items:center;justify-content:center;
-  width:34px;height:34px;border-radius:3px;flex-shrink:0;
+  width:28px;height:28px;border-radius:3px;flex-shrink:0;
   transition:border-color .15s,color .15s;touch-action:manipulation;
 }
 .ibtn:active,.ibtn:hover{border-color:var(--accent);color:var(--accent);}
@@ -87,10 +87,17 @@ body{
   cursor:pointer;padding:0 .65rem;border-radius:3px;
   letter-spacing:.06em;text-transform:uppercase;
   white-space:nowrap;flex-shrink:0;touch-action:manipulation;
-  height:34px;display:inline-flex;align-items:center;justify-content:center;
+  height:28px;display:inline-flex;align-items:center;justify-content:center;
   transition:opacity .15s;
 }
 .theme-btn:hover{opacity:.7;}
+@media(max-width:480px){
+  .theme-btn{width:28px;padding:0;font-size:0;}
+  .theme-btn::before{content:'☾';font-size:.8rem;}
+  [data-theme=dark] .theme-btn::before{content:'☀';}
+  .site-title{font-size:.9rem;gap:.3rem;}
+  .topbar{padding:0 .5rem;gap:.4rem;}
+}
 
 /* ── OVERLAY ── */
 #overlay{
@@ -170,7 +177,7 @@ body{
 .layer-row.on .layer-count{background:var(--accent);color:#fff;}
 
 .pbtn{
-  width:100%;padding:.56rem 1rem;border-radius:2px;background:var(--accent);
+  width:100%;padding:.42rem 1rem;border-radius:2px;background:var(--accent);
   color:#fff;font-family:'JetBrains Mono',monospace;font-size:.62rem;
   font-weight:500;letter-spacing:.08em;text-transform:uppercase;
   cursor:pointer;border:none;touch-action:manipulation;transition:opacity .15s;
@@ -185,14 +192,13 @@ body{
   margin-top:.75rem;width:100%;text-align:center;
   border:none;transition:opacity .15s;touch-action:manipulation;
 }
-.delbtn:hover{opacity:.7;}
-  width:100%;padding:.56rem 1rem;border-radius:2px;background:none;
+.sbtn{
+  width:100%;padding:.42rem 1rem;border-radius:2px;background:none;
   color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:.62rem;
   font-weight:500;letter-spacing:.08em;text-transform:uppercase;
   cursor:pointer;border:1px solid var(--border);
   transition:border-color .15s,color .15s;touch-action:manipulation;
 }
-.sbtn:active,.sbtn:hover{border-color:var(--accent);color:var(--accent);}
 
 /* Backlog */
 #bl-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;}
@@ -487,23 +493,6 @@ input[type=color].cinp{width:38px;height:32px;padding:2px;border-radius:2px;bord
       <input type="number" id="yr-inp" class="year-inp" value="2026" onchange="render()">
     </div>
 
-    <!-- Шари відображення -->
-    <div class="sb-sec">
-      <span class="sb-label">Шари календаря</span>
-      <div class="sb-layers">
-        <div class="layer-row on" id="layer-projects" onclick="toggleLayer('projects',this)">
-          <span class="layer-dot" style="background:var(--accent)"></span>
-          Проєкти
-          <span class="layer-count" id="lc-projects">0</span>
-        </div>
-        <div class="layer-row on" id="layer-tasks" onclick="toggleLayer('tasks',this)">
-          <span class="layer-dot" style="background:var(--e-med)"></span>
-          Задачі (з ScannerTasks)
-          <span class="layer-count" id="lc-tasks">0</span>
-        </div>
-      </div>
-    </div>
-
     <div class="sb-sec" style="display:flex;flex-direction:column;gap:.45rem;">
       <button class="pbtn" id="btn-np">+ Новий проєкт</button>
       <button class="sbtn" id="btn-nc">+ Категорія</button>
@@ -528,15 +517,6 @@ input[type=color].cinp{width:38px;height:32px;padding:2px;border-radius:2px;bord
   </div>
 </div>
 
-<!-- Task quick panel (знизу) -->
-<div id="task-panel">
-  <div class="task-panel-header">
-    <span class="task-panel-title" id="task-panel-title">Задачі</span>
-    <button class="task-panel-close" onclick="closeTaskPanel()">✕</button>
-  </div>
-  <div class="task-panel-body" id="task-panel-body"></div>
-</div>
-
 <div id="modal" class="modal" onclick="if(event.target===this)closeMod()">
   <div class="mcard" id="mbody"></div>
 </div>
@@ -548,7 +528,6 @@ const sb=supabase.createClient(SB_URL,SB_KEY);
 
 let projs=[],cats=[],scannerTasks=[];
 let fCats=new Set(),fKinds=new Set();
-let layers={projects:true,tasks:true};
 let aDate=null,editId=null;
 
 const KINDS=[
@@ -604,13 +583,6 @@ document.getElementById('sb-close-btn').addEventListener('click',closeSB);
 document.getElementById('btn-np').addEventListener('click',()=>sbAction(()=>openMod('proj',null)));
 document.getElementById('btn-nc').addEventListener('click',()=>sbAction(()=>openMod('cat',null)));
 
-/* LAYERS */
-function toggleLayer(name,el){
-  layers[name]=!layers[name];
-  el.classList.toggle('on',layers[name]);
-  render();
-}
-
 /* RESIZER */
 function initResizer(){
   const r=document.getElementById('sb-resizer');if(!r)return;
@@ -635,21 +607,17 @@ function initBLDrop(){
     e.preventDefault();bl.classList.remove('dov');
     const pid=e.dataTransfer.getData('pid');
     if(pid){await sb.from('projects').update({date:null}).eq('id',pid);sync();}
-    // Задачу з scanner_tasks також можна перетягнути в беклог (прибрати planned_date)
-    const tid=e.dataTransfer.getData('tid');
-    if(tid){await sb.from('scanner_tasks').update({planned_date:null}).eq('id',tid);sync();}
   });
   document.addEventListener('dragover',e=>{if(isMob())return;if(!document.body.hasAttribute('data-sb-open')&&e.clientX<40)sbOpen();});
 }
 
-/* DRAG & DROP — проєкти і задачі */
+/* DRAG & DROP — проєкти */
 let D={on:false,drag:false,id:null,type:'proj',ghost:null,tgt:null,x0:0,y0:0,bg:'',fg:'',lbl:'',holdTimer:null};
 
 function mkDrag(el,id,type,bg,fg,lbl){
   el.draggable=true;
   el.ondragstart=e=>{
     if(type==='proj')e.dataTransfer.setData('pid',id);
-    else e.dataTransfer.setData('tid',id);
   };
   el.addEventListener('pointerdown',e=>{
     if(e.pointerType==='mouse'||!e.isPrimary)return;
@@ -661,12 +629,12 @@ function mkDrag(el,id,type,bg,fg,lbl){
       const g=document.createElement('div');g.className='ghost';g.textContent=D.lbl;
       g.style.background=D.bg;g.style.color=D.fg;g.style.left=D.x0+'px';g.style.top=D.y0+'px';
       document.body.appendChild(g);D.ghost=g;if(navigator.vibrate)navigator.vibrate(25);
-    },400);
+    },600);
   });
   el.addEventListener('pointermove',e=>{
     if(!D.on||e.pointerType==='mouse'||!e.isPrimary)return;
     const dx=e.clientX-D.x0,dy=e.clientY-D.y0;
-    if(!D.drag&&Math.sqrt(dx*dx+dy*dy)>8){clearTimeout(D.holdTimer);D.on=false;return;}
+    if(!D.drag&&Math.sqrt(dx*dx+dy*dy)>15){clearTimeout(D.holdTimer);D.on=false;return;}
     if(!D.drag)return;e.preventDefault();
     D.ghost.style.left=e.clientX+'px';D.ghost.style.top=e.clientY+'px';
     if(isMob()){
@@ -689,11 +657,9 @@ function mkDrag(el,id,type,bg,fg,lbl){
       if(t?.classList.contains('mcell')){
         const code=t.dataset.code;if(!code)return;
         if(D.type==='proj'){await sb.from('projects').update({date:code}).eq('id',D.id);}
-        else{await sb.from('scanner_tasks').update({planned_date:code}).eq('id',D.id);}
         sync();
       } else if(t?.id==='backlog'||t?.closest?.('#backlog')){
         if(D.type==='proj'){await sb.from('projects').update({date:null}).eq('id',D.id);}
-        else{await sb.from('scanner_tasks').update({planned_date:null}).eq('id',D.id);}
         sync();
       }
     }
@@ -707,22 +673,14 @@ function mkDrag(el,id,type,bg,fg,lbl){
 
 /* DATA */
 async function sync(){
-  const[p,c,st]=await Promise.all([
-    sb.from('projects').select('*'),
-    sb.from('categories').select('*'),
-    sb.from('scanner_tasks').select('*').not('planned_date','is',null)
+  const [p, c] = await Promise.all([
+    sb.from('projects').select('*').order('created_at', {ascending:false}),
+    sb.from('categories').select('*').order('name')
   ]);
-  projs=p.data||[];cats=c.data||[];scannerTasks=st.data||[];
-  updateLayerCounts();
+  projs=p.data||[];cats=c.data||[];
   render();
 }
 
-function updateLayerCounts(){
-  const projInCal=projs.filter(p=>p.date).length;
-  const tasksInCal=scannerTasks.filter(t=>t.planned_date).length;
-  document.getElementById('lc-projects').textContent=projInCal;
-  document.getElementById('lc-tasks').textContent=tasksInCal;
-}
 
 /* BUILD PROJECT CARD */
 function mkProjCard(p,isBL=false){
@@ -798,56 +756,26 @@ function render(){
       const cell=document.createElement('div');
       cell.className='mcell';cell.setAttribute('data-lbl',MN[m-1]);cell.dataset.code=code;
 
-      // Клік на клітинку — відкрити новий проєкт або показати задачі
       cell.onclick=e=>{
         if(e.target!==cell)return;
         openMod('proj',code);
       };
 
-      /* Desktop drag events для клітинок */
       cell.ondragover=e=>{e.preventDefault();cell.classList.add('dov');};
       cell.ondragleave=e=>{if(!cell.contains(e.relatedTarget))cell.classList.remove('dov');};
       cell.ondrop=async e=>{
         cell.classList.remove('dov');
         const pid=e.dataTransfer.getData('pid');
-        const tid=e.dataTransfer.getData('tid');
         if(pid){await sb.from('projects').update({date:code}).eq('id',pid);sync();}
-        if(tid){await sb.from('scanner_tasks').update({planned_date:code}).eq('id',tid);sync();}
       };
 
-      // Шар 1: проєкти
-      if(layers.projects){
-        const cellProjs=list.filter(p=>p.date===code);
-        cellProjs.forEach(p=>{
-          const el=mkProjCard(p);
-          el.addEventListener('click',e=>{e.stopPropagation();openMod('proj',code,p);});
-          cell.appendChild(el);
-        });
-      }
-
-      // Роздільник між шарами (якщо є і проєкти і задачі)
-      if(layers.projects&&layers.tasks){
-        const cellTasks=scannerTasks.filter(t=>t.planned_date===code);
-        if(list.filter(p=>p.date===code).length>0&&cellTasks.length>0){
-          const sep=document.createElement('div');sep.className='cell-layer-sep';cell.appendChild(sep);
-        }
-      }
-
-      // Шар 2: задачі з scanner_tasks
-      if(layers.tasks){
-        const cellTasks=scannerTasks.filter(t=>t.planned_date===code);
-        cellTasks.forEach(t=>{
-          const el=mkTaskCalCard(t);
-          el.addEventListener('click',e=>{e.stopPropagation();showTasksForCell(code,cellTasks);});
-          cell.appendChild(el);
-        });
-        // Лічильник задач у кутку
-        if(cellTasks.length>0){
-          const cnt=document.createElement('div');cnt.className='mcell-tasks-count';
-          cnt.textContent='✓'+cellTasks.filter(t=>!t.done).length+'/'+cellTasks.length;
-          cell.appendChild(cnt);
-        }
-      }
+      // Рендеримо проєкти
+      const cellProjs=list.filter(p=>p.date===code);
+      cellProjs.forEach(p=>{
+        const el=mkProjCard(p);
+        el.addEventListener('click',e=>{e.stopPropagation();openMod('proj',code,p);});
+        cell.appendChild(el);
+      });
 
       grid.appendChild(cell);
     }
@@ -867,32 +795,6 @@ function render(){
   });
 }
 
-/* TASK PANEL — показати задачі місяця */
-function showTasksForCell(code,tasks){
-  const panel=document.getElementById('task-panel');
-  const body=document.getElementById('task-panel-body');
-  const title=document.getElementById('task-panel-title');
-  const[y,m]=code.split('-');
-  title.textContent=`Задачі: ${MN[parseInt(m)-1]} ${y} (${tasks.length})`;
-  body.innerHTML='';
-  if(!tasks.length){body.innerHTML='<div style="font-family:JetBrains Mono,monospace;font-size:.6rem;color:var(--muted);padding:.5rem 0">Немає запланованих задач</div>';panel.classList.add('open');return;}
-  tasks.forEach(t=>{
-    const row=document.createElement('div');row.className='task-panel-item';
-    const icon=document.createElement('span');icon.className='tpi-icon';icon.textContent=t.done?'✓':'☐';
-    const ttl=document.createElement('span');ttl.className='tpi-title';ttl.textContent=t.title;if(t.done)ttl.style.textDecoration='line-through';
-    row.appendChild(icon);row.appendChild(ttl);
-    if(t.project){const p=document.createElement('span');p.className='tpi-proj';p.textContent=t.project;row.appendChild(p);}
-    const ctx=document.createElement('span');ctx.className='tpi-ctx';
-    const ctxMap={inbox:'Вхідні',today:'Сьогодні',waiting:'Чекаю',someday:'Колись'};
-    ctx.textContent=ctxMap[t.context]||t.context;row.appendChild(ctx);
-    const unplan=document.createElement('button');unplan.className='tpi-unplan';unplan.textContent='× прибрати';
-    unplan.onclick=async()=>{await sb.from('scanner_tasks').update({planned_date:null}).eq('id',t.id);sync();closeTaskPanel();};
-    row.appendChild(unplan);
-    body.appendChild(row);
-  });
-  panel.classList.add('open');
-}
-function closeTaskPanel(){document.getElementById('task-panel').classList.remove('open');}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeMod();closeTaskPanel();}});
 
 /* MODAL */
