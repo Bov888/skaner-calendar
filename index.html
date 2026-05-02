@@ -32,7 +32,7 @@
   --text:#1a1917;--muted:#6b6963;
   --accent:#2d5a27;--accent-light:#e8f0e6;--accent-mid:#4a8a42;
   --error:#8b2010;
-  --sw:240px;
+  --sw:280px;
 }
 [data-theme=dark]{
   --bg:#141412;--surface:#1e1d1b;--surface2:#252422;--border:#2e2d2a;
@@ -104,31 +104,32 @@ body{
 #overlay[data-open]{opacity:1;pointer-events:auto;}
 
 /* ── LAYOUT ── */
-.app-body{flex:1;display:flex;overflow:hidden;}
+.app-body{flex:1;display:flex;overflow:hidden;padding:1.2rem;gap:1.2rem;}
 
 /* ── SIDEBAR ── */
 @media(min-width:769px){
   #sidebar{
-    width:0;background:var(--surface);border-right:1px solid var(--border);
-    display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;position:relative;
-    transition:width .25s,border-color .25s;border-right-color:transparent;
+    width:0;display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;position:relative;
+    padding:0;gap:.8rem;transition:width .25s cubic-bezier(.4,0,.2,1), opacity .2s;
+    opacity:0;
   }
-  body[data-sb-open] #sidebar{width:var(--sw);border-right-color:var(--border);}
-  #sb-resizer{position:absolute;top:0;right:-4px;width:8px;height:100%;cursor:col-resize;z-index:10;}
-  #sb-resizer::after{content:'';position:absolute;top:50%;left:3px;transform:translateY(-50%);width:2px;height:40px;border-radius:1px;background:var(--border);transition:background .15s;}
-  #sb-resizer:hover::after{background:var(--accent);}
+  body[data-sb-open] #sidebar{width:var(--sw);padding-right:0;opacity:1;}
 }
 @media(max-width:768px){
   #sidebar{
     position:fixed;top:0;left:0;bottom:0;width:min(300px,85vw)!important;
-    background:var(--surface);border-right:1px solid var(--border);
-    display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;
+    display:flex;flex-direction:column;
     z-index:500;transform:translateX(-110%);
-    transition:transform .25s cubic-bezier(.4,0,.2,1);
+    transition:transform .25s cubic-bezier(.4,0,.2,1);padding:0;
   }
   body[data-sb-open] #sidebar{transform:translateX(0);}
   #sb-resizer{display:none;}
 }
+.sb-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:3px;
+  display:flex;flex-direction:column;overflow:hidden;
+}
+#bl-wrap{flex:1;}
 
 .sb-topbar{
   display:none;align-items:center;justify-content:space-between;
@@ -219,36 +220,33 @@ body{
 /* ── MAIN ── */
 #main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
 
-/* ── FILTERS ── */
-#filters{border-bottom:1px solid var(--border);flex-shrink:0;}
-.frow{
-  display:flex;align-items:center;gap:.35rem;
-  padding:.28rem 1rem;overflow-x:auto;scrollbar-width:none;min-height:34px;
+/* ── TOOLBAR & FILTERS ── */
+.cal-toolbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:.7rem 1.2rem;border-bottom:1px solid var(--border);
+  background:var(--surface2);flex-shrink:0;gap:1rem;
 }
-.frow+.frow{border-top:1px solid var(--border);}
-.frow::-webkit-scrollbar{display:none;}
-.frow-lbl{
-  font-family:'JetBrains Mono',monospace;font-size:.48rem;
-  letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
-  white-space:nowrap;flex-shrink:0;padding-right:.5rem;
-  border-right:1px solid var(--border);margin-right:.1rem;
+.cal-title{
+  font-family:'Literata',serif;font-size:1.1rem;font-weight:300;
+  letter-spacing:-.02em;color:var(--text);white-space:nowrap;
 }
-.chip{
-  font-family:'JetBrains Mono',monospace;font-size:.57rem;
-  letter-spacing:.05em;text-transform:uppercase;
+.cal-filters{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;}
+.cal-select{
+  font-family:'JetBrains Mono',monospace;font-size:.55rem;
+  letter-spacing:.04em;text-transform:uppercase;
   border:1px solid var(--border);color:var(--muted);
-  padding:.35rem .65rem;border-radius:2px;
-  cursor:pointer;background:none;
-  transition:border-color .15s,color .15s,background .15s;
-  white-space:nowrap;display:inline-flex;align-items:center;gap:4px;
-  flex-shrink:0;touch-action:manipulation;
+  background:var(--surface);cursor:pointer;padding:.35rem .6rem;border-radius:2px;
+  transition:all .15s;outline:none;
 }
-.chip:hover{border-color:var(--accent);color:var(--accent);}
-.chip.on{background:var(--accent-light);border-color:var(--accent);color:var(--accent);}
-.chip .cdot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
-.chip.on .cdot{background:#fff!important;}
-.chip-edit{font-size:.45rem;opacity:.5;cursor:pointer;padding:0 1px;margin-left:1px;}
-.chip-edit:hover{opacity:1;}
+.cal-select:hover{border-color:var(--accent);color:var(--accent);}
+.cal-select.active{border-color:var(--accent);color:var(--accent);background:var(--accent-light);}
+
+@media(max-width:768px){
+  .cal-toolbar{flex-direction:column;align-items:stretch;gap:.8rem;}
+  .cal-title{text-align:center;}
+  .cal-filters{justify-content:center;}
+}
+
 .clr{
   font-family:'JetBrains Mono',monospace;font-size:.48rem;
   letter-spacing:.06em;color:var(--error);background:none;
@@ -259,7 +257,12 @@ body{
 .clr:hover{border-color:var(--error);}
 
 /* ── VIEW ── */
-#view{flex:1;overflow-y:auto;padding:1.5rem;-webkit-overflow-scrolling:touch;}
+#view{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;}
+.cal-wrap{
+  background:var(--surface);border:1px solid var(--border);border-radius:3px;
+  flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;
+}
+.cal-scroll{flex:1;overflow-y:auto;padding:1.5rem;scrollbar-width:thin;scrollbar-color:var(--border) transparent;min-height:0;}
 .yr-sec{margin-bottom:2.5rem;}
 .yr-ttl{
   font-family:'Literata',serif;font-size:1.6rem;font-weight:300;
@@ -500,32 +503,33 @@ input[type=color].cinp{width:38px;height:32px;padding:2px;border-radius:2px;bord
 
 <div class="app-body">
   <aside id="sidebar">
-    <div id="sb-resizer"></div>
-    <div class="sb-topbar">
-      <span class="sb-brand">Меню</span>
-      <button class="sb-close-btn" id="sb-close-btn">✕</button>
-    </div>
-
-    <div class="sb-sec">
-      <span class="sb-label">Рік початку</span>
-      <input type="number" id="yr-inp" class="year-inp" value="2026" onchange="render()">
-    </div>
-
-    <div class="sb-sec" style="display:flex;flex-direction:column;gap:.45rem;">
-      <button class="pbtn" id="btn-np">+ Новий проєкт</button>
-      <button class="sbtn" id="btn-nc">+ Категорія</button>
-      
-      <!-- Мобільне меню -->
-      <div class="mob-menu" style="display:none;flex-direction:column;gap:.4rem;padding-top:.4rem;border-top:1px solid var(--border);margin-top:.4rem;">
-        <button class="sbtn" onclick="toggleTheme()">☾ Змінити тему</button>
-        <button class="sbtn" style="color:var(--error)" onclick="sb.auth.signOut();location.reload();">✕ Вийти</button>
+    <div class="sb-card">
+      <div class="sb-topbar">
+        <span class="sb-brand">Меню</span>
+        <button class="sb-close-btn" id="sb-close-btn">✕</button>
       </div>
-      <style>@media(max-width:480px){.mob-menu{display:flex!important;}}</style>
+
+      <div class="sb-sec">
+        <span class="sb-label">Рік початку</span>
+        <input type="number" id="yr-inp" class="year-inp" value="2026" onchange="render()">
+      </div>
+
+      <div class="sb-sec" style="display:flex;flex-direction:column;gap:.45rem;">
+        <button class="pbtn" id="btn-np">+ Новий проєкт</button>
+        <button class="sbtn" id="btn-nc">+ Категорія</button>
+        
+        <!-- Мобільне меню -->
+        <div class="mob-menu" style="display:none;flex-direction:column;gap:.4rem;padding-top:.4rem;border-top:1px solid var(--border);margin-top:.4rem;">
+          <button class="sbtn" onclick="toggleTheme()">☾ Змінити тему</button>
+          <button class="sbtn" style="color:var(--error)" onclick="sb.auth.signOut();location.reload();">✕ Вийти</button>
+        </div>
+        <style>@media(max-width:480px){.mob-menu{display:flex!important;}}</style>
+      </div>
     </div>
 
-    <div id="bl-wrap">
-      <div class="sb-sec" style="padding-bottom:.5rem;">
-        <span class="sb-label" style="margin-bottom:0">Беклог проєктів</span>
+    <div class="sb-card" id="bl-wrap">
+      <div class="sb-sec">
+        <span class="sb-label">Беклог проєктів</span>
       </div>
       <div id="backlog">
         <div class="bl-hint" id="bl-hint">↓ перетягни сюди</div>
@@ -534,11 +538,19 @@ input[type=color].cinp{width:38px;height:32px;padding:2px;border-radius:2px;bord
   </aside>
 
   <div id="main">
-    <div id="filters">
-      <div class="frow" id="frow-cat"><span class="frow-lbl">Катег.</span></div>
-      <div class="frow" id="frow-knd"><span class="frow-lbl">Тип</span></div>
+    <div id="view">
+      <div class="cal-wrap">
+        <div class="cal-toolbar">
+          <div class="cal-title">Матриця горизонтів</div>
+          <div class="cal-filters" id="cal-filters">
+            <!-- Сюди JS вставить селектори -->
+          </div>
+        </div>
+        <div class="cal-scroll" id="cal-scroll">
+          <p class="ldg">Завантаження...</p>
+        </div>
+      </div>
     </div>
-    <div id="view"><p class="ldg">Завантаження...</p></div>
   </div>
 </div>
 
@@ -763,32 +775,50 @@ function render(){
   if(fCats.size)list=list.filter(p=>fCats.has(p.cat));
   if(fKinds.size)list=list.filter(p=>fKinds.has(p.kind||'project'));
 
-  /* Фільтри — категорії */
-  const fc=document.getElementById('frow-cat');fc.innerHTML='<span class="frow-lbl">Катег.</span>';
-  cats.forEach(c=>{
-    const ch=document.createElement('button');ch.className='chip'+(fCats.has(c.name)?' on':'');
-    const dot=document.createElement('span');dot.className='cdot';dot.style.background=fCats.has(c.name)?'#fff':c.color;
-    const tx=document.createElement('span');tx.textContent=c.name;
-    const ed=document.createElement('span');ed.className='chip-edit';ed.textContent='✎';
-    ed.onclick=e=>{e.stopPropagation();openMod('cat',null,c);};
-    ch.appendChild(dot);ch.appendChild(tx);ch.appendChild(ed);
-    ch.onclick=()=>{fCats.has(c.name)?fCats.delete(c.name):fCats.add(c.name);render();};
-    fc.appendChild(ch);
-  });
-  if(fCats.size){const b=document.createElement('button');b.className='clr';b.textContent='✕ скинути';b.onclick=()=>{fCats.clear();render();};fc.appendChild(b);}
-
-  /* Фільтри — типи */
-  const fk=document.getElementById('frow-knd');fk.innerHTML='<span class="frow-lbl">Тип</span>';
-  KINDS.forEach(k=>{
-    const ch=document.createElement('button');ch.className='chip'+(fKinds.has(k.id)?' on':'');
-    ch.innerHTML=`<span style="font-size:.7rem">${k.icon}</span>${k.lbl}`;
-    ch.onclick=()=>{fKinds.has(k.id)?fKinds.delete(k.id):fKinds.add(k.id);render();};
-    fk.appendChild(ch);
-  });
-  if(fKinds.size){const b=document.createElement('button');b.className='clr';b.textContent='✕ скинути';b.onclick=()=>{fKinds.clear();render();};fk.appendChild(b);}
-
   /* Календар */
-  const view=document.getElementById('view');view.innerHTML='';
+  const scroll=document.getElementById('cal-scroll');
+  scroll.innerHTML='';
+
+  // Тулбар та фільтри
+  const filters=document.getElementById('cal-filters');
+  filters.innerHTML='';
+
+  // Селект категорій
+  const catSel=document.createElement('select');
+  catSel.className='cal-select'+(fCats.size?' active':'');
+  catSel.innerHTML='<option value="">🏷 Категорії (Всі)</option>';
+  cats.forEach(c=>{
+    const opt=document.createElement('option');
+    opt.value=c.name;
+    opt.textContent=c.name;
+    opt.selected=fCats.has(c.name);
+    catSel.appendChild(opt);
+  });
+  catSel.onchange=e=>{
+    fCats.clear();
+    if(e.target.value)fCats.add(e.target.value);
+    render();
+  };
+  filters.appendChild(catSel);
+
+  // Селект типів
+  const kndSel=document.createElement('select');
+  kndSel.className='cal-select'+(fKinds.size?' active':'');
+  kndSel.innerHTML='<option value="">🎯 Типи (Всі)</option>';
+  KINDS.forEach(k=>{
+    const opt=document.createElement('option');
+    opt.value=k.id;
+    opt.textContent=k.icon+' '+k.lbl;
+    opt.selected=fKinds.has(k.id);
+    kndSel.appendChild(opt);
+  });
+  kndSel.onchange=e=>{
+    fKinds.clear();
+    if(e.target.value)fKinds.add(e.target.value);
+    render();
+  };
+  filters.appendChild(kndSel);
+
   for(let i=0;i<6;i++){
     const y=start+i;
     const sec=document.createElement('div');sec.className='yr-sec';
@@ -823,7 +853,8 @@ function render(){
 
       grid.appendChild(cell);
     }
-    sec.appendChild(grid);view.appendChild(sec);
+    sec.appendChild(grid);
+    scroll.appendChild(sec);
   }
 
   /* Беклог */
