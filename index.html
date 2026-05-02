@@ -289,8 +289,8 @@ body{
 .mcell.dov{border-color:var(--accent);background:var(--accent-light);}
 .mcell::before{
   content:attr(data-lbl);position:absolute;top:6px;left:6px;
-  font-family:'JetBrains Mono',monospace;font-size:.5rem;
-  font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;
+  font-family:'JetBrains Mono',monospace;font-size:.44rem;
+  font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;
 }
 /* Лічильник задач у кутку */
 .mcell-tasks-count{
@@ -426,22 +426,25 @@ input[type=color].cinp{width:38px;height:32px;padding:2px;border-radius:2px;bord
 .tpi-unplan:hover{border-color:var(--error);color:var(--error);}
 
 /* MOBILE MENU MODAL */
-#mobile-menu-modal{display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.4);backdrop-filter:blur(3px);align-items:flex-end;justify-content:center;}
-.mm-card{background:var(--bg);width:100%;max-width:440px;border-radius:3px;padding:1.5rem;box-shadow:0 -10px 30px rgba(0,0,0,.3);transform:translateY(100%);transition:transform .3s ease-out;}
+#mobile-menu-modal{display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.4);backdrop-filter:blur(3px);align-items:flex-end;justify-content:center;padding-bottom:1.5rem;}
+.mm-card{
+  background:var(--bg);width:calc(100% - 2.4rem);max-width:380px;border-radius:12px;padding:1.2rem;
+  box-shadow:0 10px 40px rgba(0,0,0,.4);transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+  border:1px solid var(--border);
+}
 #mobile-menu-modal.open{display:flex;}
 #mobile-menu-modal.open .mm-card{transform:translateY(0);}
-.mm-title{font-family:'JetBrains Mono',monospace;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;text-align:center;}
-.mm-grid{display:flex;flex-wrap:nowrap;gap:.5rem;}
+.mm-title{font-family:'JetBrains Mono',monospace;font-size:.52rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.8rem;text-align:center;opacity:.7;}
+.mm-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;}
 .mm-btn{
-  flex:1;min-width:0;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4rem;
-  background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:.75rem .3rem;
-  font-family:'JetBrains Mono',monospace;font-size:.55rem;letter-spacing:.04em;text-transform:uppercase;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.3rem;
+  background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.7rem .2rem;
+  font-family:'JetBrains Mono',monospace;font-size:.48rem;letter-spacing:.02em;text-transform:uppercase;
   color:var(--text);cursor:pointer;transition:all .15s;
 }
 .mm-btn:active{background:var(--accent-light);border-color:var(--accent);color:var(--accent);}
 .mm-btn.danger{color:var(--error);border-color:var(--error);}
-.mm-icon{font-size:1.4rem;}
+.mm-icon{font-size:1.1rem;}
 
 /* DRAG GHOST */
 .ghost{
@@ -564,6 +567,7 @@ input[type=color].cinp{width:38px;height:32px;padding:2px;border-radius:2px;bord
       <button class="mm-btn" onclick="closeMobileMenu();toggleTheme()"><span class="mm-icon">☾</span>Тема</button>
       <button class="mm-btn danger" onclick="doLogout()"><span class="mm-icon">✕</span>Вихід</button>
     </div>
+    <button class="pbtn secondary" style="width:100%;margin-top:1rem" onclick="closeMobileMenu()">Закрити</button>
   </div>
 </div>
 
@@ -582,7 +586,7 @@ const KINDS=[
   {id:'zone',    icon:'◎', lbl:'Зона'},
 ];
 const kIcon=k=>KINDS.find(x=>x.id===k)?.icon||'🎯';
-const MN=['Січ','Лют','Бер','Кві','Тра','Чер','Лип','Сер','Вер','Жов','Лис','Гру'];
+const MN=['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'];
 
 function ctxt(hex){
   const c=(hex||'#4a8a42').replace('#','');
