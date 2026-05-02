@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>ScannerPlaner</title>
+<title>ScannerPlanner</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Literata:ital,wght@0,300;0,400;0,500;1,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -240,6 +240,14 @@ body{
 }
 .cal-select:hover{border-color:var(--accent);color:var(--accent);}
 .cal-select.active{border-color:var(--accent);color:var(--accent);background:var(--accent-light);}
+.cal-reset{
+  font-family:'JetBrains Mono',monospace;font-size:.52rem;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--error);background:none;border:1px solid transparent;
+  cursor:pointer;padding:.3rem .5rem;border-radius:2px;
+  transition:border-color .15s;white-space:nowrap;touch-action:manipulation;display:none;
+}
+.cal-reset.visible{display:inline-flex;align-items:center;gap:.3rem;}
+.cal-reset:hover{border-color:var(--error);}
 
 /* ── MOBILE MENU (Right) ── */
 
@@ -283,10 +291,13 @@ body{
 .mcell{
   background:var(--surface);border-radius:3px;padding:22px 5px 5px;
   border:1px solid var(--border);position:relative;min-height:76px;
-  cursor:pointer;transition:border-color .15s;touch-action:pan-y;
+  cursor:pointer;transition:border-color .15s,background .15s;touch-action:pan-y;
 }
 .mcell:hover{border-color:var(--accent-mid);}
+.mcell:empty-ish::after,.mcell:hover::after{content:'+';position:absolute;bottom:5px;right:7px;font-size:.8rem;color:var(--accent);opacity:.3;line-height:1;pointer-events:none;}
 .mcell.dov{border-color:var(--accent);background:var(--accent-light);}
+.mcell.current-month{border-color:var(--accent);background:var(--accent-light);}
+.mcell.current-month::before{color:var(--accent);}
 .mcell::before{
   content:attr(data-lbl);position:absolute;top:6px;left:6px;
   font-family:'JetBrains Mono',monospace;font-size:.44rem;
@@ -459,7 +470,7 @@ input[type=color].cinp{width:38px;height:32px;padding:2px;border-radius:2px;bord
 
 <div id="auth-gate">
   <div class="auth-card">
-    <div class="auth-logo">Scanner<span>Planer</span></div>
+    <div class="auth-logo">Scanner<span>Planner</span></div>
     <label class="ilbl">Електронна пошта</label>
     <input type="email" id="email" class="inp" placeholder="email@example.com" style="margin-bottom:.8rem">
     <label class="ilbl">Пароль</label>
@@ -494,7 +505,7 @@ input[type=color].cinp{width:38px;height:32px;padding:2px;border-radius:2px;bord
       <circle cx="16" cy="15" r="2.2" fill="var(--bg)"/>
       <circle cx="16" cy="15" r="1.2" fill="var(--accent)"/>
     </svg>
-    Scanner<span>Planer</span>
+    Scanner<span>Planner</span>
   </button>
   <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">☾ тема</button>
   <button class="ibtn" id="more-btn" onclick="openMobileMenu()" style="display:none">
@@ -528,8 +539,9 @@ input[type=color].cinp{width:38px;height:32px;padding:2px;border-radius:2px;bord
     </div>
 
     <div class="sb-card" id="bl-wrap">
-      <div class="sb-sec">
-        <span class="sb-label">Беклог проєктів</span>
+      <div class="sb-sec" style="display:flex;align-items:center;justify-content:space-between;">
+        <span class="sb-label" style="margin-bottom:0">Беклог проєктів</span>
+        <span id="bl-count" style="font-family:'JetBrains Mono',monospace;font-size:.5rem;background:var(--surface2);color:var(--muted);padding:.05rem .35rem;border-radius:2px;">0</span>
       </div>
       <div id="backlog">
         <div class="bl-hint" id="bl-hint">↓ перетягни сюди</div>
@@ -819,6 +831,23 @@ function render(){
   };
   filters.appendChild(kndSel);
 
+  // Кнопка скидання фільтрів
+  const hasFilters=fCats.size||fKinds.size;
+  let resetBtn=document.getElementById('cal-reset-btn');
+  if(!resetBtn){
+    resetBtn=document.createElement('button');
+    resetBtn.id='cal-reset-btn';resetBtn.className='cal-reset';
+    resetBtn.innerHTML='✕ скинути';
+    resetBtn.onclick=()=>{fCats.clear();fKinds.clear();render();};
+    filters.appendChild(resetBtn);
+  } else {
+    filters.appendChild(resetBtn);
+  }
+  resetBtn.classList.toggle('visible',!!hasFilters);
+
+  const now=new Date();
+  const curCode=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+
   for(let i=0;i<6;i++){
     const y=start+i;
     const sec=document.createElement('div');sec.className='yr-sec';
@@ -829,9 +858,10 @@ function render(){
       const code=`${y}-${String(m).padStart(2,'0')}`;
       const cell=document.createElement('div');
       cell.className='mcell';cell.setAttribute('data-lbl',MN[m-1]);cell.dataset.code=code;
+      if(code===curCode)cell.classList.add('current-month');
 
       cell.onclick=e=>{
-        if(e.target!==cell)return;
+        if(e.target.closest('.pcard')||e.target.closest('.tcard-cal'))return;
         openMod('proj',code);
       };
 
@@ -868,8 +898,15 @@ function render(){
     el.addEventListener('click',()=>openMod('proj',null,p));
     bl.insertBefore(el,hint);
   });
+  const blCount=document.getElementById('bl-count');
+  if(blCount){
+    blCount.textContent=nd.length;
+    blCount.style.background=nd.length?'var(--accent)':'var(--surface2)';
+    blCount.style.color=nd.length?'#fff':'var(--muted)';
+  }
 }
 
+function closeTaskPanel(){const p=document.getElementById('task-panel');if(p)p.classList.remove('open');}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeMod();closeTaskPanel();}});
 
 /* MODAL */
