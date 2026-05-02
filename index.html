@@ -155,24 +155,6 @@ body{
 }
 .year-inp:focus{border-color:var(--accent);}
 
-/* Layer toggle */
-.sb-layers{display:flex;flex-direction:column;gap:.35rem;}
-.layer-row{
-  display:flex;align-items:center;gap:.5rem;
-  padding:.38rem .7rem;border-radius:2px;cursor:pointer;
-  border:1px solid var(--border);transition:all .15s;
-  font-family:'JetBrains Mono',monospace;font-size:.62rem;
-  letter-spacing:.04em;text-transform:uppercase;color:var(--muted);
-  touch-action:manipulation;
-}
-.layer-row:hover{border-color:var(--accent);color:var(--accent);}
-.layer-row.on{background:var(--accent-light);border-color:var(--accent);color:var(--accent);}
-.layer-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-.layer-count{
-  font-size:.5rem;background:var(--surface2);color:var(--muted);
-  padding:.05rem .3rem;border-radius:2px;margin-left:auto;
-}
-.layer-row.on .layer-count{background:var(--accent);color:#fff;}
 
 .pbtn{
   width:100%;padding:.55rem 1rem;border-radius:2px;background:var(--accent);
@@ -258,15 +240,6 @@ body{
   .cal-select{flex:1;}
 }
 
-.clr{
-  font-family:'JetBrains Mono',monospace;font-size:.48rem;
-  letter-spacing:.06em;color:var(--error);background:none;
-  cursor:pointer;padding:.15rem .4rem;border-radius:2px;
-  border:1px solid transparent;transition:border-color .15s;
-  white-space:nowrap;flex-shrink:0;margin-left:auto;touch-action:manipulation;
-}
-.clr:hover{border-color:var(--error);}
-
 /* ── VIEW ── */
 #view{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;}
 .cal-wrap{
@@ -303,13 +276,6 @@ body{
   font-family:'JetBrains Mono',monospace;font-size:.44rem;
   font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;
 }
-/* Лічильник задач у кутку */
-.mcell-tasks-count{
-  position:absolute;top:6px;right:6px;
-  font-family:'JetBrains Mono',monospace;font-size:.44rem;
-  color:var(--accent);opacity:.7;letter-spacing:.04em;
-}
-
 /* Картка проєкту */
 .pcard{
   padding:3px 5px;border-radius:2px;font-family:'JetBrains Mono',monospace;
@@ -323,30 +289,6 @@ body{
 .pkind{font-size:.55rem;opacity:.8;flex-shrink:0;margin-top:1px;line-height:1;}
 .pchk{font-size:.52rem;flex-shrink:0;margin-top:1px;opacity:0;line-height:1;}
 .pcard.done .pchk{opacity:1;}
-
-/* Картка задачі (з scanner_tasks) */
-.tcard-cal{
-  padding:3px 5px;border-radius:2px;font-family:'JetBrains Mono',monospace;
-  font-size:.54rem;margin-bottom:2px;
-  white-space:normal;word-break:break-word;line-height:1.3;
-  display:flex;align-items:flex-start;gap:3px;
-  user-select:none;cursor:pointer;touch-action:none;
-  background:var(--surface2);color:var(--muted);border-left:2px solid var(--border);
-  transition:border-color .15s,opacity .15s;
-}
-.tcard-cal:hover{border-color:var(--accent);color:var(--text);}
-.tcard-cal.done{opacity:.35;text-decoration:line-through;}
-.tcard-cal[data-e=low]{border-left-color:#6b8f71;}
-.tcard-cal[data-e=medium]{border-left-color:#b07d3a;}
-.tcard-cal[data-e=high]{border-left-color:#8b2010;}
-[data-theme=dark] .tcard-cal[data-e=low]{border-left-color:#4a8a42;}
-[data-theme=dark] .tcard-cal[data-e=medium]{border-left-color:#c9903e;}
-[data-theme=dark] .tcard-cal[data-e=high]{border-left-color:#e05040;}
-
-/* Роздільник шарів у клітинці */
-.cell-layer-sep{
-  height:1px;background:var(--border);margin:3px 0;opacity:.5;
-}
 
 /* ── MODAL ── */
 .modal{
@@ -398,44 +340,6 @@ input[type=color].cinp{width:38px;height:32px;padding:2px;border-radius:2px;bord
 .aerr{color:var(--error);font-family:'JetBrains Mono',monospace;font-size:.62rem;margin-top:.7rem;text-align:center;}
 .ldg{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--muted);text-align:center;padding:3rem;letter-spacing:.06em;}
 
-/* ── TASK QUICK VIEW PANEL ── */
-#task-panel{
-  position:fixed;bottom:0;left:0;right:0;
-  background:var(--bg);border-top:1px solid var(--border);
-  z-index:600;
-  transform:translateY(100%);
-  transition:transform .25s cubic-bezier(.4,0,.2,1);
-  max-height:60dvh;overflow-y:auto;
-  box-shadow:0 -8px 24px rgba(0,0,0,.12);
-}
-#task-panel.open{transform:translateY(0);}
-.task-panel-header{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:.75rem 1.2rem;border-bottom:1px solid var(--border);
-  position:sticky;top:0;background:var(--bg);z-index:1;
-}
-.task-panel-title{font-family:'JetBrains Mono',monospace;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
-.task-panel-close{background:none;border:1px solid var(--border);color:var(--muted);width:26px;height:26px;border-radius:2px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.8rem;touch-action:manipulation;}
-.task-panel-close:hover{border-color:var(--accent);color:var(--accent);}
-.task-panel-body{padding:.75rem 1.2rem;}
-.task-panel-item{
-  display:flex;align-items:center;gap:.6rem;
-  padding:.5rem 0;border-bottom:1px solid var(--border);
-}
-.task-panel-item:last-child{border-bottom:none;}
-.tpi-icon{font-size:.9rem;flex-shrink:0;opacity:.5;}
-.tpi-title{font-family:'Literata',serif;font-size:.9rem;font-weight:300;flex:1;color:var(--text);}
-.tpi-proj{font-family:'JetBrains Mono',monospace;font-size:.48rem;background:var(--accent-light);color:var(--accent);padding:.08rem .3rem;border-radius:2px;white-space:nowrap;}
-.tpi-ctx{font-family:'JetBrains Mono',monospace;font-size:.48rem;color:var(--muted);white-space:nowrap;}
-.tpi-unplan{
-  font-family:'JetBrains Mono',monospace;font-size:.52rem;letter-spacing:.04em;
-  text-transform:uppercase;
-  background:none;border:1px solid var(--border);color:var(--muted);
-  cursor:pointer;padding:.18rem .4rem;border-radius:2px;
-  transition:all .15s;touch-action:manipulation;white-space:nowrap;
-}
-.tpi-unplan:hover{border-color:var(--error);color:var(--error);}
-
 /* MOBILE MENU MODAL */
 #mobile-menu-modal{display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.4);backdrop-filter:blur(3px);align-items:flex-end;justify-content:center;padding-bottom:1.5rem;}
 .mm-card{
@@ -464,9 +368,20 @@ input[type=color].cinp{width:38px;height:32px;padding:2px;border-radius:2px;bord
   opacity:.9;transform:translate(-50%,-60%) scale(1.04);box-shadow:0 6px 20px rgba(0,0,0,.3);
   max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
+#toast{
+  position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--text);color:var(--bg);
+  font-family:'JetBrains Mono',monospace;font-size:.6rem;letter-spacing:.06em;
+  padding:.55rem 1rem;border-radius:3px;z-index:99999;
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;white-space:nowrap;
+  box-shadow:0 4px 16px rgba(0,0,0,.25);
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+#toast.error{background:var(--error);}
 </style>
 </head>
 <body>
+<div id="toast"></div>
 
 <div id="auth-gate">
   <div class="auth-card">
@@ -604,6 +519,15 @@ function ctxt(hex){
   const c=(hex||'#4a8a42').replace('#','');
   const r=parseInt(c.slice(0,2),16),g=parseInt(c.slice(2,4),16),b=parseInt(c.slice(4,6),16);
   return(.2126*(r/255)+.7152*(g/255)+.0722*(b/255))>.45?'#1a1917':'#fff';
+}
+
+/* TOAST */
+let _toastTimer=null;
+function toast(msg,isError=false){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.className='show'+(isError?' error':'');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>{el.className='';},2800);
 }
 
 /* THEME */
@@ -766,20 +690,6 @@ function mkProjCard(p,isBL=false){
   return el;
 }
 
-/* BUILD TASK CARD for calendar */
-function mkTaskCalCard(t){
-  const el=document.createElement('div');
-  el.className='tcard-cal'+(t.done?' done':'');
-  if(t.energy)el.dataset.e=t.energy;
-  el.title=t.title+(t.project?' ['+t.project+']':'');
-  el.style.touchAction='pan-y';
-  const icon=document.createElement('span');icon.className='pkind';icon.textContent='☐';icon.style.opacity='.5';
-  const lbl=document.createElement('span');lbl.textContent=t.title;lbl.style.flex='1';
-  el.appendChild(icon);el.appendChild(lbl);
-  mkDrag(el,t.id,'task','var(--surface2)','var(--muted)',t.title);
-  return el;
-}
-
 /* RENDER */
 function render(){
   const start=+document.getElementById('yr-inp').value||2026;
@@ -861,7 +771,7 @@ function render(){
       if(code===curCode)cell.classList.add('current-month');
 
       cell.onclick=e=>{
-        if(e.target.closest('.pcard')||e.target.closest('.tcard-cal'))return;
+        if(e.target.closest('.pcard'))return;
         openMod('proj',code);
       };
 
@@ -906,13 +816,12 @@ function render(){
   }
 }
 
-function closeTaskPanel(){const p=document.getElementById('task-panel');if(p)p.classList.remove('open');}
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeMod();closeTaskPanel();}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMod();});
 
 /* MODAL */
 function openMod(type,date,item=null){
   aDate=date;editId=item?.id??null;
-  closeSB();closeTaskPanel();
+  closeSB();
   const body=document.getElementById('mbody');
   document.getElementById('modal').style.display='flex';
 
@@ -979,7 +888,7 @@ async function savePrj(){
   const{error}=editId
     ?await sb.from('projects').update(d).eq('id',editId)
     :await sb.from('projects').insert([d]);
-  if(error){alert('Помилка: '+error.message);return;}
+  if(error){toast('Помилка: '+error.message,true);return;}
   closeMod();sync();
 }
 
@@ -997,7 +906,7 @@ async function saveCat(id){
   const{error}=id
     ?await sb.from('categories').update(d).eq('id',id)
     :await sb.from('categories').insert([d]);
-  if(error){alert('Помилка: '+error.message);return;}
+  if(error){toast('Помилка: '+error.message,true);return;}
   closeMod();sync();
 }
 async function del(t,id){
